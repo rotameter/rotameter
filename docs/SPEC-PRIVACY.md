@@ -11,7 +11,7 @@ Rotameter is privacy-preserving by construction: no personal data touches disk, 
 1. **Zero cookies** set by `collect.js`, `pixel.gif`, or `/v1/events`.
 2. **Zero tracking storage** read or written on the visitor's browser (the sole exception is reading `localStorage.getItem("rotameter_ignore")` for voluntary opt-out).
 3. **Zero raw IP addresses** written to SQLite, crash dumps, debug endpoints, or `tracing` logs.
-4. **Zero third-party forwarding** — all events remain strictly on operator-controlled infrastructure.
+4. **Zero third-party forwarding & zero phone-home** — all events remain strictly on operator-controlled infrastructure. Preconfigured `self_site` dogfooding operates **100% locally** inside the operator's own database—Rotameter never dials home or transmits telemetry to any external vendor/author server—and can be disabled completely via `--no-self-site`, `ROTAMETER_SELF_SITE=false`, or `[server] self_site = false`.
 
 ---
 

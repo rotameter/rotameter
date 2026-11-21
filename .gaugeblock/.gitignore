@@ -1,0 +1,9 @@
+# Ignore runtime database and ephemeral index files
+storypole/index.sqlite*
+storypole/workspace.sqlite*
+miter/*.redb
+miter/*.redb.lock
+spool/
+worktrees/
+datasets/
+*.bak*

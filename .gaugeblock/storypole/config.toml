@@ -1,5 +1,23 @@
 ticket_prefix = "RM"
-allowed_repos = []
-allowed_crates = []
+allowed_repos = ["rotameter"]
+allowed_crates = [
+    "rotameter-core",
+    "rotameter-store-sqlite",
+    "rotameter-server",
+    "rotameter-client",
+    "rotameter-mcp",
+    "rotameter-tui",
+    "rotameter-cli",
+]
 claim_ttl_minutes = 60
-verification_commands = [["default", "cargo fmt --all -- --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace"]]
+verification_commands = [
+    ["rotameter", "cargo fmt --all -- --check && cargo clippy --workspace --all-targets -- -D warnings && cargo nextest run --workspace"],
+    ["rotameter-core", "cargo nextest run -p rotameter-core"],
+    ["rotameter-store-sqlite", "cargo nextest run -p rotameter-store-sqlite"],
+    ["rotameter-server", "cargo nextest run -p rotameter-server"],
+    ["rotameter-client", "cargo nextest run -p rotameter-client"],
+    ["rotameter-mcp", "cargo nextest run -p rotameter-mcp"],
+    ["rotameter-tui", "cargo nextest run -p rotameter-tui"],
+    ["rotameter-cli", "cargo nextest run -p rotameter-cli"],
+    ["default", "cargo fmt --all -- --check && cargo clippy --workspace --all-targets -- -D warnings && cargo nextest run --workspace"],
+]

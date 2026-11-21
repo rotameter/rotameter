@@ -168,3 +168,9 @@ Designed for CLI scripts and future OpenTofu / IaC providers:
 - `DELETE /v1/admin/sites/{site_id}` — Deletes site and cascades data (`?confirm=true`).
 - `POST /v1/admin/keys` — Mints a scoped key (`ingest | read | admin`), returning plaintext token once + `key_id` + `key_prefix`.
 - `GET /v1/admin/keys` & `DELETE /v1/admin/keys/{key_id}` — List metadata and revoke keys.
+
+### 6.1 Preconfigured Self-Site Bootstrap (`self_site`)
+On first boot / fresh DB initialization, `rotameter serve` idempotently creates a preconfigured local site (`is_self_site = 1`) so operators can smoke-test `v1.0` ingest/queries immediately and let the `v1.5` Web UI dogfood itself locally:
+- **Site identifier:** Derived from `--public-url` host (e.g., `analytics.wolff.industries`) when set, defaulting otherwise to `_self`, and overrideable via `--self-site-id` / `ROTAMETER_SELF_SITE_ID` / `[server] self_site_id`.
+- **Three-way disable switch (precedence `CLI flag > env var > config`):** `--no-self-site` (or `--self-site=false`), `ROTAMETER_SELF_SITE=false`, or `[server] self_site = false` skips creating/enabling the self-site and omits any self-tracking in `v1.5` UI responses.
+- **Loop guard:** Internal `/v1/query`, `/v1/sites/*/realtime`, `/v1/admin/*`, and `/v1/health` requests against the self-site never synthesize self-referential ingest events.

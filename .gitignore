@@ -21,6 +21,9 @@ target/
 # Storypole / Gaugeblock runtime indexes & spools (tickets, plans and config are committed)
 .gaugeblock/**/index.sqlite*
 .gaugeblock/**/workspace.sqlite*
+.gaugeblock/miter/*.redb*
+.gaugeblock/worktrees/
+.gaugeblock/datasets/
 .gaugeblock/spool/
 .gaugeblock/telemetry/
 .storypole/*.sqlite*

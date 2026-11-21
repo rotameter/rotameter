@@ -37,7 +37,7 @@ Standard exit codes: `0` OK, `1` runtime/HTTP error, `2` invalid CLI args, `3` a
 
 | Command | Mode | Purpose |
 | --- | --- | --- |
-| `rotameter serve` | Local DB | Start HTTP server (`--bind 127.0.0.1:8000`, `--db`, `--geoip header\|mmdb`, `--mmdb-path`, `--trusted-proxy`) |
+| `rotameter serve` | Local DB | Start HTTP server (`--bind 127.0.0.1:8000`, `--db`, `--public-url`, `--no-self-site`, `--self-site-id`, `--geoip header\|mmdb`, `--mmdb-path`, `--trusted-proxy`) |
 | `rotameter site upsert <id>` | Local DB or Remote Admin API | Idempotently create/update site (`--timezone`, `--salt-rotation`, `--respect-gpc`, `--origin`, `--allow-query`, `--retention-days`) |
 | `rotameter site list / show / purge / delete` | Local or Remote | Inspect sites, prune old raw events, or delete site |
 | `rotameter key create / list / revoke` | Local or Remote | Mint scoped keys (`--scope ingest\|read\|admin`, `--site <id>`, `--label`) and revoke |
@@ -47,7 +47,9 @@ Standard exit codes: `0` OK, `1` runtime/HTTP error, `2` invalid CLI args, `3` a
 | `rotameter backup <dest>` | Local DB | Execute safe online `SQLite VACUUM INTO <dest>` snapshot |
 | `rotameter doctor` | Local or Remote | Check DB WAL integrity, pragma ceilings, salt/clock health, queue usage, or remote `/v1/health` + Access token auth |
 | `rotameter mcp` | Remote API (`stdio`) | Start Model Context Protocol server over `stdin`/`stdout` |
-| `rotameter tui` | Remote API | Launch interactive `ratatui` flight-instrument terminal dashboard |
+| `rotameter tui` | Remote API | Launch interactive `ratatui` flight-instrument dashboard |
+
+**Server self-site flags (`rotameter serve`):** First boot idempotently provisions a local preconfigured self-site (`--public-url` host or `_self`, override via `--self-site-id` / `ROTAMETER_SELF_SITE_ID` / `[server] self_site_id`), controllable with precedence `CLI > env > config` and disabled cleanly via `--no-self-site` (`--self-site=false`), `ROTAMETER_SELF_SITE=false`, or `[server] self_site = false`.
 
 ---
 

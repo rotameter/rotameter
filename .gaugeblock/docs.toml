@@ -1,0 +1,50 @@
+# Canonical 9-document map for `rotameter`.
+#
+# Audited by `chalkline docs check -d .`. Paths are repository-relative: the specification of
+# record lives in `PROJECT.md` and `docs/`, while the repository root holds README, CONTRIBUTING,
+# CHANGELOG, and AGENTS.
+
+[docs.readme]
+path = "README.md"
+required = true
+
+[docs.contributing]
+path = "CONTRIBUTING.md"
+required = true
+
+[docs.product]
+path = "PROJECT.md"
+required = true
+
+[docs.architecture]
+path = "docs/SPEC-ARCHITECTURE.md"
+required = true
+
+[docs.spec]
+path = "docs/SPEC-API.md"
+required = true
+
+[docs.design]
+path = "docs/SPEC-PRIVACY.md"
+required = true
+
+[docs.roadmap]
+path = "docs/ROADMAP.md"
+required = true
+
+[docs.changelog]
+path = "CHANGELOG.md"
+required = true
+
+[docs.agents]
+path = "AGENTS.md"
+required = true
+
+[policies]
+# Enabled cleanly as workspace Cargo crates and CLI binaries land (RM-2 .. RM-13).
+enforce_public_type_contracts = false
+enforce_crate_topology = false
+enforce_file_loc_limits = true
+enforce_readme_cli_flags = false
+enforce_changelog_unreleased = true
+enforce_contributing_toolchains = true

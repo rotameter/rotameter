@@ -1,100 +1,141 @@
-# AGENTS.md — Working Contract
+# AGENTS.md — rotameter
 
-This repository houses **Rotameter** (`MIT OR Apache-2.0`), a single-binary, privacy-first, headless web analytics engine in Rust. Read [`PROJECT.md`](./PROJECT.md) and the specifications in `docs/` before writing implementation code.
+Operational instructions and runtime guardrails for autonomous and assisted coding agents working in
+this repository. Read this before changing any file: every commit and ticket close is verified against
+this contract.
 
----
-
-## 1. Storypole Is the System of Record
-
-Once the specification documents are reviewed and `.gaugeblock/storypole/` is initialized, all implementation work is tracked in Storypole tickets:
-
-- No implementation code lands outside a claimed ticket.
-- Every ticket carries explicit acceptance criteria and verification gates.
-- Scope discovered mid-task (`v1.5` UI, `v2.0` funnels, GTM/Zaraz templates, secondary DB adapters) is `defer`red rather than silently pulled into `v1.0`.
-- Architectural decisions are recorded as MADRs in [`docs/decisions/`](./docs/decisions/README.md).
-
----
-
-## 2. Branch and Commit Protocol
-
-- `main` holds verified work only.
-- One branch per ticket: `<type>/<ticket>-<slug>` (e.g., `feat/rm-12-sqlite-wal-ingestor`).
-- Conventional commits in imperative mood, referencing the ticket and exact verification command output.
-- Merge with `--no-ff`, then delete the feature branch. Never force-push `main`.
+> **Maintainer:** Colin Wolff · **License:** `MIT OR Apache-2.0`
+> **Built with (dogfooding only):** the `gaugeblock` suite — `storypole`, `miter`, `chalkline`, `dado`,
+> `batten`, `joiner`, `benchwork`, `outfeed`, `rabbet`, `sawhorse`. `rotameter` is an independent
+> project: it is not part of, owned by, governed by, or released under that suite or its organization.
+> Those tools are used here strictly as a consumer.
+> **Language:** Rust, **edition 2024**, MSRV **1.99** (`edition`/`rust-version` pinned in root `Cargo.toml`)
+> **Versioning:** Lockstep SemVer across the workspace; git tags `v<version>`
 
 ---
 
-## 3. Hard Engineering Boundaries
+## 1. Project Mission & Canonical Specs
 
-| Rule | Detail |
-| --- | --- |
-| **Memory ceiling** | Idle RSS `< 40 MB`; peak RSS `< 128 MB` on `1 vCPU / 1 GB RAM` (`VM.Standard.E2.1.Micro`) under load. |
-| **Client script budget** | `collect.js` stays **`<= 1.5 KB` gzip** (`1,536 B`), zero cookies, zero `localStorage` reads except `rotameter_ignore`, zero external network calls. |
-| **Zero unsafe code** | `#![forbid(unsafe_code)]` at crate root for all application crates (`rotameter-*`). |
-| **No panic paths in prod** | Zero `.unwrap()`, `.expect()`, or `panic!()` outside `#[cfg(test)]` / `tests/` / `benches/`. Use typed errors (`thiserror` in libraries, `anyhow`/structured errors at CLI/server boundaries). |
-| **Workspace DAG & core purity** | `rotameter-core` must compile **without** `tokio`, `axum`, `rusqlite`, `ratatui`, or OS network/filesystem crates. Verify cleanly with `cargo tree -p rotameter-core`. |
-| **Privacy invariant** | Never persist raw IP addresses, full unhashed `User-Agent` identifiers tied to individuals, or tracking cookies in SQLite, memory dumps, or `tracing` logs. |
-| **Clean-sheet `/v1/*` API** | Never introduce legacy compatibility shims for Plausible, GoatCounter, Matomo, or GA4 wire formats. |
-| **SQLite safety** | All writes flow through the single batched WAL writer thread/task; every schema change uses numbered forward migrations; backups use `VACUUM INTO` or Litestream (never raw `cp` of an open WAL DB). |
-| **File modularity** | Keep source files focused and under ~400 lines; split domain logic cleanly across modules rather than building monolithic `main.rs` or `lib.rs` files. |
-| **Warnings as errors** | `cargo clippy --workspace --all-targets -- -D warnings` must pass cleanly. |
+`rotameter` is a single-binary, privacy-first, headless web analytics engine in Rust built for
+unattended durability on a `1 vCPU / 1 GB RAM` VM (`< 40 MB` idle RSS, `< 128 MB` peak RSS) with zero
+cookies, zero persisted raw IPs, and an event-stream-first SQLite WAL store behind pluggable `Storage`
+traits.
+
+- [`PROJECT.md`](./PROJECT.md) — product boundaries, engineering budgets, phased roadmap
+- [`docs/ROADMAP.md`](./docs/ROADMAP.md) — `v1.0` / `v1.5` / `v2.0` milestones and `RM-*` map
+- [`docs/SPEC-ARCHITECTURE.md`](./docs/SPEC-ARCHITECTURE.md) — crate DAG, `Storage` traits, ring buffer, SQLite schema
+- [`docs/SPEC-PRIVACY.md`](./docs/SPEC-PRIVACY.md) — `HMAC-SHA256` salt rotation, 30m sessions, bots, GeoIP, cardinality caps
+- [`docs/SPEC-API.md`](./docs/SPEC-API.md) — `/v1/*` HTTP contract, scoped auth, `collect.js`, `pixel.gif`, Astro/CF SSR
+- [`docs/SPEC-INTERFACES.md`](./docs/SPEC-INTERFACES.md) — CLI, `stdio` read-only MCP, `ratatui` TUI
+- [`docs/SPEC-OPERATIONS.md`](./docs/SPEC-OPERATIONS.md) — multi-arch `musl`/macOS builds, `systemd`, Litestream/R2, load gates
+- [`docs/decisions/README.md`](./docs/decisions/README.md) — MADR 4.0 architectural decisions
 
 ---
 
-## 4. Planned Workspace Map
+## 2. Workspace Layout & Crate Boundaries
 
-```text
-rotameter/
-  PROJECT.md
-  AGENTS.md
-  docs/
-    COMPARISON-FEATURES.md
-    COMPARISON-METRICS.md
-    SPEC-ARCHITECTURE.md
-    SPEC-PRIVACY.md
-    SPEC-API.md
-    SPEC-INTERFACES.md
-    SPEC-OPERATIONS.md
-    decisions/
-      README.md
-      template.md
-  crates/
-    rotameter-core/          # Pure Rust domain types, hashing, session state machine, normalization, query AST
-    rotameter-store-sqlite/  # Bundled SQLite WAL Storage implementation + migrations + backup
-    rotameter-server/        # Axum HTTP ingest/query/admin server, ring-buffer pipeline, collect.js/pixel
-    rotameter-client/        # Typed async/sync HTTP client with CF-Access service token support
-    rotameter-mcp/           # stdio MCP server exposing read-only analytics tools
-    rotameter-tui/           # ratatui flight-instrument terminal UI
-    rotameter-cli/           # Unified `rotameter` binary (feature-gated: server, sqlite, mcp, tui)
-  assets/
-    collect.js               # Source + size-gated minified collector
-  integrations/
-    astro-cloudflare/        # First-party Astro + Cloudflare Workers proxy & SSR hit helper
-  infra/                     # Reference systemd unit, cloudflared/Access & Litestream deployment configs
+Cargo virtual workspace (scaffolded under `RM-2`). Dependency edges flow strictly downward — zero
+lateral edges between leaf apps or upward leaks into `rotameter-core`:
+
+| Crate | Path | Owns |
+| --- | --- | --- |
+| `rotameter-core` | `crates/rotameter-core` | Domain types, `HMAC-SHA256` hashing, salt rotation, 30m session LRU, URL/UTM/referrer normalizers, bot/UA classifiers, cardinality guard, `Storage` traits. **Zero `tokio`, `rusqlite`, `axum`, `ratatui`, or OS I/O.** |
+| `rotameter-store-sqlite` | `crates/rotameter-store-sqlite` | Bundled SQLite WAL `Storage` implementation, migrations, `dim_strings` interner, batched `BEGIN IMMEDIATE` writer, `VACUUM INTO` backups. |
+| `rotameter-server` | `crates/rotameter-server` | `axum` `/v1/*` server, scoped Bearer auth, rate limiting, `16,384`-event MPSC ring buffer, GeoIP, `collect.js`/`pixel.gif`, `SIGTERM` drain, first-boot `self_site` bootstrap. |
+| `rotameter-client` | `crates/rotameter-client` | Typed HTTP client, `config.toml` profiles, `CF-Access-Client-Id`/`Secret` headers. |
+| `rotameter-mcp` | `crates/rotameter-mcp` | `stdio` JSON-RPC 2.0 read-only MCP server (7 analytics tools in `v1.0`). |
+| `rotameter-tui` | `crates/rotameter-tui` | Interactive `ratatui` flight-instrument terminal UI with ASCII block chart and drill-down. |
+| `rotameter-cli` | `crates/rotameter-cli` | Unified feature-gated `rotameter` binary (`server`, `sqlite`, `mcp`, `tui`). |
+
+`miter deps --path . --unused` proves declared crate dependencies remain strictly used.
+
+---
+
+## 3. Invariant Rules (DO NOT BREAK)
+
+### 3.1 Runtime, Privacy & Budget Invariants
+- **Memory ceiling:** Idle RSS `< 40 MB`; peak RSS `< 128 MB` on `1 vCPU / 1 GB RAM` under `5,000 events/s` burst + concurrent queries.
+- **Collector weight:** `assets/collect.js` stays **`<= 1,536 bytes` gzip**, zero cookies, zero tracking storage (reads `localStorage.rotameter_ignore` only).
+- **Zero raw PII on disk:** Never store raw IPs or unhashed tracking identifiers in SQLite, memory dumps, or `tracing` logs.
+- **Local-only self-dogfooding:** Preconfigured `self_site` initialization lives strictly inside the operator's local database and respects `--no-self-site` / `ROTAMETER_SELF_SITE=false` / `[server] self_site = false`. **Rotameter never phones home.**
+- **Safety:** `#![forbid(unsafe_code)]` on all workspace crates; zero `.unwrap()`, `.expect()`, or `panic!()` outside `#[cfg(test)]` / `tests/` / `benches/`.
+- **Clean-sheet `/v1/*`:** Never add Plausible, GoatCounter, Matomo, or GA4 wire compatibility shims.
+
+### 3.2 Modularity: 250-Line Ceiling, 200-Line Warning
+- **Hard ceiling — 250 lines per `.rs` file** (comments and inline tests included). `miter audit --path . --threshold 250` fails non-zero at `>= 250`.
+- **Warning band — 200–249 lines:** Plan a submodule split via `miter slice` (`types.rs`, `error.rs`, `tests.rs` with `pub use` re-exports) before adding new code.
+- **Docs ceiling:** Canonical docs stay under **500 lines** (`chalkline docs check -d .`).
+
+### 3.3 Atomic Commits, Lockstep SemVer & Keep a Changelog
+- One logical change per commit, on a feature branch (`feat/<rm-n-slug>`), using Conventional Commits (`<type>(<scope>): <summary>` + `Task: RM-<n>` footer).
+- `[workspace.package] version` in root `Cargo.toml` is the single version source; release bumps run through `outfeed plan` / `outfeed apply` + annotated tag `v<version>`. Never bump versions in feature commits.
+- Observable or user-facing changes land with an entry under `## [Unreleased]` in [`CHANGELOG.md`](./CHANGELOG.md) in the same commit (`chalkline docs check -d .` enforces `enforce_changelog_unreleased`).
+
+### 3.4 Tiered Verification Policy
+
+**Tier 1 — Inner loop (every edit):**
+```bash
+miter verify --path crates/<dir>
+cargo nextest run -p <crate> <module>       # fallback: cargo test -p <crate>
 ```
 
----
+**Tier 2 — Atomic commit gate (every commit, per touched crate):**
+```bash
+cargo fmt --check -p <crate>
+cargo clippy -p <crate> --all-targets -- -D warnings
+cargo nextest run -p <crate>
+miter audit --path . --threshold 250
+chalkline docs check -d .
+```
 
-## 5. Verification Gates (Target `v1.0` CI & Local)
-
+**Tier 3 — Task completion gate (before merge to `main` & `storypole verify`):**
 ```bash
 cargo fmt --all -- --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
-cargo tree -p rotameter-core --edges normal    # assert zero tokio/rusqlite/axum/ratatui deps
-./scripts/check-collector-size.sh             # gzip(collect.js) <= 1536 bytes
-./scripts/check-memory-budget.sh              # idle < 40 MB RSS, burst/query peak < 128 MB RSS
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo nextest run --workspace
+cargo test --doc --workspace
+cargo tree -p rotameter-core --edges normal # verify zero tokio/rusqlite/axum/ratatui
+miter audit --path . --threshold 200
+miter deps --path . --unused
+storypole verify <KEY> --run
 ```
 
-For cross-compilation release verification:
+**Tier 4 — Release gate (per version bump / `v1.0` milestone):**
+Everything in Tier 3 plus `cargo build --workspace --release`, `./scripts/check-collector-size.sh`, `./scripts/check-memory-budget.sh`, `outfeed plan -d . --no-llm`, and the `RM-17` release harness (`SIGTERM` drain, midnight rollover, 100k cardinality bomb, 1M-event `p95 < 25 ms`, Litestream/R2 restore drill).
 
+### 3.5 Zero Inline Scope Creep (`storypole defer`)
+Unrelated bugs, `v1.5` UI ideas, or `v2.0` funnel/adapter work discovered mid-ticket must not leak into the current diff:
 ```bash
-cross build --release --target x86_64-unknown-linux-musl
-cross build --release --target aarch64-unknown-linux-musl
+storypole defer "<title>" --kind <bug|tech-debt|feature|refactor|spike> \
+  --crate-name <crate> --symbols "<crate::path::symbol>" --files "<path>"
 ```
 
 ---
 
-## 6. Architectural Decisions
+## 4. Dogfooding the `gaugeblock` Suite
 
-Significant architectural trade-offs—such as storage layout changes, auth model changes, cardinality cap tuning, or adding a new `Storage` backend—are recorded as MADRs in [`docs/decisions/`](./docs/decisions/README.md) using [`docs/decisions/template.md`](./docs/decisions/template.md). Never rewrite an accepted ADR; supersede it with a new record.
+Workspace configuration and state live under `.gaugeblock/` and `.agents/`:
+- **Tracked:** `.gaugeblock/config.toml`, `.gaugeblock/docs.toml`, `.gaugeblock/storypole/config.toml`, `.gaugeblock/storypole/ledger.jsonl` (and `tickets/`/`plans/`), `.agents/mcp_config.json`, `.agents/rules.md`, `.agents/skills/gaugeblock-workflow/SKILL.md`.
+- **Ignored (machine-local):** `.gaugeblock/storypole/index.sqlite*`, `.gaugeblock/storypole/workspace.sqlite*`, `.gaugeblock/miter/*.redb*`, `.gaugeblock/spool/`, `.gaugeblock/worktrees/`, `.gaugeblock/datasets/`.
+
+| Tool | Role in `rotameter` |
+| --- | --- |
+| `storypole` | Backlog of record (`RM-*`), leases (`claim`/`heartbeat`/`handoff`), `defer`, `verify --run`, `ledger-verify`/`ledger-reconcile`. |
+| `miter` | AST index (`index`, `lookup`, `skeleton`, `references`, `impact`, `slice`), 250/200-line `audit`, `deps --unused`, isolated `verify`. |
+| `chalkline` | `recon`, `grill`, and `docs check -d .` across the 9-doc map in `.gaugeblock/docs.toml`. |
+| `outfeed` | SemVer bump planning (`plan`, `apply`, `status`, `lockfiles`) and `CHANGELOG.md` promotion. |
+| `benchwork` | Workspace capabilities check (`capabilities -r .`) and snapshots (`snapshot -r .`). |
+| `dado` + `batten` | Deterministic boilerplate generation and grammar validation for repetitive wire/schema matrices. |
+| `joiner` / `rabbet` / `sawhorse` | Optional synthesis & telemetry pipeline (never required on the critical path). |
+
+---
+
+## 5. Agent Execution Loop
+
+1. **Brief & lease:** `storypole next` → `storypole claim <KEY> <AGENT_ID> --branch feat/<slug>` → `storypole show <KEY>`.
+2. **Slice context:** `miter skeleton <path>` / `miter lookup <Symbol> --context` / `miter impact <Symbol> --depth 2` before reading full files.
+3. **Decide:** Record architectural decisions as MADR 4.0 files in `docs/decisions/` and update [`docs/decisions/README.md`](./docs/decisions/README.md).
+4. **Implement (Tier 1):** Small modules (`< 250` lines), docstrings on public items, tests beside code, `miter verify --path crates/<dir>`.
+5. **Defer:** Push out-of-scope discoveries to `storypole defer`.
+6. **Commit (Tier 2):** Per-crate fmt/clippy/nextest + `miter audit --threshold 250` + `chalkline docs check -d .` + `CHANGELOG.md` line.
+7. **Close (Tier 3):** Whole-workspace gates + `storypole verify <KEY> --run`.

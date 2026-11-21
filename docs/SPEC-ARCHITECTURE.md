@@ -112,10 +112,11 @@ SQLite WAL File (rotameter.db + rotameter.db-wal)
 
 ```sql
 CREATE TABLE sites (
-  site_id            TEXT PRIMARY KEY,               -- e.g. "colinwolff.dev"
+  site_id            TEXT PRIMARY KEY,               -- e.g. "colinwolff.dev" or local self_site
   timezone           TEXT NOT NULL DEFAULT 'UTC',
   salt_rotation      TEXT NOT NULL DEFAULT 'daily',  -- daily | weekly | monthly
   respect_gpc        INTEGER NOT NULL DEFAULT 0,
+  is_self_site       INTEGER NOT NULL DEFAULT 0,     -- 1 = local preconfigured dogfood site
   allowed_origins    TEXT NOT NULL DEFAULT '[]',     -- JSON array of allowed origins
   allowed_query_keys TEXT NOT NULL DEFAULT '[]',     -- JSON allowlist kept in normalized path
   raw_retention_days INTEGER,                        -- NULL = retain raw events indefinitely
@@ -215,6 +216,7 @@ CREATE TABLE rollups_daily (
 - **Compact rows:** Integer-interned paths/dimensions + `BLOB(16)` IDs + `WITHOUT ROWID` keep raw `events` around **~55–75 bytes/row** (`1M` events ≈ `60–75 MB` on disk).
 - **Unique visitors across arbitrary ranges:** `idx_sessions_range(site_id, started_at_ms, visitor_id)` is a **covering index** — counting distinct visitors across `7D`, `30D`, or `90D` never even touches the main `sessions` table pages.
 - **Zero-rewrite `v2.0` funnels & user flows:** `events(site_id, session_id, seq_in_session)` already stores exact in-session event ordering (`seq_in_session = 1, 2, 3...`), so `v2.0` funnel windows and step transitions query existing historical data directly.
+- **First-boot local `self_site`:** `rotameter serve` idempotently seeds a local site row (`is_self_site = 1`, site ID from `--public-url` host or `_self`) unless disabled via `--no-self-site`, `ROTAMETER_SELF_SITE=false`, or `[server] self_site = false`, enabling local smoke-testing (`v1.0`) and Web UI dogfooding (`v1.5`) without touching external networks.
 
 ---
 

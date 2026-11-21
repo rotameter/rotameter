@@ -17,7 +17,10 @@ pub(crate) fn header_str(headers: &HeaderMap, name: &str) -> Option<String> {
         .map(str::to_string)
 }
 
-pub(crate) fn extract_client_ip(headers: &HeaderMap) -> String {
+pub(crate) fn extract_client_ip(headers: &HeaderMap, trusted_proxy: bool) -> String {
+    if trusted_proxy && let Some(ip) = header_str(headers, "x-rotameter-client-ip") {
+        return ip;
+    }
     if let Some(ip) = header_str(headers, "cf-connecting-ip") {
         return ip;
     }
@@ -33,17 +36,32 @@ pub(crate) fn extract_client_ip(headers: &HeaderMap) -> String {
     header_str(headers, "x-real-ip").unwrap_or_else(|| "0.0.0.0".to_string())
 }
 
-pub(crate) fn extract_country(headers: &HeaderMap) -> String {
-    header_str(headers, "cf-ipcountry")
-        .map(|s| s.to_ascii_uppercase())
-        .filter(|s| !matches!(s.as_str(), "XX" | "T1" | ""))
+pub(crate) fn extract_country(headers: &HeaderMap, trusted_proxy: bool) -> String {
+    let trusted = if trusted_proxy {
+        normalize_country(header_str(headers, "x-rotameter-country"))
+    } else {
+        None
+    };
+    trusted
+        .or_else(|| normalize_country(header_str(headers, "cf-ipcountry")))
         .unwrap_or_else(|| "(unknown)".to_string())
 }
 
-pub(crate) fn extract_region(headers: &HeaderMap) -> String {
-    header_str(headers, "cf-region-code")
+pub(crate) fn extract_region(headers: &HeaderMap, trusted_proxy: bool) -> String {
+    let trusted = if trusted_proxy {
+        header_str(headers, "x-rotameter-region")
+    } else {
+        None
+    };
+    trusted
+        .or_else(|| header_str(headers, "cf-region-code"))
         .or_else(|| header_str(headers, "cf-region"))
         .unwrap_or_else(|| "(unknown)".to_string())
+}
+
+fn normalize_country(raw: Option<String>) -> Option<String> {
+    raw.map(|s| s.to_ascii_uppercase())
+        .filter(|s| !matches!(s.as_str(), "XX" | "T1" | ""))
 }
 
 pub(crate) fn parse_props(

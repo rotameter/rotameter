@@ -147,8 +147,9 @@ pub(crate) fn enqueue_normalized_hit(
     );
     let props = parse_props(hit.props)?;
 
+    let trusted_proxy = auth.is_some();
     let ts_ms = now_ms();
-    let ip = extract_client_ip(headers);
+    let ip = extract_client_ip(headers, trusted_proxy);
     let ua_str = ua.as_deref().unwrap_or_default();
     let candidates = resolve_visitor_candidates(
         state.salt_provider.as_ref(),
@@ -171,8 +172,8 @@ pub(crate) fn enqueue_normalized_hit(
         ref_host: norm_ref.source,
         channel: norm_ref.channel,
         utm: norm_url.utm,
-        country: extract_country(headers),
-        region: extract_region(headers),
+        country: extract_country(headers, trusted_proxy),
+        region: extract_region(headers, trusted_proxy),
         browser: classified_ua.browser,
         os: classified_ua.os,
         device_type: classified_ua.device_type,

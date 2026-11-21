@@ -33,4 +33,4 @@ contract, or trades one quality attribute against another (e.g., RAM footprint v
 | [0005](./0005-clean-sheet-v1-api-and-scoped-keys.md) | Ship a clean-sheet /v1 API with scoped hashed keys and Astro/Cloudflare Workers SSR integration | accepted | RM-7, RM-8, RM-9, RM-10, RM-11 |
 | [0006](./0006-headless-v1-interfaces-cli-mcp-tui.md) | Ship v1.0 headless with CLI, read-only stdio MCP, and interactive ratatui TUI | accepted | RM-12, RM-13, RM-14, RM-15, RM-18, RM-20 |
 
-[`template.md`](./template.md) is the starting point for `0007-...`.
+[`madr-template.md`](../templates/madr-template.md) is the starting point for `0007-...`.

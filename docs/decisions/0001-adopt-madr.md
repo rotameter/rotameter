@@ -57,5 +57,5 @@ Chosen option: "MADR 4.0 Markdown files in `docs/decisions/` with an indexed `RE
 ## More Information
 
 * Storypole: `RM-1`.
-* Template & index: [`template.md`](./template.md), [`README.md`](./README.md).
+* Template & index: [`madr-template.md`](../templates/madr-template.md), [`README.md`](./README.md).
 * Working contract: [`../../AGENTS.md`](../../AGENTS.md).

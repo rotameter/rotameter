@@ -1,0 +1,29 @@
+[package]
+name = "rotameter-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "rotameter"
+path = "src/main.rs"
+
+[features]
+default = ["server", "sqlite", "mcp", "tui"]
+server = ["dep:rotameter-server"]
+sqlite = ["dep:rotameter-store-sqlite"]
+mcp = ["dep:rotameter-mcp"]
+tui = ["dep:rotameter-tui"]
+
+[dependencies]
+rotameter-core.workspace = true
+rotameter-client.workspace = true
+rotameter-server = { workspace = true, optional = true }
+rotameter-store-sqlite = { workspace = true, optional = true }
+rotameter-mcp = { workspace = true, optional = true }
+rotameter-tui = { workspace = true, optional = true }
+
+[lints]
+workspace = true

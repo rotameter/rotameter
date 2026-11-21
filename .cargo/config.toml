@@ -1,0 +1,11 @@
+# Shared workspace target directory and sccache compiler caching for Rotameter.
+# Override locally with `CARGO_BUILD_RUSTC_WRAPPER=""` if `sccache` is not installed.
+
+[build]
+target-dir = "target"
+rustc-wrapper = "sccache"
+# Disable Cargo incremental artifacts so sccache hits reliably and target/ stays small.
+incremental = false
+
+[env]
+SCCACHE_CACHE_SIZE = "15G"

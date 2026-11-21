@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  SCCACHE_GHA_ENABLED: "true"
+
+jobs:
+  ci:
+    name: Workspace Lint, Test & Purity Gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust 1.99 toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.99"
+          components: rustfmt, clippy
+
+      - name: Configure sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@nextest
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run Clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+      - name: Run workspace unit tests
+        run: cargo nextest run --workspace --all-features
+
+      - name: Run workspace doc tests
+        run: cargo test --doc --workspace
+
+      - name: Check rotameter-cli feature matrix
+        run: |
+          cargo check -p rotameter-cli --no-default-features
+          cargo check -p rotameter-cli --no-default-features --features server,sqlite
+          cargo check -p rotameter-cli --no-default-features --features mcp,tui
+
+      - name: Verify rotameter-core purity and unsafe forbids
+        run: ./scripts/check-core-purity.sh
+
+      - name: Enforce 250-line ceiling on Rust source files
+        run: |
+          while IFS= read -r -d '' file; do
+            lines=$(wc -l < "$file")
+            if [ "$lines" -ge 250 ]; then
+              echo "ERROR: ${file} has ${lines} lines (limit < 250)" >&2
+              exit 1
+            fi
+          done < <(find crates -name '*.rs' -print0)
+
+      - name: Show sccache statistics
+        run: sccache --show-stats

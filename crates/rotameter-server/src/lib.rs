@@ -1,7 +1,20 @@
 #![forbid(unsafe_code)]
 //! HTTP ingest, query, and admin server for Rotameter.
 
+mod auth;
+pub mod config;
+mod error;
+pub mod handlers;
+pub mod ingest;
+pub mod serve;
+pub mod state;
+
 use rotameter_core::ComponentInfo;
+
+pub use config::{ServerConfig, ServerError};
+pub use handlers::build_router;
+pub use serve::{init_tracing, serve};
+pub use state::{AppState, ServerStore};
 
 /// Returns static metadata describing `rotameter-server`.
 pub const fn component_info() -> ComponentInfo {

@@ -15,7 +15,7 @@ path = "src/main.rs"
 
 [features]
 default = ["server", "sqlite", "mcp", "tui"]
-server = ["dep:rotameter-server"]
+server = ["dep:rotameter-server", "dep:tokio"]
 sqlite = ["dep:rotameter-store-sqlite"]
 mcp = ["dep:rotameter-mcp"]
 tui = ["dep:rotameter-tui"]
@@ -27,6 +27,7 @@ rotameter-server = { workspace = true, optional = true }
 rotameter-store-sqlite = { workspace = true, optional = true }
 rotameter-mcp = { workspace = true, optional = true }
 rotameter-tui = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true }
 
 [lints]
 workspace = true

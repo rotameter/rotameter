@@ -1,6 +1,9 @@
 #![forbid(unsafe_code)]
 //! Unified feature-gated CLI library for Rotameter.
 
+#[cfg(all(feature = "server", feature = "sqlite"))]
+pub mod serve_store;
+
 use rotameter_core::ComponentInfo;
 
 /// Returns metadata for all workspace components compiled under the active feature set.

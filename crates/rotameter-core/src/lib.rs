@@ -1,7 +1,15 @@
 #![forbid(unsafe_code)]
-//! Pure domain logic, types, and storage trait contracts for Rotameter.
+//! Pure domain logic, types, normalizers, classifiers, and storage contracts for Rotameter.
 //!
 //! This crate is intentionally free of OS I/O, async runtimes, and storage engines.
+
+pub mod bot;
+pub mod error;
+pub mod id;
+pub mod normalize;
+pub mod query;
+pub mod types;
+pub mod ua;
 
 /// Lockstep workspace semantic version shared by all Rotameter crates.
 pub const WORKSPACE_VERSION: &str = env!("CARGO_PKG_VERSION");

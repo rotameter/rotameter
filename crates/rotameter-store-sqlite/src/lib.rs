@@ -7,12 +7,16 @@ mod control_plane;
 mod ingest;
 mod intern;
 pub mod migrations;
+pub mod query;
+mod realtime;
+mod retention;
 mod row_decode;
 pub mod store;
 
 use rotameter_core::ComponentInfo;
 
 pub use config::{SqliteConfig, SqliteHealthSnapshot};
+pub use query::format_query_result_csv;
 pub use store::SqliteStore;
 
 /// Returns static metadata describing `rotameter-store-sqlite`.

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `rotameter-store-sqlite` analytics query engine (`AnalyticsQueryStore`), `IANA` timezone timeseries bucketing, multi-dimension breakdowns, `eq`/`neq`/`in`/`contains`/`prefix` SQL filters, `RFC 4180` CSV projection (`format_query_result_csv`), 5-minute realtime snapshot + 30-minute pulse, `raw_retention_days` raw-row pruner, and `purge_before` (`RM-6`).
 - `rotameter-store-sqlite` WAL persistence backend: bundled `rusqlite`, `0001_initial.sql` migrations (`orgs`, `sites`, `api_keys`, site-scoped `dim_strings`, `sessions`, `events`, `rollups_hourly`/`daily`), LRU-cached `DimInterner`, `ControlPlaneStore` & `EventIngestStore` batched `BEGIN IMMEDIATE` writer, WAL checkpoint, and online `VACUUM INTO` backups (`RM-5`).
 - Privacy, session, cardinality, and storage abstractions in `rotameter-core`: `HMAC-SHA256` visitor hashing, `daily`/`weekly`/`monthly` salt window rotation with `30m` grace carryover, `SaltProvider` trait + `InMemorySaltProvider`, `O(1)` bounded `SessionTracker` LRU, daily per-site `CardinalityGuard` (`(other)` overflow), and `ControlPlaneStore`/`EventIngestStore`/`AnalyticsQueryStore` traits (`RM-4`).
 - Pure-Rust domain models in `rotameter-core`: TypeID-style prefixed UUIDv7 UIDs (`OrgId`, `SiteId`, `KeyId`), slug/ref validation (`SiteRef`), `Org`/`Site`/`ApiKeyRecord`/`EventKind`/`EventProps`/`QuerySpec`, URL/UTM/referrer/channel normalizers, Aho-Corasick bot/prefetch filter, and coarse User-Agent classifier (`RM-3`).

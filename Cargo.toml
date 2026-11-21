@@ -24,6 +24,8 @@ homepage = "https://github.com/colinwolff/rotameter"
 
 [workspace.dependencies]
 aho-corasick = "1.1"
+chrono = { version = "0.4", default-features = false, features = ["std"] }
+chrono-tz = "0.10"
 hmac-sha256 = "1.1"
 rusqlite = { version = "0.42", features = ["bundled"] }
 serde = { version = "1.0", features = ["derive"] }

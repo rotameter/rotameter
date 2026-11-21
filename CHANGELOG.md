@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `rotameter-store-sqlite` WAL persistence backend: bundled `rusqlite`, `0001_initial.sql` migrations (`orgs`, `sites`, `api_keys`, site-scoped `dim_strings`, `sessions`, `events`, `rollups_hourly`/`daily`), LRU-cached `DimInterner`, `ControlPlaneStore` & `EventIngestStore` batched `BEGIN IMMEDIATE` writer, WAL checkpoint, and online `VACUUM INTO` backups (`RM-5`).
 - Privacy, session, cardinality, and storage abstractions in `rotameter-core`: `HMAC-SHA256` visitor hashing, `daily`/`weekly`/`monthly` salt window rotation with `30m` grace carryover, `SaltProvider` trait + `InMemorySaltProvider`, `O(1)` bounded `SessionTracker` LRU, daily per-site `CardinalityGuard` (`(other)` overflow), and `ControlPlaneStore`/`EventIngestStore`/`AnalyticsQueryStore` traits (`RM-4`).
 - Pure-Rust domain models in `rotameter-core`: TypeID-style prefixed UUIDv7 UIDs (`OrgId`, `SiteId`, `KeyId`), slug/ref validation (`SiteRef`), `Org`/`Site`/`ApiKeyRecord`/`EventKind`/`EventProps`/`QuerySpec`, URL/UTM/referrer/channel normalizers, Aho-Corasick bot/prefetch filter, and coarse User-Agent classifier (`RM-3`).
 - 7-crate Cargo workspace (`rotameter-core`, `rotameter-store-sqlite`, `rotameter-server`, `rotameter-client`, `rotameter-mcp`, `rotameter-tui`, `rotameter-cli`) with `MIT OR Apache-2.0` license files, shared `target/` + `sccache` configuration in `.cargo/config.toml`, workspace Clippy/`rustfmt` lints, `scripts/check-core-purity.sh`, and GitHub Actions CI (`RM-2`).

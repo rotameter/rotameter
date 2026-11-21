@@ -9,6 +9,7 @@ Rotameter exposes a clean-sheet, strongly typed JSON HTTP API under `/v1/*`. No 
 ## 1. Conventions & Error Envelope
 
 - **Base prefix:** `/v1/*`
+- **Identifiers (`ADR-0007`):** Organization, site, and API key entities use immutable TypeID-style prefixed UUIDv7 UIDs (`org_<26-char base32>`, `site_<26-char base32>`, `key_<26-char base32>`). Sites pair an immutable `site_id` with an org-unique `slug` (e.g., `"colinwolff.dev"`) and mutable `display_name`; query/admin paths accept `site_id` or `slug` within the authenticated org.
 - **Field naming:** `snake_case` everywhere in JSON request/response bodies.
 - **Timestamps:** RFC 3339 UTC strings (`"2026-11-20T19:00:00Z"`) with explicit `timezone` field when reporting local-date buckets.
 - **Uniform Error Envelope:** Every `4xx` / `5xx` API response returns:
@@ -62,7 +63,7 @@ Single-event ingest returning **`202 Accepted`** (empty body or `{"accepted": 1}
 
 ```json
 {
-  "site_id": "colinwolff.dev",
+  "site_id": "site_01jb8x9k2m0000000000000000",
   "event": "pageview",
   "url": "https://colinwolff.dev/projects/rotameter?utm_source=hn",
   "referrer": "https://news.ycombinator.com/",
@@ -99,7 +100,7 @@ Single composable query endpoint powering dashboards, CLI, MCP, and TUI.
 **Request:**
 ```json
 {
-  "site_id": "colinwolff.dev",
+  "site_id": "site_01jb8x9k2m0000000000000000",
   "range": { "preset": "30d" },
   "granularity": "day",
   "metrics": ["visitors", "pageviews", "visits", "views_per_visit", "bounce_rate", "avg_visit_duration_ms"],
@@ -123,7 +124,8 @@ Single composable query endpoint powering dashboards, CLI, MCP, and TUI.
 **Response (`200 OK`):**
 ```json
 {
-  "site_id": "colinwolff.dev",
+  "site_id": "site_01jb8x9k2m0000000000000000",
+  "slug": "colinwolff.dev",
   "timezone": "America/Los_Angeles",
   "window": { "from": "2026-10-22T07:00:00Z", "to": "2026-11-21T07:00:00Z" },
   "summary": {
@@ -153,7 +155,7 @@ Single composable query endpoint powering dashboards, CLI, MCP, and TUI.
 ```
 
 ### 5.2 `GET /v1/sites/{site}/realtime` (Requires `rm_rd_` or `rm_adm_`)
-Returns active visitors in the last `5 minutes`, current top active pages, and minute-by-minute pulse over the last `30 minutes`.
+`{site}` accepts either `site_id` (`site_...`) or `slug` within the authenticated org. Returns active visitors in the last `5 minutes`, current top active pages, and minute-by-minute pulse over the last `30 minutes`.
 
 ### 5.3 `GET /v1/health` (Unauthenticated, non-sensitive)
 Returns service liveness, storage readiness, schema version, queue depth (`%` full), and uptime—zero secrets, zero site metrics.
@@ -162,15 +164,16 @@ Returns service liveness, storage readiness, schema version, queue depth (`%` fu
 
 ## 6. Idempotent Admin Endpoints (`v1.0`, Requires `rm_adm_`)
 
-Designed for CLI scripts and future OpenTofu / IaC providers:
-- `PUT /v1/admin/sites/{site_id}` — Idempotently creates or updates site settings (`timezone`, `salt_rotation`, `respect_gpc`, `allowed_origins`, `allowed_query_keys`, `raw_retention_days`).
-- `GET /v1/admin/sites` & `GET /v1/admin/sites/{site_id}` — List/inspect site configuration.
-- `DELETE /v1/admin/sites/{site_id}` — Deletes site and cascades data (`?confirm=true`).
+Designed for CLI scripts and future OpenTofu / IaC providers (`rm_adm_` keys are scoped to an `org_id`; single-tenant self-hosted deployments bind to the seeded `default` org):
+- `POST /v1/admin/sites` — Creates a site with `slug`, `display_name`, and settings, returning the generated immutable `site_id` (`site_...`).
+- `PUT /v1/admin/sites/{site}` — Idempotently creates or updates site settings (`slug`, `display_name`, `timezone`, `salt_rotation`, `respect_gpc`, `allowed_origins`, `allowed_query_keys`, `raw_retention_days`) matched by `site_id` or `slug`.
+- `GET /v1/admin/sites` & `GET /v1/admin/sites/{site}` — List/inspect site configuration (including `site_id`, `org_id`, `slug`, `display_name`).
+- `DELETE /v1/admin/sites/{site}` — Deletes site and cascades data (`?confirm=true`).
 - `POST /v1/admin/keys` — Mints a scoped key (`ingest | read | admin`), returning plaintext token once + `key_id` + `key_prefix`.
 - `GET /v1/admin/keys` & `DELETE /v1/admin/keys/{key_id}` — List metadata and revoke keys.
 
 ### 6.1 Preconfigured Self-Site Bootstrap (`self_site`)
-On first boot / fresh DB initialization, `rotameter serve` idempotently creates a preconfigured local site (`is_self_site = 1`) so operators can smoke-test `v1.0` ingest/queries immediately and let the `v1.5` Web UI dogfood itself locally:
-- **Site identifier:** Derived from `--public-url` host (e.g., `analytics.wolff.industries`) when set, defaulting otherwise to `_self`, and overrideable via `--self-site-id` / `ROTAMETER_SELF_SITE_ID` / `[server] self_site_id`.
+On first boot / fresh DB initialization, `rotameter serve` idempotently seeds the local `default` org and a preconfigured local site (`is_self_site = 1`) so operators can smoke-test `v1.0` ingest/queries immediately and let the `v1.5` Web UI dogfood itself locally:
+- **Site slug & identifier:** Generates a persistent immutable `site_id` (`site_...`) with `display_name = "Self (Local)"` and `slug` derived from `--public-url` host (e.g., `analytics.wolff.industries`) when set, defaulting otherwise to `_self`, overrideable via `--self-site-id` / `ROTAMETER_SELF_SITE_ID` / `[server] self_site_id`.
 - **Three-way disable switch (precedence `CLI flag > env var > config`):** `--no-self-site` (or `--self-site=false`), `ROTAMETER_SELF_SITE=false`, or `[server] self_site = false` skips creating/enabling the self-site and omits any self-tracking in `v1.5` UI responses.
 - **Loop guard:** Internal `/v1/query`, `/v1/sites/*/realtime`, `/v1/admin/*`, and `/v1/health` requests against the self-site never synthesize self-referential ingest events.

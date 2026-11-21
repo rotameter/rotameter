@@ -21,11 +21,12 @@ For each incoming request, `rotameter-core` extracts:
 - `client_ip`: from `CF-Connecting-IP` (when `trusted_proxy_headers = true`), else `X-Forwarded-For` rightmost trusted hop, else the TCP peer socket address.
 - `user_agent`: HTTP `User-Agent` header (truncated to `512 B`).
 
-It computes a 16-byte pseudonymous `visitor_id`:
+It computes a 16-byte pseudonymous `visitor_id` using the site's immutable 16-byte `site_id` UID (so domain or slug renames never reset active visitor hashes):
 
-$$\text{visitor\_id} = \text{HMAC-SHA256}(\text{salt}_{\text{window}}, \text{site\_id} \,\|\, \text{0x00} \,\|\, \text{client\_ip} \,\|\, \text{0x00} \,\|\, \text{user\_agent})[0..16]$$
+$$\text{visitor\_id} = \text{HMAC-SHA256}(\text{salt}_{\text{window}}, \text{site\_id\_bytes} \,\|\, \text{0x00} \,\|\, \text{client\_ip} \,\|\, \text{0x00} \,\|\, \text{user\_agent})[0..16]$$
 
 ### Rotation Windows & Midnight Grace Carryover
+- **Pluggable `SaltProvider` (`rotameter-core`):** Salt window resolution sits behind a `SaltProvider` trait so single-node deployments use an in-memory CSPRNG provider while multi-node deployments can share salts cleanly via DB, Redis, or KMS.
 - **Default (`daily`):** Generates a fresh 32-byte CSPRNG salt at `00:00 UTC`.
 - **Configurable per-site `salt_rotation`:** `daily` (default, Plausible-equivalent), `weekly` (ISO week boundary), or `monthly` (1st of UTC month) for operators wanting multi-day deduplication within one bounded calendar window.
 - **Midnight 30-Minute Grace Window:** Active sessions do **not** artificially split at `23:59 -> 00:01 UTC`. For `30 minutes` after a salt rotation, the session resolver checks the in-memory LRU against both `HMAC(current_salt, ...)` and `HMAC(previous_salt, ...)`; if a matching active session is still open (`now - last_event_ms <= 1,800,000 ms`), the event attaches seamlessly to that existing `session_id` and `visitor_id` until the session closes naturally.
@@ -86,7 +87,7 @@ To prevent bot query-string bombs or hostile custom properties from bloating SQL
    - `event_name`: max `64` bytes (ASCII `[a-zA-Z0-9_.:-]`).
    - `props`: max `10` keys per event; max `64` bytes per key; max `128` bytes per scalar string value; nested objects/arrays rejected/flattened cleanly.
 3. **Daily Per-Site Dimension Overflow Cap:**
-   - Each site caps new unique `dim_strings` creations per UTC day per dimension kind (defaults: `10,000` unique paths/day, `5,000` unique referrer URLs/day, `2,000` unique custom prop values/day).
+   - `dim_strings` is isolated per `site_id`, and each site caps new unique `dim_strings` creations per UTC day per dimension kind (defaults: `10,000` unique paths/day, `5,000` unique referrer URLs/day, `2,000` unique custom prop values/day).
    - Once a site hits its daily cap for a dimension kind, any novel unseen value maps deterministically to **`(other)`** in `dim_strings`—preserving total pageviews/counts while guaranteeing bounded disk growth.
 
 ---

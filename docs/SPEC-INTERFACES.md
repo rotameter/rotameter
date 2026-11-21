@@ -31,6 +31,7 @@ All client-facing commands (`query`, `realtime`, `site`, `key`, `mcp`, `tui`) re
 ## 2. CLI (`rotameter`)
 
 Uniform flags across operational subcommands: `--format table|json|csv`, `--profile <name>`, `--quiet`.
+All `<site>` arguments across CLI, MCP, and TUI resolve either an immutable `site_id` (`site_...`) or the site's unique `slug` within the active org/profile (`ADR-0007`).
 Standard exit codes: `0` OK, `1` runtime/HTTP error, `2` invalid CLI args, `3` auth/Access error, `4` health/doctor gate failure.
 
 ### Subcommand Tree (`v1.0`)
@@ -38,7 +39,7 @@ Standard exit codes: `0` OK, `1` runtime/HTTP error, `2` invalid CLI args, `3` a
 | Command | Mode | Purpose |
 | --- | --- | --- |
 | `rotameter serve` | Local DB | Start HTTP server (`--bind 127.0.0.1:8000`, `--db`, `--public-url`, `--no-self-site`, `--self-site-id`, `--geoip header\|mmdb`, `--mmdb-path`, `--trusted-proxy`) |
-| `rotameter site upsert <id>` | Local DB or Remote Admin API | Idempotently create/update site (`--timezone`, `--salt-rotation`, `--respect-gpc`, `--origin`, `--allow-query`, `--retention-days`) |
+| `rotameter site upsert <site>` | Local DB or Remote Admin API | Idempotently create/update site (`--slug`, `--name`, `--timezone`, `--salt-rotation`, `--respect-gpc`, `--origin`, `--allow-query`, `--retention-days`) |
 | `rotameter site list / show / purge / delete` | Local or Remote | Inspect sites, prune old raw events, or delete site |
 | `rotameter key create / list / revoke` | Local or Remote | Mint scoped keys (`--scope ingest\|read\|admin`, `--site <id>`, `--label`) and revoke |
 | `rotameter query <site>` | Remote API | Query summary, timeseries, and breakdowns (`--range 24h\|7d\|30d\|12m\|all`, `--group-by path`, `--filter country=US`, `--compare`, `--format csv`) |

@@ -5,6 +5,9 @@ edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Axum HTTP ingest, query, and admin server for Rotameter"
 
 [dependencies]
 rotameter-core.workspace = true

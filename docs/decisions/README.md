@@ -32,5 +32,6 @@ contract, or trades one quality attribute against another (e.g., RAM footprint v
 | [0004](./0004-cookieless-salt-sessions-and-cardinality-caps.md) | Enforce cookieless HMAC-SHA256 hashing, bounded 30m sessions, and daily cardinality caps | accepted | RM-3, RM-4, RM-8, RM-17 |
 | [0005](./0005-clean-sheet-v1-api-and-scoped-keys.md) | Ship a clean-sheet /v1 API with scoped hashed keys and Astro/Cloudflare Workers SSR integration | accepted | RM-7, RM-8, RM-9, RM-10, RM-11 |
 | [0006](./0006-headless-v1-interfaces-cli-mcp-tui.md) | Ship v1.0 headless with CLI, read-only stdio MCP, and interactive ratatui TUI | accepted | RM-12, RM-13, RM-14, RM-15, RM-18, RM-20 |
+| [0007](./0007-opaque-uids-and-saas-tenancy-seams.md) | Adopt opaque prefixed UUIDv7 UIDs, site-scoped dictionaries, and SaaS seams | accepted | RM-3, RM-4, RM-5, RM-7, RM-8, RM-23 |
 
-[`madr-template.md`](../templates/madr-template.md) is the starting point for `0007-...`.
+[`madr-template.md`](../templates/madr-template.md) is the starting point for `0008-...`.

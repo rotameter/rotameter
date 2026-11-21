@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "rotameter-cli"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "rotameter-client",
  "rotameter-core",
@@ -16,39 +16,39 @@ dependencies = [
 
 [[package]]
 name = "rotameter-client"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "rotameter-core",
 ]
 
 [[package]]
 name = "rotameter-core"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 
 [[package]]
 name = "rotameter-mcp"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "rotameter-client",
 ]
 
 [[package]]
 name = "rotameter-server"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "rotameter-core",
 ]
 
 [[package]]
 name = "rotameter-store-sqlite"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "rotameter-core",
 ]
 
 [[package]]
 name = "rotameter-tui"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "rotameter-client",
 ]

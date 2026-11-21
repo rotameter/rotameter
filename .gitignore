@@ -1,6 +1,9 @@
 # Rust build artifacts (Cargo.lock is committed for reproducible binaries)
 target/
 
+# outfeed crates.io namespace reservation staging
+reserve-staging/
+
 # Local databases & test state
 *.db
 *.db-wal

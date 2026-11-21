@@ -5,6 +5,9 @@ edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Typed HTTP client for the Rotameter /v1 API"
 
 [dependencies]
 rotameter-core.workspace = true

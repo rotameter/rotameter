@@ -9,21 +9,26 @@ members = [
     "crates/rotameter-tui",
     "crates/rotameter-cli",
 ]
+exclude = [
+    "reserve-staging",
+]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 edition = "2024"
 rust-version = "1.99"
 authors = ["Colin Wolff"]
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/colinwolff/rotameter"
+homepage = "https://github.com/colinwolff/rotameter"
 
 [workspace.dependencies]
-rotameter-core = { path = "crates/rotameter-core", version = "0.1.0" }
-rotameter-store-sqlite = { path = "crates/rotameter-store-sqlite", version = "0.1.0" }
-rotameter-server = { path = "crates/rotameter-server", version = "0.1.0" }
-rotameter-client = { path = "crates/rotameter-client", version = "0.1.0" }
-rotameter-mcp = { path = "crates/rotameter-mcp", version = "0.1.0" }
-rotameter-tui = { path = "crates/rotameter-tui", version = "0.1.0" }
+rotameter-core = { path = "crates/rotameter-core", version = "0.1.0-alpha.1" }
+rotameter-store-sqlite = { path = "crates/rotameter-store-sqlite", version = "0.1.0-alpha.1" }
+rotameter-server = { path = "crates/rotameter-server", version = "0.1.0-alpha.1" }
+rotameter-client = { path = "crates/rotameter-client", version = "0.1.0-alpha.1" }
+rotameter-mcp = { path = "crates/rotameter-mcp", version = "0.1.0-alpha.1" }
+rotameter-tui = { path = "crates/rotameter-tui", version = "0.1.0-alpha.1" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

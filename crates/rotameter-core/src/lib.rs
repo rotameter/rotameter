@@ -4,10 +4,14 @@
 //! This crate is intentionally free of OS I/O, async runtimes, and storage engines.
 
 pub mod bot;
+pub mod cardinality;
 pub mod error;
 pub mod id;
 pub mod normalize;
+pub mod privacy;
 pub mod query;
+pub mod session;
+pub mod storage;
 pub mod types;
 pub mod ua;
 

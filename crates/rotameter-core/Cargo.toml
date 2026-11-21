@@ -11,6 +11,7 @@ description = "Pure-Rust domain types, privacy hashing, session engine, and stor
 
 [dependencies]
 aho-corasick.workspace = true
+hmac-sha256.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 url.workspace = true

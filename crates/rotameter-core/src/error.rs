@@ -18,10 +18,14 @@ pub enum ErrorCode {
     InvalidEventName,
     /// Event custom properties exceeded key/size constraints.
     InvalidProperties,
-    /// Invalid analytics query specification or bounds.
+    /// Query specification failed semantic validation.
     InvalidQuery,
     /// Request URL host is not permitted by site `allowed_origins`.
     HostMismatch,
+    /// Persistence backend failure surfaced through a storage trait.
+    StorageError,
+    /// Salt lookup or lock acquisition failed.
+    SaltUnavailable,
 }
 
 /// Pure-Rust domain validation error returned by `rotameter-core` constructors and parsers.
@@ -48,6 +52,12 @@ pub enum CoreError {
     /// URL host is outside the site's `allowed_origins`.
     #[error("host `{0}` is not permitted for this site")]
     HostMismatch(String),
+    /// Storage trait operation failed.
+    #[error("storage error: {0}")]
+    Storage(String),
+    /// Salt provider could not resolve a window salt.
+    #[error("salt unavailable: {0}")]
+    SaltUnavailable(String),
 }
 
 impl CoreError {
@@ -61,6 +71,8 @@ impl CoreError {
             Self::InvalidProperties(_) => ErrorCode::InvalidProperties,
             Self::InvalidQuery(_) => ErrorCode::InvalidQuery,
             Self::HostMismatch(_) => ErrorCode::HostMismatch,
+            Self::Storage(_) => ErrorCode::StorageError,
+            Self::SaltUnavailable(_) => ErrorCode::SaltUnavailable,
         }
     }
 }

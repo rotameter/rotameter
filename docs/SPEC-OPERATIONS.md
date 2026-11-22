@@ -25,7 +25,7 @@ Every release produces stripped static binaries (`LTO = "thin"`, `codegen-units 
 ## 2. Reference Production Topology (`VM.Standard.E2.1.Micro` + Cloudflare)
 
 ```text
-Visitor Browser / Astro Worker (colinwolff.dev)
+Visitor Browser / Astro Worker (example.com)
   │  POST /api/e (first-party) ──▶ CF Worker ctx.waitUntil()
   │                                  │ (CF-Access-Client-Id/Secret + CF-Connecting-IP + CF-IPCountry)
   ▼                                  ▼

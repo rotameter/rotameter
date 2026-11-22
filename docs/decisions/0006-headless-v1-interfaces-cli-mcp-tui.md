@@ -32,7 +32,7 @@ Chosen option: "Headless `v1.0` with CLI + read-only `stdio` MCP + interactive `
 * Good, because `rotameter mcp` is read-only by construction in `v1.0`, eliminating accidental site deletion or key revocation during AI exploration.
 * Good, because `rotameter tui` gives operators cursor-scrubbing ASCII block charts and breakdown filter drill-downs over SSH or locally against `analytics.wolff.industries`.
 * Good, because when Web UI (`v1.5`) arrives as a decoupled client over `/v1/*`, the headless engine continues running unchanged (`--ui=off` default).
-* Bad, because browser-only admin viewing requires either `colinwolff.dev/analytics`, CLI/TUI, or waiting until `v1.5`.
+* Bad, because browser-only admin viewing requires either an external dashboard (e.g., `example.com/analytics`), CLI/TUI, or waiting until `v1.5`.
 
 ### Confirmation
 

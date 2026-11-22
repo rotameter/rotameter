@@ -8,7 +8,7 @@ decision-makers: Colin Wolff (owner)
 
 ## Context and Problem Statement
 
-Rotameter `v1.0` starts as a single-binary self-hosted engine on a `1 vCPU / 1 GB RAM` VM, while remaining cleanly extensible into a multi-tenant hosted SaaS (`rotameter-cloud`) in the future without breaking public APIs or requiring table rewrites. Using mutable domain strings as primary keys (`site_id = "colinwolff.dev"`) and sharing a global `dim_strings` dictionary across sites breaks when domains change, causes cross-tenant collisions, and widens composite `WITHOUT ROWID` indexes.
+Rotameter `v1.0` starts as a single-binary self-hosted engine on a `1 vCPU / 1 GB RAM` VM, while remaining cleanly extensible into a multi-tenant hosted SaaS (`rotameter-cloud`) in the future without breaking public APIs or requiring table rewrites. Using mutable domain strings as primary keys (`site_id = "example.com"`) and sharing a global `dim_strings` dictionary across sites breaks when domains change, causes cross-tenant collisions, and widens composite `WITHOUT ROWID` indexes.
 
 ## Decision Drivers
 

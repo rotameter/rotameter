@@ -8,7 +8,7 @@ decision-makers: Colin Wolff (owner)
 
 ## Context and Problem Statement
 
-Existing self-hosted analytics APIs carry historical wire quirks (e.g., cryptic short field names `{ n, u, d, r }`, separate v1/v2 query models, or limited zero-JS/SSR support). Rotameter's owner explicitly rejected inheriting external wire-protocol debt, while needing first-class support for static/hybrid Astro sites on Cloudflare Workers (`colinwolff.dev`) where the analytics engine sits privately behind Cloudflare Tunnel and Zero Trust Access.
+Existing self-hosted analytics APIs carry historical wire quirks (e.g., cryptic short field names `{ n, u, d, r }`, separate v1/v2 query models, or limited zero-JS/SSR support). Rotameter's owner explicitly rejected inheriting external wire-protocol debt, while needing first-class support for static/hybrid Astro sites on Cloudflare Workers (e.g., `example.com`) where the analytics engine sits privately behind Cloudflare Tunnel and Zero Trust Access.
 
 ## Decision Drivers
 
@@ -29,7 +29,7 @@ Chosen option: "Clean-sheet `/v1/*` JSON API + scoped hashed Bearer keys + first
 
 ### Consequences
 
-* Good, because `rotameter-client`, `rotameter-mcp`, `rotameter-tui`, and external consumers (like `colinwolff.dev/analytics`) share one orthogonal query endpoint (`POST /v1/query`).
+* Good, because `rotameter-client`, `rotameter-mcp`, `rotameter-tui`, and external consumers (like `example.com/analytics`) share one orthogonal query endpoint (`POST /v1/query`).
 * Good, because `PUT /v1/admin/sites/{id}` makes CLI and future OpenTofu provisioning idempotent without exposing admin mutations over MCP.
 * Good, because the Astro/Cloudflare Workers integration keeps browsers `'self'`-only, proxies via `ctx.waitUntil()`, injects `CF-Access-Client-Id`/`Secret`, and drops `*.workers.dev` preview noise automatically.
 * Bad, because sites migrating from Plausible/GoatCounter change their tracker snippet rather than swapping DNS alone (mitigated by `rotameter import` for historical data).

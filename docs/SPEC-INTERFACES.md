@@ -20,7 +20,7 @@ All client-facing commands (`query`, `realtime`, `site`, `key`, `mcp`, `tui`) re
 
    [profiles.prod]
    url = "https://analytics.wolff.industries"
-   site = "colinwolff.dev"
+   site = "example.com"
    token_env = "ROTAMETER_TOKEN"
    cf_access_client_id_env = "CF_ACCESS_CLIENT_ID"
    cf_access_client_secret_env = "CF_ACCESS_CLIENT_SECRET"
@@ -85,7 +85,7 @@ A crisp, high-density `ratatui` flight-instrument dashboard consuming the remote
 ### Screen Anatomy
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│ ROTAMETER // colinwolff.dev    [1:24H] [2:7D] [*3:30D*] [4:12M] [5:ALL]  ● 3 LIVE │
+│ ROTAMETER // example.com       [1:24H] [2:7D] [*3:30D*] [4:12M] [5:ALL]  ● 3 LIVE │
 ├───────────────────────────┬──────────────────────────────────────────────────┤
 │ VISITORS       1,842 +22% │  ▅                                               │
 │ PAGEVIEWS      4,190 +27% │  █   ▆       ▇   ▅                               │

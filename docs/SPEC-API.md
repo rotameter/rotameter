@@ -9,7 +9,7 @@ Rotameter exposes a clean-sheet, strongly typed JSON HTTP API under `/v1/*`. No 
 ## 1. Conventions & Error Envelope
 
 - **Base prefix:** `/v1/*`
-- **Identifiers (`ADR-0007`):** Organization, site, and API key entities use immutable TypeID-style prefixed UUIDv7 UIDs (`org_<26-char base32>`, `site_<26-char base32>`, `key_<26-char base32>`). Sites pair an immutable `site_id` with an org-unique `slug` (e.g., `"colinwolff.dev"`) and mutable `display_name`; query/admin paths accept `site_id` or `slug` within the authenticated org.
+- **Identifiers (`ADR-0007`):** Organization, site, and API key entities use immutable TypeID-style prefixed UUIDv7 UIDs (`org_<26-char base32>`, `site_<26-char base32>`, `key_<26-char base32>`). Sites pair an immutable `site_id` with an org-unique `slug` (e.g., `"example.com"`) and mutable `display_name`; query/admin paths accept `site_id` or `slug` within the authenticated org.
 - **Field naming:** `snake_case` everywhere in JSON request/response bodies.
 - **Timestamps:** RFC 3339 UTC strings (`"2026-11-20T19:00:00Z"`) with explicit `timezone` field when reporting local-date buckets.
 - **Uniform Error Envelope:** Every `4xx` / `5xx` API response returns:
@@ -33,7 +33,7 @@ Keys are randomly generated (`32` bytes), prefixed by role (`rm_ing_...`, `rm_rd
 | Scope | Prefix | Permitted Operations |
 | --- | --- | --- |
 | `ingest` | `rm_ing_` | `POST /v1/events`, `POST /v1/events/batch` for the bound `site_id` (required for server-to-server batching; optional for browser `collect.js` / `pixel.gif` matching `allowed_origins`). |
-| `read` | `rm_rd_` | `POST /v1/query`, `GET /v1/sites/{site}/realtime` for the bound `site_id` (used by `colinwolff.dev`, TUI, MCP). |
+| `read` | `rm_rd_` | `POST /v1/query`, `GET /v1/sites/{site}/realtime` for the bound `site_id` (used by external dashboards, TUI, MCP). |
 | `admin` | `rm_adm_` | Full read + `/v1/admin/sites/*`, `/v1/admin/keys/*` across sites (used by CLI, OpenTofu, setup scripts). |
 
 - **Public browser ingest guardrails:** Unauthenticated `POST /v1/events`, `GET /v1/pixel.gif`, and `GET /v1/collect.js` must match a registered `site_id` and (when configured) `Origin`/`Referer` host in `allowed_origins`, subject to a per-IP in-memory token bucket (e.g., `60 req/min`, burst `20`).
@@ -65,7 +65,7 @@ Single-event ingest returning **`202 Accepted`** (empty body or `{"accepted": 1}
 {
   "site_id": "site_01jb8x9k2m0000000000000000",
   "event": "pageview",
-  "url": "https://colinwolff.dev/projects/rotameter?utm_source=hn",
+  "url": "https://example.com/projects/rotameter?utm_source=hn",
   "referrer": "https://news.ycombinator.com/",
   "viewport_width": 1440,
   "props": {
@@ -81,11 +81,11 @@ Server-side / log-importer batch ingest (requires `rm_ing_` or `rm_adm_` Bearer 
 
 ## 4. First-Class Astro & Cloudflare Workers Integration (`integrations/astro-cloudflare/`)
 
-Designed specifically for static/hybrid Astro sites deployed on Cloudflare Workers (such as `colinwolff.dev`) where Rotameter sits privately behind a Cloudflare Tunnel + Access Service Token:
+Designed specifically for static/hybrid Astro sites deployed on Cloudflare Workers (such as `example.com`) where Rotameter sits privately behind a Cloudflare Tunnel + Access Service Token:
 
 1. **First-Party Worker Proxy Routes** (`src/pages/api/r.js.ts` + `src/pages/api/e.ts`):
    - `GET /api/r.js`: proxies and edge-caches `/v1/collect.js` from `ROTAMETER_URL` using `CF-Access-Client-Id` / `CF-Access-Client-Secret`, keeping the browser strictly `'self'`-only under strict CSP. Returns a harmless `200` empty comment if the origin is temporarily unreachable.
-   - `POST /api/e`: validates origin (`colinwolff.dev` only — silently drops `*.workers.dev` previews and `localhost` with `204`), immediately returns `202` to the browser, and forwards the payload inside **`ctx.waitUntil()`** with `CF-Connecting-IP`, `CF-IPCountry`, `CF-Region-Code`, `User-Agent`, and Access Service Token headers.
+   - `POST /api/e`: validates origin (`example.com` only — silently drops `*.workers.dev` previews and `localhost` with `204`), immediately returns `202` to the browser, and forwards the payload inside **`ctx.waitUntil()`** with `CF-Connecting-IP`, `CF-IPCountry`, `CF-Region-Code`, `User-Agent`, and Access Service Token headers.
 2. **Pure Server-Side SSR Helper** (`trackServerHit(request, env, ctx, opts)`):
    - Zero client JavaScript required for on-demand Astro routes (`/status`, `/analytics`, `/rss.xml`, `404.astro`).
    - Enqueues a `pageview` or `not_found` event asynchronously inside `ctx.waitUntil()` with a short timeout (`1500 ms`), never blocking SSR page latency and never throwing if the analytics VM restarts.
@@ -125,7 +125,7 @@ Single composable query endpoint powering dashboards, CLI, MCP, and TUI.
 ```json
 {
   "site_id": "site_01jb8x9k2m0000000000000000",
-  "slug": "colinwolff.dev",
+  "slug": "example.com",
   "timezone": "America/Los_Angeles",
   "window": { "from": "2026-10-22T07:00:00Z", "to": "2026-11-21T07:00:00Z" },
   "summary": {

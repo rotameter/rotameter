@@ -126,7 +126,7 @@ CREATE TABLE orgs (
 CREATE TABLE sites (
   site_id            BLOB PRIMARY KEY,               -- 16-byte UUIDv7 (wire: site_<26-char base32>)
   org_id             BLOB NOT NULL REFERENCES orgs(org_id) ON DELETE CASCADE,
-  slug               TEXT NOT NULL,                  -- unique per org, e.g. "colinwolff.dev" or "_self"
+  slug               TEXT NOT NULL,                  -- unique per org, e.g. "example.com" or "_self"
   display_name       TEXT NOT NULL,                  -- mutable human-friendly label
   timezone           TEXT NOT NULL DEFAULT 'UTC',
   salt_rotation      TEXT NOT NULL DEFAULT 'daily',  -- daily | weekly | monthly

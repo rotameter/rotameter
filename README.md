@@ -62,6 +62,48 @@ rotameter mcp   # newline-delimited JSON-RPC 2.0 over stdio
 
 ---
 
+## Flight-Instrument TUI (`rotameter tui`)
+
+`rotameter tui` renders a real-time `ratatui` flight-instrument dashboard backed by `/v1/query` and `/v1/sites/{site}/realtime` with non-blocking `30s` background polling:
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│ ROTAMETER // example.com    [1:24H] [2:7D] [*3:30D*] [4:12M] [5:ALL]          ● 18 LIVE  │
+├──────────────────────────────┬───────────────────────────────────────────────────────────┤
+│ VISITORS       1,842    +22% │  █                                                        │
+│ PAGEVIEWS      4,190    +27% │  █ ▆       ▇   ▅                                          │
+│ VISITS         2,110    +24% │  █ █ ▄ ▂ ▅ █ ▆ █ ▄ █ ▇ ▃ ▆ █ ▅ ▇ ▄ ▆ █ ▃ ▅ ▇ ▓            │
+│ VIEWS/VISIT     1.99     +2% │  2026.10.24 ───────────────────────────▶ TODAY (11.22)    │
+│ BOUNCE RATE    48.2%     -3% │  CURSOR: 2026.11.14 · 112 VISITORS · 248 VIEWS            │
+│ AVG DURATION  01m34s     +7% │  ACTIVE FILTER: [country=US] (Esc to clear)               │
+├──────────────────────────────┴───────────────────────────────────────────────────────────┤
+│ BREAKDOWN [Tab]: *PAGES* | SOURCES | GEO | TECH | EVENTS                                 │
+│ ITEM                                                       SHARE            VISITORS     │
+│ > /projects/rotameter                                      22.4%                 412     │
+│   /blog/sqlite-wal-analytics                               16.1%                 297     │
+│   /                                                        14.8%                 273     │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+ [s] site  [1-5] range  [←/→] scrub bar  [Tab] panel  [Enter] filter  [Esc] clear  [?] help
+```
+
+### Launching & Keybindings
+
+- **Launch against a live server or local demo DB:**
+  ```bash
+  # Direct flags or environment variables (ROTAMETER_URL / ROTAMETER_TOKEN)
+  rotameter --url http://127.0.0.1:8000 --token rm_rd_... tui
+
+  # Or save defaults in ~/.config/rotameter/config.toml and run:
+  rotameter tui
+  ```
+- **Navigate & drill down:**
+  - `1`–`5`: switch time window (`24H`, `7D`, `30D`, `12M`, `ALL`)
+  - `←`/`→` (`h`/`l`): scrub horizontally across chart bars and roll the `CURSOR:` headline readout (`TODAY` bar highlighted in cyan)
+  - `↑`/`↓` (`j`/`k`) + `Enter`: push the selected row (`PAGES`, `SOURCES`, `GEO`, `TECH`, `EVENTS`) as an active filter; `Esc` pops it
+  - `Tab` / `Shift+Tab`: cycle breakdown panels · `s`: open site switcher · `r`: manual refresh · `?`: help · `q`: quit
+
+---
+
 ## CLI Commands
 
 | Command | Mode | Summary |

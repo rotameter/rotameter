@@ -35,7 +35,7 @@ export const POST: APIRoute = ({ request, locals }) =>
 <script
   defer
   src="/api/r.js"
-  data-site="colinwolff.dev"
+  data-site="example.com"
   data-endpoint="/api/e"
 ></script>
 ```
@@ -57,5 +57,5 @@ await trackServerHit(Astro.request, env, Astro.locals.cfContext, {
 - `ROTAMETER_URL` — private tunnel URL (e.g., `https://rotameter.internal.example`)
 - `ROTAMETER_SITE` — target `site_...` UID or slug
 - `ROTAMETER_INGEST_KEY` — scoped `rm_ing_...` Bearer token
-- `ROTAMETER_ALLOWED_ORIGINS` — comma-separated production hosts (`colinwolff.dev,www.colinwolff.dev`)
+- `ROTAMETER_ALLOWED_ORIGINS` — comma-separated production hosts (`example.com,www.example.com`)
 - `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET` (also supports `ROTAMETER_ACCESS_CLIENT_ID` / `ROTAMETER_ACCESS_CLIENT_SECRET`)

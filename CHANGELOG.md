@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Aligned release roadmap across `docs/ROADMAP.md`, `PROJECT.md`, and `AGENTS.md` to Rust/Cargo SemVer progression (`0.1.0` headless engine -> `0.2.0` Web UI/tags/remote MCP -> `0.3.0` funnels/multi-backend -> `0.4.0` plugins/webhooks -> `1.0.0` stable GA freeze) while keeping HTTP routes on `/v1/*`.
 - Adopted `ADR-0007` (TypeID-style prefixed UUIDv7 UIDs `org_...`/`site_...`/`key_...`, `orgs` tenancy with auto-seeded `default` org, `slug` + `display_name`, site-scoped `dim_strings`, `SaltProvider`, and per-site `IngestPolicy` seams) across architecture, privacy, API, and interface specs, and aligned workspace manifests to `0.1.0-alpha.1` with repository metadata and `reserve-staging` exclusions (`RM-23`).
 
 ### Added

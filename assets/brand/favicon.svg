@@ -1,0 +1,24 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 16 16"
+  width="16"
+  height="16"
+  fill="none"
+  stroke-width="1.75"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-label="rotameter icon"
+>
+  <style>
+    .rm-vessel { stroke: #0f172a; }
+    .rm-float { fill: #0f172a; }
+    @media (prefers-color-scheme: dark) {
+      .rm-vessel { stroke: #f8fafc; }
+      .rm-float { fill: #f8fafc; }
+    }
+  </style>
+  <!-- Tapered vessel silhouette -->
+  <path class="rm-vessel" d="M4.5 2.5h7l-1.2 11h-4.6l-1.2-11z" />
+  <!-- Equilibrium float -->
+  <rect class="rm-float" x="6.25" y="6.25" width="3.5" height="2.25" rx="0.5" stroke="none" />
+</svg>

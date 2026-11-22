@@ -230,6 +230,8 @@ CREATE TABLE rollups_daily (
 ) WITHOUT ROWID;
 ```
 
+*Forward migration [`0002_query_rollups.sql`](../crates/rotameter-store-sqlite/migrations/0002_query_rollups.sql) (`schema_version = 2`) extends `rollups_daily` with `visitors` and adds `seen_visitors_daily` + `rollups_path_daily` so multi-day `summary`, `timeseries`, and `Dimension::Path` breakdowns stay under `25 ms` `p95` at `1M` events.*
+
 ### Why This Layout Scales on `1 vCPU / 1 GB RAM`
 - **Compact rows:** Integer-interned paths/dimensions + `BLOB(16)` `site_id`/`session_id`/`visitor_id` + `WITHOUT ROWID` keep raw `events` compact (`1M` events ≈ `60–75 MB` on disk).
 - **Unique visitors across arbitrary ranges:** `idx_sessions_range(site_id, started_at_ms, visitor_id)` is a **covering index** — counting distinct visitors across `7D`, `30D`, or `90D` never even touches the main `sessions` table pages.

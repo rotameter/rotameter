@@ -45,6 +45,7 @@ Standard exit codes: `0` OK, `1` runtime/HTTP error, `2` invalid CLI args, `3` a
 | `rotameter query <site>` | Remote API | Query summary, timeseries, and breakdowns (`--range 24h\|7d\|30d\|12m\|all`, `--group-by path`, `--filter country=US`, `--compare`, `--format csv`) |
 | `rotameter realtime <site>` | Remote API | Stream/print 5-minute active visitors and active pages (`--watch`) |
 | `rotameter import <site> <file>` | Local DB or Remote Batch API | Backfill historical hits from JSONL or Nginx/Caddy CLF logs (`--dry-run`) |
+| `rotameter seed` | Local DB | Synthesize repeatable multi-day diurnal curves, breakdowns, and live pulse for local previews |
 | `rotameter backup <dest>` | Local DB | Execute safe online `SQLite VACUUM INTO <dest>` snapshot |
 | `rotameter doctor` | Local or Remote | Check DB WAL integrity, pragma ceilings, salt/clock health, queue usage, or remote `/v1/health` + Access token auth |
 | `rotameter mcp` | Remote API (`stdio`) | Start Model Context Protocol server over `stdin`/`stdout` |

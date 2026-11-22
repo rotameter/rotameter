@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Brand SVG icon sprite, standalone icons, adaptive light/dark `favicon.svg`, multi-size `favicon.ico`, Apple/PWA PNG icons, and `site.webmanifest` under `assets/brand/`, alongside refreshed `0.1.0` publishing documentation (`README.md`, `CONTRIBUTING.md`, `SPEC-INTERFACES.md`, `SPEC-ARCHITECTURE.md`).
 - Interactive `ratatui` flight-instrument terminal UI (`rotameter-tui` / `rotameter tui`) with site switcher (`s`), `1`–`5` range hotkeys (`24H`/`7D`/`30D`/`12M`/`ALL`), 5m live ticker, KPI strip with period deltas, ASCII block chart with dense cap, today accent, horizontal cursor scrubber (`←`/`→`/`h`/`l`), breakdown tabs (`PAGES`/`SOURCES`/`GEO`/`TECH`/`EVENTS`), `Enter`/`Esc` filter drill-down, and non-blocking `30s` polling (`RM-15`).
 - Read-only `stdio` MCP server (`rotameter-mcp` / `rotameter mcp`) speaking JSON-RPC 2.0 and exposing all 7 read-only analytics tools (`rotameter_sites` with `default_site` fallback on `rm_rd_` keys, `rotameter_summary`, `rotameter_timeseries`, `rotameter_breakdown`, `rotameter_realtime`, `rotameter_compare_periods`, and `rotameter_query`) (`RM-14`).
 - `rotameter seed` subcommand (`--site`, `--days`, `--sessions-per-day`, `--realtime-visitors`, `--seed`, `--reset`) synthesizing deterministic multi-day diurnal curves, weighted referrers/channels/UTMs, geo/browser/device breakdowns, and trailing 30-minute realtime pulse into local SQLite stores (`RM-26`).

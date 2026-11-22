@@ -17,18 +17,22 @@ Thank you for contributing to **Rotameter** (`MIT OR Apache-2.0`). Read [`AGENTS
 ## Workflow & Engineering Laws
 
 1. **Storypole first:** Claim or create a ticket before changing code (`storypole next` / `storypole claim <KEY> <AGENT> --branch feat/<slug>`). Out-of-scope discoveries go to `storypole defer`.
-2. **File size ceiling:** Keep source files under **250 lines** (warn at **200 lines**) and documentation files under **500 lines**.
+2. **File size ceiling:** Keep source files under **200 lines** for task completion (`miter audit --threshold 200`; hard limit **250 lines**) and documentation files under **500 lines**.
 3. **Safety & core purity:**
    - `#![forbid(unsafe_code)]` across every workspace crate.
    - Zero `.unwrap()`, `.expect()`, or `panic!()` outside tests/benches.
    - `rotameter-core` remains strictly OS/async/DB-free.
-4. **Conventional Commits & Changelog:** Use `<type>(<scope>): <summary>` with `Task: RM-<n>` footers, and record user-visible changes under `## [Unreleased]` in [`CHANGELOG.md`](./CHANGELOG.md) in the same commit.
-5. **Verification before commit:**
+4. **Local previews:** Use `rotameter seed` (`RM-26`) to populate repeatable 30-day curves and live realtime data into an isolated SQLite DB when testing API queries, TUI screens, or UI prototypes.
+5. **Conventional Commits & Changelog:** Use `<type>(<scope>): <summary>` with `Task: RM-<n>` footers, and record user-visible changes under `## [Unreleased]` in [`CHANGELOG.md`](./CHANGELOG.md) in the same commit.
+6. **Verification before merge:**
 
    ```bash
    cargo fmt --all -- --check
    cargo clippy --workspace --all-targets --all-features -- -D warnings
    cargo nextest run --workspace
-   miter audit --path . --threshold 250
+   cargo test --doc --workspace
+   miter audit --path . --threshold 200
+   miter deps --path . --unused
    chalkline docs check -d .
+   ./scripts/run-release-gates.sh   # full Tier 4 release gate suite
    ```

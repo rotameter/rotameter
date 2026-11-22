@@ -6,7 +6,6 @@ rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-homepage.workspace = true
 description = "Interactive ratatui terminal dashboard for Rotameter"
 
 [dependencies]

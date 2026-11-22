@@ -6,7 +6,6 @@ rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-homepage.workspace = true
 description = "Pure-Rust domain types, privacy hashing, session engine, and storage traits for Rotameter"
 
 [dependencies]

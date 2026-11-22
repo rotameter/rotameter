@@ -31,10 +31,9 @@ fn run_sites(backend: &dyn AnalyticsBackend) -> Result<Value, String> {
     match backend.list_sites() {
         Ok(sites) => Ok(json!({ "sites": sites, "fallback": false })),
         Err(err) if err.is_auth_error() => {
-            let sites: Vec<Value> = backend
-                .default_site()
-                .map(|slug| vec![json!({ "site_id": slug, "source": "config.default_site" })])
-                .unwrap_or_default();
+            let sites: Vec<Value> = backend.default_site().map_or_else(Vec::new, |slug| {
+                vec![json!({ "site_id": slug, "source": "config.default_site" })]
+            });
             Ok(json!({
                 "sites": sites,
                 "fallback": true,

@@ -68,7 +68,7 @@ pub fn classify_traffic(
         return BotFilterDecision::Allow;
     }
 
-    let trimmed_ua = user_agent.map(str::trim).unwrap_or_default();
+    let trimmed_ua = user_agent.map_or("", str::trim);
     if trimmed_ua.is_empty() {
         return if require_user_agent {
             BotFilterDecision::Drop(BotDropReason::MissingUserAgent)

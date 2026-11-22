@@ -77,12 +77,12 @@ impl GeoIpResolver {
 
 fn lookup_mmdb(reader: &Reader<Vec<u8>>, client_ip: &str) -> Option<(String, String)> {
     let addr: IpAddr = client_ip.trim().parse().ok()?;
-    let city: geoip2::City<'_> = reader.lookup(addr).ok()?;
-    let country_raw = city.country.and_then(|c| c.iso_code)?;
+    let city: geoip2::City<'_> = reader.lookup(addr).ok()?.decode().ok()??;
+    let country_raw = city.country.iso_code?;
     let country = normalize_country(Some(country_raw.to_string()))?;
     let region = city
         .subdivisions
-        .and_then(|subs| subs.into_iter().next())
+        .first()
         .and_then(|sub| sub.iso_code)
         .map(str::trim)
         .filter(|s| !s.is_empty())

@@ -11,7 +11,7 @@ Because Rotameter ships headless in `v1.0`, the **CLI**, **MCP server**, and **T
 All client-facing commands (`query`, `realtime`, `site`, `key`, `mcp`, `tui`) resolve endpoint credentials in priority order:
 1. CLI flags (`--url`, `--token`, `--profile`, `--access-id`, `--access-secret`)
 2. Environment variables:
-   - `ROTAMETER_URL` (e.g., `https://analytics.wolff.industries`)
+   - `ROTAMETER_URL` (e.g., `https://analytics.example.com`)
    - `ROTAMETER_TOKEN` (`rm_rd_...` or `rm_adm_...`)
    - `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET` (sent automatically on every request when present)
 3. Profile file `~/.config/rotameter/config.toml` (mode `0600`):
@@ -19,7 +19,7 @@ All client-facing commands (`query`, `realtime`, `site`, `key`, `mcp`, `tui`) re
    default_profile = "prod"
 
    [profiles.prod]
-   url = "https://analytics.wolff.industries"
+   url = "https://analytics.example.com"
    site = "example.com"
    token_env = "ROTAMETER_TOKEN"
    cf_access_client_id_env = "CF_ACCESS_CLIENT_ID"

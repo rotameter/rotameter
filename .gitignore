@@ -1,6 +1,9 @@
 # Rust build artifacts (Cargo.lock is committed for reproducible binaries)
 target/
 
+# JS/TS build artifacts
+integrations/astro-cloudflare/dist/
+
 # outfeed crates.io namespace reservation staging
 reserve-staging/
 

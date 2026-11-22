@@ -79,7 +79,7 @@ pub(crate) const SOURCES: &[(u64, SourceSpec)] = &[
     (
         3,
         (
-            "newsletter.wolff.dev",
+            "newsletter.example.com",
             Channel::Email,
             Some("newsletter"),
             Some("email"),

@@ -28,7 +28,7 @@ pub struct ConfigFile {
 /// Single profile entry under `[profiles.<name>]` in `config.toml`.
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ProfileConfig {
-    /// Base Rotameter server URL (e.g., `https://analytics.wolff.industries`).
+    /// Base Rotameter server URL (e.g., `https://analytics.example.com`).
     pub url: Option<String>,
     /// Default site identifier (`site_...` or `slug`) associated with this profile.
     pub site: Option<String>,

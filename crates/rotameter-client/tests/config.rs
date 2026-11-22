@@ -22,7 +22,7 @@ fn resolves_precedence_overrides_over_env_over_profile_and_indirection() {
 default_profile = "prod"
 
 [profiles.prod]
-url = "https://analytics.wolff.industries/"
+url = "https://analytics.example.com/"
 site = "colinwolff.dev"
 token_env = "PROD_TOKEN"
 cf_access_client_id_env = "PROD_CF_ID"
@@ -48,7 +48,7 @@ token = "rm_adm_staging_inline"
         ]),
     )
     .unwrap();
-    assert_eq!(cfg.base_url.as_str(), "https://analytics.wolff.industries/");
+    assert_eq!(cfg.base_url.as_str(), "https://analytics.example.com/");
     assert_eq!(cfg.default_site.as_deref(), Some("colinwolff.dev"));
     assert_eq!(cfg.token.as_deref(), Some("rm_rd_from_profile_env"));
     assert_eq!(cfg.cf_access_client_id.as_deref(), Some("cf-id-from-env"));

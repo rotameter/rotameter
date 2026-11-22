@@ -29,7 +29,7 @@ Visitor Browser / Astro Worker (example.com)
   │  POST /api/e (first-party) ──▶ CF Worker ctx.waitUntil()
   │                                  │ (CF-Access-Client-Id/Secret + CF-Connecting-IP + CF-IPCountry)
   ▼                                  ▼
-Cloudflare Edge & Zero Trust Access (analytics.wolff.industries)
+Cloudflare Edge & Zero Trust Access (analytics.example.com)
   │  Cloudflare Tunnel (outbound-only QUIC/HTTP2 from VM — zero public HTTP ports open)
   ▼
 Oracle Always-Free VM (VM.Standard.E2.1.Micro · 1 vCPU / 1 GB RAM / 2 GB swap)
@@ -47,7 +47,7 @@ Oracle Always-Free VM (VM.Standard.E2.1.Micro · 1 vCPU / 1 GB RAM / 2 GB swap)
 
 ## 3. Backups & Disaster Recovery
 
-- **Continuous WAL streaming (recommended):** **Litestream** runs alongside `rotameter`, streaming WAL segments every few seconds to a private Cloudflare R2 bucket (e.g., `s3://wolff-industries-backups/rotameter/`). RPO: ~seconds.
+- **Continuous WAL streaming (recommended):** **Litestream** runs alongside `rotameter`, streaming WAL segments every few seconds to a private Cloudflare R2 bucket (e.g., `s3://example-backups/rotameter/`). RPO: ~seconds.
 - **Point-in-time CLI snapshot:** `rotameter backup /tmp/rotameter-$(date +%F).db` executes SQLite `VACUUM INTO` safely while live writes continue without locking readers.
 - **Verified Restore Drill (mandatory before `v1.0` tag):**
   1. Stop service or spin up a fresh temp directory.

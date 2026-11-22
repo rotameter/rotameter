@@ -5,11 +5,48 @@
   "license": "MIT OR Apache-2.0",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./astro": "./src/astro.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./astro": {
+      "types": "./dist/astro.d.ts",
+      "import": "./dist/astro.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "rotameter",
+    "analytics",
+    "astro",
+    "cloudflare",
+    "cloudflare-workers",
+    "privacy"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/colinwolff/rotameter.git",
+    "directory": "integrations/astro-cloudflare"
+  },
+  "homepage": "https://github.com/colinwolff/rotameter/tree/main/integrations/astro-cloudflare#readme",
+  "bugs": {
+    "url": "https://github.com/colinwolff/rotameter/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "build": "npx --yes -p typescript@5.8 tsc",
+    "prepack": "npm run build",
+    "typecheck": "npx --yes -p typescript@5.8 tsc --noEmit",
     "test": "node --test tests/*.test.ts"
   }
 }

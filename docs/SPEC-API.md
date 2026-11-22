@@ -174,6 +174,6 @@ Designed for CLI scripts and future OpenTofu / IaC providers (`rm_adm_` keys are
 
 ### 6.1 Preconfigured Self-Site Bootstrap (`self_site`)
 On first boot / fresh DB initialization, `rotameter serve` idempotently seeds the local `default` org and a preconfigured local site (`is_self_site = 1`) so operators can smoke-test `v1.0` ingest/queries immediately and let the `v1.5` Web UI dogfood itself locally:
-- **Site slug & identifier:** Generates a persistent immutable `site_id` (`site_...`) with `display_name = "Self (Local)"` and `slug` derived from `--public-url` host (e.g., `analytics.wolff.industries`) when set, defaulting otherwise to `_self`, overrideable via `--self-site-id` / `ROTAMETER_SELF_SITE_ID` / `[server] self_site_id`.
+- **Site slug & identifier:** Generates a persistent immutable `site_id` (`site_...`) with `display_name = "Self (Local)"` and `slug` derived from `--public-url` host (e.g., `analytics.example.com`) when set, defaulting otherwise to `_self`, overrideable via `--self-site-id` / `ROTAMETER_SELF_SITE_ID` / `[server] self_site_id`.
 - **Three-way disable switch (precedence `CLI flag > env var > config`):** `--no-self-site` (or `--self-site=false`), `ROTAMETER_SELF_SITE=false`, or `[server] self_site = false` skips creating/enabling the self-site and omits any self-tracking in `v1.5` UI responses.
 - **Loop guard:** Internal `/v1/query`, `/v1/sites/*/realtime`, `/v1/admin/*`, and `/v1/health` requests against the self-site never synthesize self-referential ingest events.

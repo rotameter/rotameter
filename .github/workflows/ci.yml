@@ -69,3 +69,23 @@ jobs:
 
       - name: Show sccache statistics
         run: sccache --show-stats
+
+  astro-cloudflare:
+    name: Build, Typecheck & Test @rotameter/astro-cloudflare
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Typecheck, build, test & pack dry-run
+        working-directory: integrations/astro-cloudflare
+        run: |
+          npm run typecheck
+          npm run build
+          npm test
+          npm pack --dry-run

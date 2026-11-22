@@ -20,7 +20,7 @@ async fn self_site_bootstrap_is_idempotent_and_guards_v1_paths() {
     let db = dir.path().join("self.db");
     let cfg = ServerConfig {
         bootstrap_admin_key: Some(admin.to_string()),
-        public_url: Some("https://analytics.wolff.industries".to_string()),
+        public_url: Some("https://analytics.example.com".to_string()),
         self_site_enabled: true,
         ..ServerConfig::default()
     };
@@ -41,7 +41,7 @@ async fn self_site_bootstrap_is_idempotent_and_guards_v1_paths() {
     .await;
     let arr1 = as_json(&list1);
     assert_eq!(arr1.as_array().unwrap().len(), 1);
-    assert_eq!(arr1[0]["slug"].as_str(), Some("analytics.wolff.industries"));
+    assert_eq!(arr1[0]["slug"].as_str(), Some("analytics.example.com"));
     assert_eq!(arr1[0]["is_self_site"].as_bool(), Some(true));
     let self_id = arr1[0]["site_id"].as_str().unwrap().to_string();
 
@@ -51,7 +51,7 @@ async fn self_site_bootstrap_is_idempotent_and_guards_v1_paths() {
         "/v1/events",
         Some(admin),
         &[("user-agent", "Mozilla/5.0 Chrome/131.0")],
-        Some(&json!({ "site_id": self_id, "url": "https://analytics.wolff.industries/v1/query" })),
+        Some(&json!({ "site_id": self_id, "url": "https://analytics.example.com/v1/query" })),
     )
     .await;
     assert_eq!(

@@ -32,12 +32,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/colinwolff/rotameter.git",
+    "url": "git+https://github.com/rotameter/rotameter.git",
     "directory": "integrations/astro-cloudflare"
   },
-  "homepage": "https://github.com/colinwolff/rotameter/tree/main/integrations/astro-cloudflare#readme",
+  "homepage": "https://github.com/rotameter/rotameter/tree/main/integrations/astro-cloudflare#readme",
   "bugs": {
-    "url": "https://github.com/colinwolff/rotameter/issues"
+    "url": "https://github.com/rotameter/rotameter/issues"
   },
   "publishConfig": {
     "access": "public",

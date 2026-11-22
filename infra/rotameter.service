@@ -1,6 +1,6 @@
 [Unit]
 Description=Rotameter Privacy-First Web Analytics Server
-Documentation=https://github.com/colinwolff/rotameter
+Documentation=https://github.com/rotameter/rotameter
 After=network-online.target
 Wants=network-online.target
 

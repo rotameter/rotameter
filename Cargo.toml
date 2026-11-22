@@ -19,8 +19,8 @@ edition = "2024"
 rust-version = "1.99"
 authors = ["Colin Wolff"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/colinwolff/rotameter"
-homepage = "https://github.com/colinwolff/rotameter"
+repository = "https://github.com/rotameter/rotameter"
+homepage = "https://github.com/rotameter/rotameter"
 
 [workspace.dependencies]
 aho-corasick = "1.1"

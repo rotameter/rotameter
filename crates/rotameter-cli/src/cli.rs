@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use clap::{Args, Parser, Subcommand};
 
 use crate::cli_sub::{ImportArgs, KeyArgs, QueryArgs, RealtimeArgs, SiteArgs};
+use crate::cmd_seed::SeedArgs;
 use crate::format::OutputFormat;
 
 /// Unified headless Rotameter analytics CLI.
@@ -72,6 +73,8 @@ pub enum Command {
     Realtime(RealtimeArgs),
     /// Backfill historical hits from `JSONL` or Nginx/Caddy CLF logs.
     Import(ImportArgs),
+    /// Generate realistic synthetic multi-day and realtime traffic into a local SQLite DB.
+    Seed(SeedArgs),
     /// Create a consistent online `SQLite VACUUM INTO` snapshot backup.
     Backup(BackupArgs),
     /// Verify local `SQLite` WAL health or remote `/v1/health` readiness.

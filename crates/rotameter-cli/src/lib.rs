@@ -8,6 +8,7 @@ mod cmd_key;
 mod cmd_ops;
 mod cmd_query;
 mod cmd_realtime;
+pub mod cmd_seed;
 mod cmd_site;
 mod cmd_site_ops;
 mod context;
@@ -22,6 +23,14 @@ mod local_import_norm;
 mod local_keys;
 #[cfg(feature = "sqlite")]
 mod local_sites;
+#[cfg(feature = "sqlite")]
+mod seed_catalog;
+#[cfg(feature = "sqlite")]
+mod seed_gen;
+#[cfg(feature = "sqlite")]
+mod seed_rng;
+#[cfg(feature = "sqlite")]
+mod seed_session;
 pub mod serve_cmd;
 mod serve_resolve;
 #[cfg(all(feature = "server", feature = "sqlite"))]
@@ -69,6 +78,7 @@ fn dispatch(parsed: Cli) -> Result<(), CliError> {
         Command::Query(args) => cmd_query::run_query(g, &args),
         Command::Realtime(args) => cmd_realtime::run_realtime(g, &args),
         Command::Import(args) => cmd_import::run_import(g, &args),
+        Command::Seed(args) => cmd_seed::run_seed(g, &args),
         Command::Backup(args) => cmd_ops::run_backup(g, &args),
         Command::Doctor(args) => cmd_ops::run_doctor(g, &args),
         Command::Mcp => run_mcp(),

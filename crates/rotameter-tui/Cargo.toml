@@ -10,7 +10,10 @@ homepage.workspace = true
 description = "Interactive ratatui terminal dashboard for Rotameter"
 
 [dependencies]
+crossterm.workspace = true
+ratatui.workspace = true
 rotameter-client.workspace = true
+thiserror.workspace = true
 
 [lints]
 workspace = true

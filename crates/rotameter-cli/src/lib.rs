@@ -82,7 +82,7 @@ fn dispatch(parsed: Cli) -> Result<(), CliError> {
         Command::Backup(args) => cmd_ops::run_backup(g, &args),
         Command::Doctor(args) => cmd_ops::run_doctor(g, &args),
         Command::Mcp => run_mcp(g),
-        Command::Tui => run_tui(),
+        Command::Tui => run_tui(g),
     }
 }
 
@@ -100,16 +100,13 @@ fn run_mcp(_global: &cli::GlobalOpts) -> Result<(), CliError> {
 }
 
 #[cfg(feature = "tui")]
-fn run_tui() -> Result<(), CliError> {
-    let info = rotameter_tui::component_info();
-    Err(CliError::usage(format!(
-        "`{} tui` terminal dashboard will be wired in RM-15",
-        info.name
-    )))
+fn run_tui(global: &cli::GlobalOpts) -> Result<(), CliError> {
+    let client = context::remote_client(global)?;
+    rotameter_tui::run_tui(&client).map_err(|err| CliError::runtime(err.to_string()))
 }
 
 #[cfg(not(feature = "tui"))]
-fn run_tui() -> Result<(), CliError> {
+fn run_tui(_global: &cli::GlobalOpts) -> Result<(), CliError> {
     Err(CliError::usage(
         "`rotameter tui` requires the `tui` cargo feature",
     ))

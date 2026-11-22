@@ -1,7 +1,21 @@
 #![forbid(unsafe_code)]
 //! Typed HTTP client for the Rotameter `/v1/*` API.
 
+#[cfg(feature = "blocking")]
+pub mod blocking;
+pub mod client;
+pub mod config;
+pub mod error;
+mod headers;
+pub mod types;
+
 pub use rotameter_core::ComponentInfo;
+
+#[cfg(feature = "blocking")]
+pub use blocking::BlockingRotameterClient;
+pub use client::RotameterClient;
+pub use config::{ClientConfig, ConfigFile, ConfigOverrides, ProfileConfig};
+pub use error::ClientError;
 
 /// Returns static metadata describing `rotameter-client`.
 pub const fn component_info() -> ComponentInfo {

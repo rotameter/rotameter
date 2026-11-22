@@ -55,12 +55,13 @@ pub(crate) fn purge_site_before(
     let mut total = delete_raw_before(&tx, site_id, before_ms)?;
     let cutoff_day = utc_yyyymmdd(before_ms);
 
-    let d_del = tx
-        .execute(
-            "DELETE FROM rollups_daily WHERE site_id = ?1 AND day_utc < ?2",
-            params![site_blob, cutoff_day],
-        )
-        .map_err(map_sql_err)?;
+    let mut d_del = 0_usize;
+    for table in ["rollups_daily", "seen_visitors_daily", "rollups_path_daily"] {
+        let sql = format!("DELETE FROM {table} WHERE site_id = ?1 AND day_utc < ?2");
+        d_del += tx
+            .execute(&sql, params![site_blob, cutoff_day])
+            .map_err(map_sql_err)?;
+    }
 
     let hourly_buckets = collect_purged_hourly_buckets(&tx, site_blob, before_ms)?;
     for bucket in hourly_buckets {

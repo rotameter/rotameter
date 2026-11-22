@@ -33,7 +33,7 @@ fn opens_wal_db_verifies_pragmas_and_runs_site_crud() {
     let store = SqliteStore::open(&db_path, SqliteConfig::default(), 1_700_000_000_000).unwrap();
     let health = store.health_snapshot().unwrap();
     assert_eq!(health.journal_mode, "wal");
-    assert_eq!(health.schema_version, 1);
+    assert_eq!(health.schema_version, 2);
     assert_eq!(health.cache_size, -16_000);
     assert_eq!(health.mmap_size, 67_108_864);
     assert!(health.integrity_ok);
@@ -77,7 +77,7 @@ fn opens_wal_db_verifies_pragmas_and_runs_site_crud() {
 
     drop(store);
     let reopened = SqliteStore::open(&db_path, SqliteConfig::default(), 1_700_000_030_000).unwrap();
-    assert_eq!(reopened.schema_version().unwrap(), 1);
+    assert_eq!(reopened.schema_version().unwrap(), 2);
 }
 
 #[test]

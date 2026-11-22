@@ -13,7 +13,7 @@ pub(crate) fn write_event(
     tx: &Transaction<'_>,
     interner: &mut DimInterner,
     ev: &IngestEvent,
-) -> Result<(), CoreError> {
+) -> Result<i64, CoreError> {
     let event_name_id = interner.intern(
         tx,
         ev.site_id,
@@ -49,7 +49,7 @@ pub(crate) fn write_event(
         props_json,
     ])
     .map_err(map_sql_err)?;
-    Ok(())
+    Ok(path_id)
 }
 
 pub(crate) fn write_session(

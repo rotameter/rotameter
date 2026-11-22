@@ -6,11 +6,18 @@ use rusqlite::{Connection, TransactionBehavior, params};
 
 use crate::config::map_sql_err;
 
-const MIGRATIONS: &[(u32, &str, &str)] = &[(
-    1,
-    "0001_initial",
-    include_str!("../migrations/0001_initial.sql"),
-)];
+const MIGRATIONS: &[(u32, &str, &str)] = &[
+    (
+        1,
+        "0001_initial",
+        include_str!("../migrations/0001_initial.sql"),
+    ),
+    (
+        2,
+        "0002_query_rollups",
+        include_str!("../migrations/0002_query_rollups.sql"),
+    ),
+];
 
 /// Applies all pending forward migrations atomically and returns the latest schema version.
 ///

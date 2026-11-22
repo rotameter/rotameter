@@ -4,6 +4,8 @@
 mod breakdown;
 mod breakdown_sql;
 pub mod csv;
+mod daily_breakdown;
+mod daily_fast;
 mod dim_map;
 mod filter_sql;
 mod rollup_summary;
@@ -39,13 +41,13 @@ impl AnalyticsQueryStore for SqliteStore {
 
         self.with_reader(|conn| {
             let (from_ms, to_ms) = resolve_window(conn, site.site_id, &spec.range, tz, now_ms)?;
-            let summary = query_summary(conn, site.site_id, from_ms, to_ms, &spec.filters)?;
+            let summary = query_summary(conn, site, from_ms, to_ms, &spec.filters)?;
 
             let previous_summary = if spec.compare_previous {
                 let (prev_from, prev_to) = previous_window(from_ms, to_ms);
                 Some(query_summary(
                     conn,
-                    site.site_id,
+                    site,
                     prev_from,
                     prev_to,
                     &spec.filters,
@@ -55,22 +57,16 @@ impl AnalyticsQueryStore for SqliteStore {
             };
 
             let timeseries = match spec.granularity {
-                Some(granularity) => query_timeseries(
-                    conn,
-                    site.site_id,
-                    from_ms,
-                    to_ms,
-                    granularity,
-                    tz,
-                    &spec.filters,
-                )?,
+                Some(granularity) => {
+                    query_timeseries(conn, site, from_ms, to_ms, granularity, tz, &spec.filters)?
+                }
                 None => Vec::new(),
             };
 
             let primary_metric = spec.metrics.first().copied().unwrap_or(Metric::Visitors);
             let breakdown = query_breakdown(
                 conn,
-                site.site_id,
+                site,
                 from_ms,
                 to_ms,
                 &spec.group_by,

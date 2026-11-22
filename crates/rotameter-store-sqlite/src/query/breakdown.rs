@@ -6,13 +6,14 @@ use std::collections::BTreeMap;
 
 use rotameter_core::cardinality::OVERFLOW_BUCKET;
 use rotameter_core::error::CoreError;
-use rotameter_core::id::SiteId;
 use rotameter_core::query::{Dimension, Metric, QueryFilter, QuerySort, SortDir};
 use rotameter_core::storage::BreakdownRow;
+use rotameter_core::types::{SaltRotation, Site};
 use rusqlite::{Connection, params_from_iter, types::Value};
 
 use crate::config::map_sql_err;
 use crate::query::breakdown_sql::{build_event_breakdown_sql, build_session_breakdown_sql};
+use crate::query::daily_breakdown::try_daily_path_breakdown;
 use crate::query::dim_map::dimension_key_name;
 use crate::query::filter_sql::build_filter_plan;
 use crate::query::summary::{build_kpi_summary, non_neg_u64, u64_to_f64};
@@ -26,7 +27,7 @@ pub(crate) struct BreakdownOutcome {
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn query_breakdown(
     conn: &Connection,
-    site_id: SiteId,
+    site: &Site,
     from_ms: i64,
     to_ms: i64,
     group_by: &[Dimension],
@@ -43,9 +44,25 @@ pub(crate) fn query_breakdown(
             truncated_by_cardinality_cap: false,
         });
     }
+    if filters.is_empty()
+        && site.salt_rotation == SaltRotation::Daily
+        && group_by == [Dimension::Path]
+        && let Some(fast) = try_daily_path_breakdown(
+            conn,
+            site.site_id,
+            from_ms,
+            to_ms,
+            primary_metric,
+            sort,
+            limit,
+            offset,
+        )?
+    {
+        return Ok(fast);
+    }
 
     let mut params = vec![
-        Value::Blob(site_id.as_bytes().to_vec()),
+        Value::Blob(site.site_id.as_bytes().to_vec()),
         Value::Integer(from_ms),
         Value::Integer(to_ms),
     ];
@@ -130,7 +147,12 @@ fn read_breakdown_rows(
     Ok((out, truncated))
 }
 
-fn compare_rows(a: &BreakdownRow, b: &BreakdownRow, metric: Metric, dir: SortDir) -> Ordering {
+pub(crate) fn compare_rows(
+    a: &BreakdownRow,
+    b: &BreakdownRow,
+    metric: Metric,
+    dir: SortDir,
+) -> Ordering {
     let ord = match metric {
         Metric::Visitors => a.visitors.cmp(&b.visitors),
         Metric::Pageviews => a.pageviews.cmp(&b.pageviews),

@@ -5,12 +5,13 @@ use std::collections::{BTreeMap, HashSet};
 
 use chrono_tz::Tz;
 use rotameter_core::error::CoreError;
-use rotameter_core::id::SiteId;
 use rotameter_core::query::{Granularity, QueryFilter};
 use rotameter_core::storage::TimeseriesPoint;
+use rotameter_core::types::Site;
 use rusqlite::{Connection, params_from_iter, types::Value};
 
 use crate::config::map_sql_err;
+use crate::query::daily_fast::try_daily_timeseries;
 use crate::query::filter_sql::build_filter_plan;
 use crate::query::summary::{non_neg_u64, raw_session_hour_floor};
 use crate::query::timeseries_rollup::{RollupBucketQuery, fold_historical_buckets};
@@ -42,7 +43,7 @@ impl BucketAcc {
 
 pub(crate) fn query_timeseries(
     conn: &Connection,
-    site_id: SiteId,
+    site: &Site,
     from_ms: i64,
     to_ms: i64,
     granularity: Granularity,
@@ -50,7 +51,7 @@ pub(crate) fn query_timeseries(
     filters: &[QueryFilter],
 ) -> Result<Vec<TimeseriesPoint>, CoreError> {
     let mut params = vec![
-        Value::Blob(site_id.as_bytes().to_vec()),
+        Value::Blob(site.site_id.as_bytes().to_vec()),
         Value::Integer(from_ms),
         Value::Integer(to_ms),
     ];
@@ -76,12 +77,15 @@ pub(crate) fn query_timeseries(
     }
 
     if filters.is_empty() {
-        let (raw_floor, has_live) = raw_session_hour_floor(conn, site_id, to_ms)?;
+        if let Some(fast) = try_daily_timeseries(conn, site, from_ms, to_ms, granularity, tz)? {
+            return Ok(fast);
+        }
+        let (raw_floor, has_live) = raw_session_hour_floor(conn, site.site_id, to_ms)?;
         if from_ms < raw_floor {
             fold_historical_buckets(
                 conn,
                 RollupBucketQuery {
-                    site_id,
+                    site_id: site.site_id,
                     from_ms,
                     to_ms: raw_floor.min(to_ms),
                     raw_floor,
@@ -95,7 +99,7 @@ pub(crate) fn query_timeseries(
         let live_start = from_ms.max(raw_floor);
         if live_start < to_ms {
             let live_params = [
-                Value::Blob(site_id.as_bytes().to_vec()),
+                Value::Blob(site.site_id.as_bytes().to_vec()),
                 Value::Integer(live_start),
                 Value::Integer(to_ms),
             ];

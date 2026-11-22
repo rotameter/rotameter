@@ -149,6 +149,8 @@ pub(crate) fn delete_site_cascade(
         "sessions",
         "rollups_hourly",
         "rollups_daily",
+        "seen_visitors_daily",
+        "rollups_path_daily",
         "dim_strings",
         "api_keys",
     ] {

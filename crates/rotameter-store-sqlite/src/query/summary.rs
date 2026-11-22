@@ -6,9 +6,11 @@ use rotameter_core::id::SiteId;
 use rotameter_core::privacy::MS_PER_HOUR;
 use rotameter_core::query::QueryFilter;
 use rotameter_core::storage::KpiSummary;
+use rotameter_core::types::Site;
 use rusqlite::{Connection, OptionalExtension, types::Value};
 
 use crate::config::map_sql_err;
+use crate::query::daily_fast::try_daily_summary;
 use crate::query::filter_sql::build_filter_plan;
 use crate::query::rollup_summary::{
     query_filtered_event_summary, query_historical_rollup, query_session_slice_raw,
@@ -62,17 +64,20 @@ pub(crate) fn build_kpi_summary(
 
 pub(crate) fn query_summary(
     conn: &Connection,
-    site_id: SiteId,
+    site: &Site,
     from_ms: i64,
     to_ms: i64,
     filters: &[QueryFilter],
 ) -> Result<KpiSummary, CoreError> {
     if filters.is_empty() {
-        return query_unfiltered_summary(conn, site_id, from_ms, to_ms);
+        if let Some(fast) = try_daily_summary(conn, site, from_ms, to_ms)? {
+            return Ok(fast);
+        }
+        return query_unfiltered_summary(conn, site.site_id, from_ms, to_ms);
     }
 
     let mut params = vec![
-        Value::Blob(site_id.as_bytes().to_vec()),
+        Value::Blob(site.site_id.as_bytes().to_vec()),
         Value::Integer(from_ms),
         Value::Integer(to_ms),
     ];

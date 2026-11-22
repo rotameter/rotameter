@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 //! `EventIngestStore` implementation for [`SqliteStore`].
 
+mod path_rollups;
 mod writer;
 
 use rotameter_core::error::CoreError;
@@ -65,8 +66,9 @@ impl EventIngestStore for SqliteStore {
                 .conn
                 .transaction_with_behavior(TransactionBehavior::Immediate)
                 .map_err(map_sql_err)?;
+            let mut path_ids = Vec::with_capacity(batch.events.len());
             for ev in &batch.events {
-                writer::write_event(&tx, &mut state.interner, ev)?;
+                path_ids.push(writer::write_event(&tx, &mut state.interner, ev)?);
             }
             for sess in &batch.sessions {
                 writer::write_session(&tx, &mut state.interner, sess)?;
@@ -74,6 +76,8 @@ impl EventIngestStore for SqliteStore {
             for rollup in &batch.rollups {
                 writer::write_rollup(&tx, rollup)?;
             }
+            path_rollups::record_daily_visitors(&tx, &batch.sessions)?;
+            path_rollups::write_path_rollups(&tx, &batch.events, &path_ids, &batch.sessions)?;
             tx.commit().map_err(map_sql_err)
         })
     }

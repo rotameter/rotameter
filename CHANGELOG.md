@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Multi-arch release workflow (`.github/workflows/release.yml` for `x86_64`/`aarch64` `musl` and Apple Silicon/Intel macOS), multi-arch distroless `Dockerfile`, hardened `systemd` unit (`infra/rotameter.service`), Litestream R2 replication manifests (`infra/litestream.yml`), and verified restore drill script (`infra/restore-drill.sh`) (`RM-16`).
 - Zero-dependency TypeScript Astro & Cloudflare Workers integration package (`@rotameter/astro-cloudflare` under `integrations/astro-cloudflare/`) providing edge-cached `/api/r.js` collector proxy, `waitUntil`-backed `/api/e` event proxy with Cloudflare Access Service Token headers and preview host dropping, and pure SSR `trackServerHit()` helper (`RM-11`).
 - Automated `scripts/check-collector-size.sh` (`<= 1,536 B` gzip + zero cookies/tracking storage CI gate), `scripts/test-collect-js.mjs` DOM harness, and expanded `GET /v1/collect.js` & `GET /v1/pixel.gif` edge-case integration tests (`RM-10`).
 - Unified feature-gated `rotameter` CLI (`serve` with `--public-url`/`--no-self-site`/`--self-site-id` `CLI > env > config` precedence, `site`, `key`, `query`, `realtime --watch`, `import` JSONL/CLF with `--dry-run`, `backup`, and `doctor`) with `table`/`json`/`csv` output and documented exit codes (`RM-13`).

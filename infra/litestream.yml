@@ -1,0 +1,16 @@
+# Litestream continuous SQLite WAL replication to Cloudflare R2
+# Copy to /etc/litestream.yml (mode 0600) and supply R2 credentials via /etc/rotameter/litestream.env
+
+dbs:
+  - path: /var/lib/rotameter/rotameter.db
+    replicas:
+      - type: s3
+        bucket: ${LITESTREAM_R2_BUCKET}
+        path: rotameter/db
+        endpoint: https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com
+        region: auto
+        force-path-style: true
+        sync-interval: 5s
+        retention: 168h
+        snapshot-interval: 24h
+        validation-interval: 12h

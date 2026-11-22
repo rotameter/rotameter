@@ -1,0 +1,10 @@
+target/
+.git/
+.gaugeblock/
+.agents/
+reserve-staging/
+*.db
+*.db-wal
+*.db-shm
+dist/
+node_modules/

@@ -1,0 +1,28 @@
+[Unit]
+Description=Litestream SQLite WAL Replication for Rotameter
+After=rotameter.service network-online.target
+Requires=rotameter.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rotameter
+Group=rotameter
+EnvironmentFile=/etc/rotameter/litestream.env
+ExecStart=/usr/local/bin/litestream replicate -config /etc/litestream.yml
+Restart=always
+RestartSec=5s
+KillSignal=SIGTERM
+TimeoutStopSec=15s
+
+MemoryHigh=64M
+MemoryMax=96M
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/rotameter
+
+[Install]
+WantedBy=multi-user.target

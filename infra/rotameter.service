@@ -1,0 +1,39 @@
+[Unit]
+Description=Rotameter Privacy-First Web Analytics Server
+Documentation=https://github.com/colinwolff/rotameter
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rotameter
+Group=rotameter
+EnvironmentFile=-/etc/rotameter/rotameter.env
+WorkingDirectory=/var/lib/rotameter
+ExecStart=/usr/local/bin/rotameter serve --bind 127.0.0.1:8000 --db /var/lib/rotameter/rotameter.db
+Restart=on-failure
+RestartSec=3s
+KillSignal=SIGTERM
+TimeoutStopSec=15s
+
+# Resource budgets (1 vCPU / 1 GB VM)
+MemoryHigh=160M
+MemoryMax=256M
+
+# Hardening sandbox
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+ReadWritePaths=/var/lib/rotameter
+StateDirectory=rotameter
+StateDirectoryMode=0750
+
+[Install]
+WantedBy=multi-user.target

@@ -11,6 +11,9 @@ description = "Read-only stdio Model Context Protocol (MCP) server for Rotameter
 
 [dependencies]
 rotameter-client.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
 
 [lints]
 workspace = true

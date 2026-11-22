@@ -81,22 +81,19 @@ fn dispatch(parsed: Cli) -> Result<(), CliError> {
         Command::Seed(args) => cmd_seed::run_seed(g, &args),
         Command::Backup(args) => cmd_ops::run_backup(g, &args),
         Command::Doctor(args) => cmd_ops::run_doctor(g, &args),
-        Command::Mcp => run_mcp(),
+        Command::Mcp => run_mcp(g),
         Command::Tui => run_tui(),
     }
 }
 
 #[cfg(feature = "mcp")]
-fn run_mcp() -> Result<(), CliError> {
-    let info = rotameter_mcp::component_info();
-    Err(CliError::usage(format!(
-        "`{} mcp` stdio runtime will be wired in RM-14",
-        info.name
-    )))
+fn run_mcp(global: &cli::GlobalOpts) -> Result<(), CliError> {
+    let client = context::remote_client(global)?;
+    rotameter_mcp::run_stdio(&client).map_err(|err| CliError::runtime(err.to_string()))
 }
 
 #[cfg(not(feature = "mcp"))]
-fn run_mcp() -> Result<(), CliError> {
+fn run_mcp(_global: &cli::GlobalOpts) -> Result<(), CliError> {
     Err(CliError::usage(
         "`rotameter mcp` requires the `mcp` cargo feature",
     ))

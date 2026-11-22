@@ -1103,6 +1103,9 @@ name = "rotameter-mcp"
 version = "0.1.0-alpha.1"
 dependencies = [
  "rotameter-client",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]

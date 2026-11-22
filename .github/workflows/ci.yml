@@ -54,6 +54,9 @@ jobs:
       - name: Verify rotameter-core purity and unsafe forbids
         run: ./scripts/check-core-purity.sh
 
+      - name: Enforce collect.js gzip size and privacy invariants
+        run: ./scripts/check-collector-size.sh
+
       - name: Enforce 250-line ceiling on Rust source files
         run: |
           while IFS= read -r -d '' file; do

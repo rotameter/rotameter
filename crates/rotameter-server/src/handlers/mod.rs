@@ -4,8 +4,10 @@
 pub(crate) mod admin_keys;
 pub(crate) mod admin_sites;
 pub(crate) mod admin_wire;
+pub(crate) mod batch_wire;
 pub(crate) mod collect;
 pub(crate) mod events;
+pub(crate) mod events_batch;
 pub(crate) mod headers;
 pub(crate) mod health;
 pub(crate) mod query;
@@ -23,6 +25,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/v1/collect.js", get(collect::get_collect_js))
         .route("/v1/pixel.gif", get(collect::get_pixel_gif))
         .route("/v1/events", post(events::post_event))
+        .route("/v1/events/batch", post(events_batch::post_events_batch))
         .route("/v1/query", post(query::post_query))
         .route("/v1/sites/{site}/realtime", get(query::get_realtime))
         .route(

@@ -7,7 +7,7 @@ use axum::Json;
 use axum::body::Bytes;
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
-use rotameter_core::bot::{BotFilterDecision, PrefetchHeaders, classify_traffic};
+use rotameter_core::bot::{BotFilterDecision, classify_traffic};
 use rotameter_core::id::SiteRef;
 use rotameter_core::normalize::{normalize_referrer, normalize_url};
 use rotameter_core::privacy::resolve_visitor_candidates;
@@ -17,9 +17,7 @@ use serde::Deserialize;
 
 use crate::auth::{AuthContext, extract_optional_auth};
 use crate::error::ApiError;
-use crate::handlers::headers::{
-    extract_client_ip, extract_country, extract_region, header_str, parse_props,
-};
+use crate::handlers::headers::{extract_client_ip, extract_prefetch, header_str, parse_props};
 use crate::ingest::types::QueuedEvent;
 use crate::state::{AppState, now_ms};
 
@@ -79,55 +77,21 @@ pub(crate) fn enqueue_normalized_hit(
     auth: Option<AuthContext>,
     hit: &HitInput<'_>,
 ) -> Result<bool, ApiError> {
-    let site_ref = SiteRef::parse(hit.site_id_raw).map_err(ApiError::from)?;
-    let org_id = match auth {
-        Some(ctx) => {
-            if !matches!(ctx.scope, KeyScope::Ingest | KeyScope::Admin) {
-                return Err(ApiError::forbidden(
-                    "insufficient_scope",
-                    "key cannot ingest events",
-                ));
-            }
-            ctx.org_id
-        }
-        None => state.default_org_id,
-    };
+    let site = resolve_ingest_site(state, headers, auth, hit.site_id_raw)?;
 
-    let site = state
-        .store
-        .resolve_site(org_id, &site_ref)
-        .map_err(ApiError::from)?
-        .ok_or_else(|| ApiError::not_found("site_not_found", "unknown site identifier"))?;
-
-    if let Some(ctx) = auth {
-        if ctx.scope == KeyScope::Ingest && ctx.site_id != Some(site.site_id) {
-            return Err(ApiError::forbidden(
-                "site_scope_mismatch",
-                "ingest key is not scoped to the target site",
-            ));
-        }
-    } else if !site.allowed_origins.is_empty()
-        && let Some(origin) =
-            header_str(headers, "origin").or_else(|| header_str(headers, "referer"))
-    {
-        let origin_url = if origin.contains("://") {
-            origin
-        } else {
-            format!("https://{origin}")
-        };
-        normalize_url(&origin_url, &[], &site.allowed_origins).map_err(ApiError::from)?;
+    let trusted_proxy = auth.is_some();
+    let ip = extract_client_ip(headers, trusted_proxy);
+    if !trusted_proxy {
+        state.rate_limiter.check(&ip).map_err(|wait| {
+            ApiError::too_many_requests("rate_limited", "rate limit exceeded", wait)
+        })?;
     }
-
     if site.respect_gpc && header_str(headers, "sec-gpc").as_deref() == Some("1") {
         return Ok(false);
     }
 
     let ua = header_str(headers, "user-agent");
-    let prefetch = PrefetchHeaders {
-        sec_purpose: headers.get("sec-purpose").and_then(|v| v.to_str().ok()),
-        purpose: headers.get("purpose").and_then(|v| v.to_str().ok()),
-        x_moz: headers.get("x-moz").and_then(|v| v.to_str().ok()),
-    };
+    let prefetch = extract_prefetch(headers);
     if matches!(
         classify_traffic(ua.as_deref(), prefetch, hit.require_user_agent, false),
         BotFilterDecision::Drop(_)
@@ -139,6 +103,9 @@ pub(crate) fn enqueue_normalized_hit(
         EventKind::parse(hit.event_name.unwrap_or("pageview")).map_err(ApiError::from)?;
     let norm_url = normalize_url(hit.url, &site.allowed_query_keys, &site.allowed_origins)
         .map_err(ApiError::from)?;
+    if site.is_self_site && norm_url.path.starts_with("/v1/") {
+        return Ok(false);
+    }
     let norm_ref = normalize_referrer(
         hit.referrer,
         &norm_url.host,
@@ -147,9 +114,8 @@ pub(crate) fn enqueue_normalized_hit(
     );
     let props = parse_props(hit.props)?;
 
-    let trusted_proxy = auth.is_some();
     let ts_ms = now_ms();
-    let ip = extract_client_ip(headers, trusted_proxy);
+    let (country, region) = state.geoip.resolve(headers, &ip, trusted_proxy);
     let ua_str = ua.as_deref().unwrap_or_default();
     let candidates = resolve_visitor_candidates(
         state.salt_provider.as_ref(),
@@ -172,12 +138,57 @@ pub(crate) fn enqueue_normalized_hit(
         ref_host: norm_ref.source,
         channel: norm_ref.channel,
         utm: norm_url.utm,
-        country: extract_country(headers, trusted_proxy),
-        region: extract_region(headers, trusted_proxy),
+        country,
+        region,
         browser: classified_ua.browser,
         os: classified_ua.os,
         device_type: classified_ua.device_type,
         viewport_class: ViewportClass::from_width(hit.viewport_width),
     })?;
     Ok(true)
+}
+
+fn resolve_ingest_site(
+    state: &AppState,
+    headers: &HeaderMap,
+    auth: Option<AuthContext>,
+    site_id_raw: &str,
+) -> Result<rotameter_core::types::Site, ApiError> {
+    let site_ref = SiteRef::parse(site_id_raw).map_err(ApiError::from)?;
+    let org_id = match auth {
+        Some(ctx) => {
+            if !matches!(ctx.scope, KeyScope::Ingest | KeyScope::Admin) {
+                return Err(ApiError::forbidden(
+                    "insufficient_scope",
+                    "key cannot ingest events",
+                ));
+            }
+            ctx.org_id
+        }
+        None => state.default_org_id,
+    };
+    let site = state
+        .store
+        .resolve_site(org_id, &site_ref)
+        .map_err(ApiError::from)?
+        .ok_or_else(|| ApiError::not_found("site_not_found", "unknown site identifier"))?;
+    if let Some(ctx) = auth {
+        if ctx.scope == KeyScope::Ingest && ctx.site_id != Some(site.site_id) {
+            return Err(ApiError::forbidden(
+                "site_scope_mismatch",
+                "ingest key is not scoped to the target site",
+            ));
+        }
+    } else if !site.allowed_origins.is_empty()
+        && let Some(origin) =
+            header_str(headers, "origin").or_else(|| header_str(headers, "referer"))
+    {
+        let origin_url = if origin.contains("://") {
+            origin
+        } else {
+            format!("https://{origin}")
+        };
+        normalize_url(&origin_url, &[], &site.allowed_origins).map_err(ApiError::from)?;
+    }
+    Ok(site)
 }

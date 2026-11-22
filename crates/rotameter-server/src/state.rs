@@ -17,7 +17,10 @@ use rotameter_core::storage::{
 use rotameter_core::types::{ApiKeyRecord, KeyScope};
 
 use crate::config::{ServerConfig, ServerError};
+use crate::geoip::GeoIpResolver;
 use crate::ingest::IngestPipeline;
+use crate::rate_limit::IpRateLimiter;
+use crate::self_site::ensure_self_site;
 
 /// Unified persistence trait required by `rotameter-server`.
 pub trait ServerStore:
@@ -46,9 +49,12 @@ pub trait ServerStore:
 pub struct AppState {
     pub(crate) store: Arc<dyn ServerStore>,
     pub(crate) salt_provider: Arc<dyn SaltProvider>,
+    pub(crate) rate_limiter: Arc<IpRateLimiter>,
+    pub(crate) geoip: Arc<GeoIpResolver>,
     /// Bounded asynchronous ingestion channel + batched writer task handle.
     pub ingest: IngestPipeline,
     pub(crate) default_org_id: OrgId,
+    pub(crate) self_site_id: Option<SiteId>,
     pub(crate) started_at: Instant,
 }
 
@@ -74,6 +80,9 @@ impl AppState {
             seed_bootstrap_admin_key(store.as_ref(), org.org_id, raw_token, now)?;
         }
 
+        let self_site_id = ensure_self_site(store.as_ref(), org.org_id, config, now)?;
+        let geoip = Arc::new(GeoIpResolver::from_config(config)?);
+        let rate_limiter = Arc::new(IpRateLimiter::new(config.rate_limit));
         let salt_provider: Arc<dyn SaltProvider> =
             Arc::new(InMemorySaltProvider::new(|_| random_salt_or_fallback()));
         let ingest = IngestPipeline::spawn(store.clone(), config);
@@ -81,10 +90,18 @@ impl AppState {
         Ok(Self {
             store,
             salt_provider,
+            rate_limiter,
+            geoip,
             ingest,
             default_org_id: org.org_id,
+            self_site_id,
             started_at: Instant::now(),
         })
+    }
+
+    /// Returns the seeded local `self_site` UID when first-boot seeding is enabled.
+    pub const fn self_site_id(&self) -> Option<SiteId> {
+        self.self_site_id
     }
 }
 

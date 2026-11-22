@@ -9,7 +9,9 @@ use rotameter_core::id::SiteRef;
 use serde::Deserialize;
 
 use crate::auth::extract_optional_auth;
+use crate::error::ApiError;
 use crate::handlers::events::{HitInput, enqueue_normalized_hit};
+use crate::handlers::headers::extract_client_ip;
 use crate::state::AppState;
 
 const COLLECT_JS: &str = include_str!("../../../../assets/collect.js");
@@ -29,8 +31,21 @@ pub(crate) struct PixelQuery {
     event: Option<String>,
 }
 
-pub(crate) async fn get_collect_js() -> impl IntoResponse {
-    (
+pub(crate) async fn get_collect_js(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    if extract_optional_auth(&state, &headers)
+        .ok()
+        .flatten()
+        .is_none()
+    {
+        let ip = extract_client_ip(&headers, false);
+        state.rate_limiter.check(&ip).map_err(|wait| {
+            ApiError::too_many_requests("rate_limited", "rate limit exceeded", wait)
+        })?;
+    }
+    Ok((
         StatusCode::OK,
         [
             (CONTENT_TYPE, "application/javascript; charset=utf-8"),
@@ -38,16 +53,22 @@ pub(crate) async fn get_collect_js() -> impl IntoResponse {
             (X_CONTENT_TYPE_OPTIONS, "nosniff"),
         ],
         COLLECT_JS,
-    )
+    ))
 }
 
 pub(crate) async fn get_pixel_gif(
     State(state): State<AppState>,
     headers: HeaderMap,
     Query(query): Query<PixelQuery>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, ApiError> {
+    let auth = extract_optional_auth(&state, &headers).ok().flatten();
+    if auth.is_none() {
+        let ip = extract_client_ip(&headers, false);
+        state.rate_limiter.check(&ip).map_err(|wait| {
+            ApiError::too_many_requests("rate_limited", "rate limit exceeded", wait)
+        })?;
+    }
     if let Some(site_raw) = query.site.as_deref() {
-        let auth = extract_optional_auth(&state, &headers).ok().flatten();
         let org_id = auth.map_or(state.default_org_id, |ctx| ctx.org_id);
         let host = SiteRef::parse(site_raw)
             .ok()
@@ -88,7 +109,7 @@ pub(crate) async fn get_pixel_gif(
         );
     }
 
-    (
+    Ok((
         StatusCode::OK,
         [
             (CONTENT_TYPE, "image/gif"),
@@ -96,5 +117,5 @@ pub(crate) async fn get_pixel_gif(
             (X_CONTENT_TYPE_OPTIONS, "nosniff"),
         ],
         PIXEL_GIF,
-    )
+    ))
 }

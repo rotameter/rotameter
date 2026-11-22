@@ -100,6 +100,7 @@ pub(crate) async fn spawn_live_server(
         store,
         &ServerConfig {
             bootstrap_admin_key: Some(bootstrap_admin_key.to_string()),
+            self_site_enabled: false,
             ..ServerConfig::default()
         },
     )?;

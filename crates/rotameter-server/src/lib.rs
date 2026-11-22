@@ -4,14 +4,17 @@
 mod auth;
 pub mod config;
 mod error;
+mod geoip;
 pub mod handlers;
 pub mod ingest;
+mod rate_limit;
+mod self_site;
 pub mod serve;
 pub mod state;
 
 use rotameter_core::ComponentInfo;
 
-pub use config::{ServerConfig, ServerError};
+pub use config::{GeoIpMode, RateLimitConfig, ServerConfig, ServerError};
 pub use handlers::build_router;
 pub use serve::{init_tracing, serve};
 pub use state::{AppState, ServerStore};

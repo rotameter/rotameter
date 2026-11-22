@@ -2,7 +2,8 @@
 //! Uniform JSON `/v1` error envelope implementing [`axum::response::IntoResponse`].
 
 use axum::Json;
-use axum::http::StatusCode;
+use axum::http::header::RETRY_AFTER;
+use axum::http::{HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Response};
 use rotameter_core::error::CoreError;
 use serde::Serialize;
@@ -14,6 +15,7 @@ pub(crate) struct ApiError {
     code: &'static str,
     message: String,
     details: Option<serde_json::Value>,
+    retry_after_secs: Option<u64>,
 }
 
 #[derive(Serialize)]
@@ -36,6 +38,7 @@ impl ApiError {
             code,
             message: message.into(),
             details: None,
+            retry_after_secs: None,
         }
     }
 
@@ -64,6 +67,16 @@ impl ApiError {
         Self::new(StatusCode::CONFLICT, code, message)
     }
 
+    pub(crate) fn too_many_requests(
+        code: &'static str,
+        message: impl Into<String>,
+        retry_after_secs: u64,
+    ) -> Self {
+        let mut err = Self::new(StatusCode::TOO_MANY_REQUESTS, code, message);
+        err.retry_after_secs = Some(retry_after_secs.max(1));
+        err
+    }
+
     pub(crate) fn service_unavailable(code: &'static str, message: impl Into<String>) -> Self {
         Self::new(StatusCode::SERVICE_UNAVAILABLE, code, message)
     }
@@ -82,7 +95,13 @@ impl IntoResponse for ApiError {
                 details: &self.details,
             },
         };
-        (self.status, Json(body)).into_response()
+        let mut resp = (self.status, Json(body)).into_response();
+        if let Some(secs) = self.retry_after_secs
+            && let Ok(val) = HeaderValue::from_str(&secs.to_string())
+        {
+            resp.headers_mut().insert(RETRY_AFTER, val);
+        }
+        resp
     }
 }
 

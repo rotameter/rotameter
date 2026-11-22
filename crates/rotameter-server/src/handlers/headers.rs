@@ -4,9 +4,18 @@
 use std::collections::BTreeMap;
 
 use axum::http::HeaderMap;
+use rotameter_core::bot::PrefetchHeaders;
 use rotameter_core::types::EventProps;
 
 use crate::error::ApiError;
+
+pub(crate) fn extract_prefetch(headers: &HeaderMap) -> PrefetchHeaders<'_> {
+    PrefetchHeaders {
+        sec_purpose: headers.get("sec-purpose").and_then(|v| v.to_str().ok()),
+        purpose: headers.get("purpose").and_then(|v| v.to_str().ok()),
+        x_moz: headers.get("x-moz").and_then(|v| v.to_str().ok()),
+    }
+}
 
 pub(crate) fn header_str(headers: &HeaderMap, name: &str) -> Option<String> {
     headers
@@ -59,7 +68,7 @@ pub(crate) fn extract_region(headers: &HeaderMap, trusted_proxy: bool) -> String
         .unwrap_or_else(|| "(unknown)".to_string())
 }
 
-fn normalize_country(raw: Option<String>) -> Option<String> {
+pub(crate) fn normalize_country(raw: Option<String>) -> Option<String> {
     raw.map(|s| s.to_ascii_uppercase())
         .filter(|s| !matches!(s.as_str(), "XX" | "T1" | ""))
 }

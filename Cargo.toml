@@ -30,6 +30,7 @@ chrono-tz = "0.10"
 getrandom = "0.3"
 hmac-sha256 = "1.1"
 http-body-util = "0.1"
+maxminddb = "0.24"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls-webpki-roots"] }
 rusqlite = { version = "0.42", features = ["bundled"] }
 serde = { version = "1.0", features = ["derive"] }

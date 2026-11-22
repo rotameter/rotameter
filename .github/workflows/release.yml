@@ -10,6 +10,9 @@ permissions:
   contents: write
   packages: write
 
+env:
+  CARGO_BUILD_RUSTC_WRAPPER: ""
+
 jobs:
   build-binaries:
     name: Build (${{ matrix.target }})
@@ -24,10 +27,10 @@ jobs:
             os: ubuntu-24.04-arm
             musl: true
           - target: aarch64-apple-darwin
-            os: macos-14
+            os: macos-15
             musl: false
           - target: x86_64-apple-darwin
-            os: macos-14
+            os: macos-15
             musl: false
     runs-on: ${{ matrix.os }}
     steps:

@@ -43,7 +43,7 @@ async fn collect_js_headers_body_and_privacy_invariants() {
 
     let body_bytes = resp.into_body().collect().await.unwrap().to_bytes();
     let body = String::from_utf8(body_bytes.to_vec()).unwrap();
-    let disk_js = include_str!("../../../assets/collect.js");
+    let disk_js = include_str!("../assets/collect.js");
     assert_eq!(body, disk_js);
     assert!(!body.contains("document.cookie"));
     assert!(!body.contains("sessionStorage"));

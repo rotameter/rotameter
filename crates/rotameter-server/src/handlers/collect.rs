@@ -14,7 +14,7 @@ use crate::handlers::events::{HitInput, enqueue_normalized_hit};
 use crate::handlers::headers::extract_client_ip;
 use crate::state::AppState;
 
-const COLLECT_JS: &str = include_str!("../../../../assets/collect.js");
+const COLLECT_JS: &str = include_str!("../../assets/collect.js");
 
 const PIXEL_GIF: [u8; 43] = [
     0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x01, 0x00, 0x01, 0x00, 0x80, 0x00, 0x00, 0xff, 0xff, 0xff,

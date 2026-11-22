@@ -33,4 +33,11 @@ if [ "$gzip_bytes" -gt "$MAX_GZIP_BYTES" ]; then
   exit 1
 fi
 
+if [ "$COLLECTOR_PATH" = "assets/collect.js" ] && [ -f "crates/rotameter-server/assets/collect.js" ]; then
+  if ! cmp -s "$COLLECTOR_PATH" "crates/rotameter-server/assets/collect.js"; then
+    echo "ERROR: crates/rotameter-server/assets/collect.js drifted from assets/collect.js" >&2
+    exit 1
+  fi
+fi
+
 echo "OK: collector gzip budget and privacy invariants passed."

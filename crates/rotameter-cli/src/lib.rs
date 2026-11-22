@@ -1,10 +1,112 @@
 #![forbid(unsafe_code)]
 //! Unified feature-gated CLI library for Rotameter.
 
+pub mod cli;
+pub mod cli_sub;
+mod cmd_import;
+mod cmd_key;
+mod cmd_ops;
+mod cmd_query;
+mod cmd_realtime;
+mod cmd_site;
+mod cmd_site_ops;
+mod context;
+pub mod exit;
+pub mod format;
+mod import_parse;
+#[cfg(feature = "sqlite")]
+mod local_import;
+#[cfg(feature = "sqlite")]
+mod local_import_norm;
+#[cfg(feature = "sqlite")]
+mod local_keys;
+#[cfg(feature = "sqlite")]
+mod local_sites;
+pub mod serve_cmd;
+mod serve_resolve;
 #[cfg(all(feature = "server", feature = "sqlite"))]
 pub mod serve_store;
 
+use std::ffi::OsString;
+use std::process::ExitCode;
+
+use clap::Parser;
 use rotameter_core::ComponentInfo;
+
+use cli::{Cli, Command};
+use exit::CliError;
+
+/// Parses CLI arguments and executes the selected subcommand, returning a documented exit code.
+pub fn run<I, T>(args: I) -> ExitCode
+where
+    I: IntoIterator<Item = T>,
+    T: Into<OsString> + Clone,
+{
+    let parsed = match Cli::try_parse_from(args) {
+        Ok(cli) => cli,
+        Err(err) => {
+            let code = u8::try_from(err.exit_code()).unwrap_or(exit::EXIT_USAGE);
+            let _ = err.print();
+            return ExitCode::from(code);
+        }
+    };
+
+    match dispatch(parsed) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(err) => {
+            eprintln!("{}", err.message);
+            ExitCode::from(err.code)
+        }
+    }
+}
+
+fn dispatch(parsed: Cli) -> Result<(), CliError> {
+    let g = &parsed.global;
+    match parsed.command {
+        Command::Serve(args) => serve_cmd::run_serve(g, &args),
+        Command::Site(args) => cmd_site::run_site(g, &args),
+        Command::Key(args) => cmd_key::run_key(g, &args),
+        Command::Query(args) => cmd_query::run_query(g, &args),
+        Command::Realtime(args) => cmd_realtime::run_realtime(g, &args),
+        Command::Import(args) => cmd_import::run_import(g, &args),
+        Command::Backup(args) => cmd_ops::run_backup(g, &args),
+        Command::Doctor(args) => cmd_ops::run_doctor(g, &args),
+        Command::Mcp => run_mcp(),
+        Command::Tui => run_tui(),
+    }
+}
+
+#[cfg(feature = "mcp")]
+fn run_mcp() -> Result<(), CliError> {
+    let info = rotameter_mcp::component_info();
+    Err(CliError::usage(format!(
+        "`{} mcp` stdio runtime will be wired in RM-14",
+        info.name
+    )))
+}
+
+#[cfg(not(feature = "mcp"))]
+fn run_mcp() -> Result<(), CliError> {
+    Err(CliError::usage(
+        "`rotameter mcp` requires the `mcp` cargo feature",
+    ))
+}
+
+#[cfg(feature = "tui")]
+fn run_tui() -> Result<(), CliError> {
+    let info = rotameter_tui::component_info();
+    Err(CliError::usage(format!(
+        "`{} tui` terminal dashboard will be wired in RM-15",
+        info.name
+    )))
+}
+
+#[cfg(not(feature = "tui"))]
+fn run_tui() -> Result<(), CliError> {
+    Err(CliError::usage(
+        "`rotameter tui` requires the `tui` cargo feature",
+    ))
+}
 
 /// Returns metadata for all workspace components compiled under the active feature set.
 pub fn enabled_components() -> Vec<ComponentInfo> {

@@ -16,18 +16,28 @@ path = "src/main.rs"
 [features]
 default = ["server", "sqlite", "mcp", "tui"]
 server = ["dep:rotameter-server", "dep:tokio"]
-sqlite = ["dep:rotameter-store-sqlite"]
+sqlite = ["dep:rotameter-store-sqlite", "dep:getrandom"]
 mcp = ["dep:rotameter-mcp"]
 tui = ["dep:rotameter-tui"]
 
 [dependencies]
+chrono.workspace = true
+clap.workspace = true
+getrandom = { workspace = true, optional = true }
 rotameter-core.workspace = true
 rotameter-client.workspace = true
 rotameter-server = { workspace = true, optional = true }
 rotameter-store-sqlite = { workspace = true, optional = true }
 rotameter-mcp = { workspace = true, optional = true }
 rotameter-tui = { workspace = true, optional = true }
+serde.workspace = true
+serde_json.workspace = true
 tokio = { workspace = true, optional = true }
+toml.workspace = true
+url.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
 
 [lints]
 workspace = true

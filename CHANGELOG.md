@@ -7,13 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-25
+
 ### Added
 
 - Exported a zero-dependency, Astro-bundlable CSP-safe browser beacon (`@rotameter/astro-cloudflare/beacon`) supporting `localStorage.rotameter_ignore`, `not_found`, SPA navigation, `outbound_click`, and `file_download`, and honored explicitly configured preview/staging origins (`*.workers.dev`, `*.pages.dev`) in `ROTAMETER_ALLOWED_ORIGINS` while keeping unlisted previews blocked (`RM-27`).
 
+### Fixed
+
+- Preferred `ROTAMETER_ACCESS_CLIENT_ID` / `ROTAMETER_ACCESS_CLIENT_SECRET` over generic `CF_ACCESS_CLIENT_*` credentials in `buildAccessHeaders` so Rotameter-scoped Cloudflare Access headers win when both are bound (`RM-27`).
+- Treated `data-rotameter-not-found="false"` consistently with `<meta name="rotameter-not-found" content="false">` in `@rotameter/astro-cloudflare/beacon`, and extended `.github/workflows/release.yml` to smoke-import `./dist/beacon.js` (`RM-27`).
+
 ### Changed
 
-- Adopted `ADR-0008` (OLTP/OLAP storage trait split with single-DB default, feature-gated `rotameter-arrow` canonical exchange and portable Parquet/JSON backup/restore/migrate, 3-layer DB adapter strategy, dual-granularity webhook/Arrow sink seams, and 4-rung multi-node scaling ladder) and re-sequenced the roadmap across `0.1.0` -> `0.6.0` -> `1.0.0` -> `2.0.0` (`docs/ROADMAP.md`, `PROJECT.md`, `docs/SPEC-ARCHITECTURE.md`).
+- Adopted `ADR-0008` (OLTP/OLAP storage trait split with single-DB default, feature-gated `rotameter-arrow` canonical exchange and portable Parquet/JSON backup/restore/migrate, 3-layer DB adapter strategy, dual-granularity webhook/Arrow sink seams, and 4-rung multi-node scaling ladder) and re-sequenced the roadmap across `0.1.0` -> `0.6.0` -> `1.0.0` -> `2.0.0` across `docs/ROADMAP.md`, `PROJECT.md`, `docs/SPEC-ARCHITECTURE.md`, `README.md`, and `AGENTS.md`.
 
 ## [0.1.0] - 2026-11-22
 

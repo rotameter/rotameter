@@ -30,6 +30,10 @@ export interface NormalizedBeaconPayload {
   props?: Record<string, PropValue>;
 }
 
+export interface AllowedOriginsOptions {
+  allowLocal?: boolean;
+}
+
 export interface CollectProxyOptions {
   fetcher?: typeof fetch;
   timeoutMs?: number;
@@ -40,6 +44,7 @@ export interface EventProxyOptions {
   fetcher?: typeof fetch;
   timeoutMs?: number;
   maxBodyBytes?: number;
+  allowLocal?: boolean;
 }
 
 export interface ServerHitOptions {
@@ -49,4 +54,5 @@ export interface ServerHitOptions {
   props?: Record<string, PropValue>;
   fetcher?: typeof fetch;
   timeoutMs?: number;
+  allowLocal?: boolean;
 }

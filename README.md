@@ -125,14 +125,14 @@ rotameter mcp   # newline-delimited JSON-RPC 2.0 over stdio
 ## Deployment, Integrations & Brand Assets
 
 - **Production deployment:** Multi-arch `musl`/macOS release workflow, distroless `Dockerfile`, hardened `systemd` unit (`MemoryMax=256M`), Litestream → R2 replication, and verified restore drill — see [`infra/README.md`](./infra/README.md).
-- **Astro & Cloudflare Workers:** Zero-dependency edge proxy (`/api/r.js`, `/api/e` via `waitUntil()`) + SSR `trackServerHit()` helper — see [`integrations/astro-cloudflare/README.md`](./integrations/astro-cloudflare/README.md).
+- **Astro & Cloudflare Workers:** Zero-dependency edge proxy (`/api/r.js`, `/api/e` via `waitUntil()`), bundled CSP-safe beacon (`@rotameter/astro-cloudflare/beacon`), and SSR `trackServerHit()` helper — see [`integrations/astro-cloudflare/README.md`](./integrations/astro-cloudflare/README.md).
 - **Brand & favicons:** SVG symbol sprite ([`assets/brand/icons-sprite.svg`](./assets/brand/icons-sprite.svg)), standalone icons ([`assets/brand/icons/`](./assets/brand/icons)), adaptive light/dark favicon ([`assets/brand/favicon.svg`](./assets/brand/favicon.svg)), multi-size [`favicon.ico`](./assets/brand/favicon.ico), Apple/PWA PNGs (`16`, `32`, `180`, `192`, `512`), and [`site.webmanifest`](./assets/brand/site.webmanifest).
 
 ---
 
 ## Documentation & Roadmap
 
-SemVer progression: **`0.1.0`** *(headless engine)* → **`0.2.0`** *(optional Web UI, OIDC/RBAC, GTM/Zaraz, HTTP `/mcp`)* → **`0.3.0`** *(funnels, cohorts, multi-backend `Storage`)* → **`0.4.0`** *(webhooks, sinks, WASM transforms)* → **`1.0.0`** *(stable GA freeze)*.
+SemVer progression: **`0.1.0`** *(headless engine)* → **`0.2.0`** *(OLTP/OLAP storage split, Arrow portability, DuckDB)* → **`0.3.0`** *(initial Web UI, simple admin/OIDC, HTTP `/mcp`)* → **`0.4.0`** *(funnels, flows, cohorts, heatmaps, Web UI v2)* → **`0.5.0`** *(multi-node Tier 2 DBs, webhooks, Arrow sinks)* → **`0.6.0`** *(enterprise RBAC, GTM/Zaraz, Tier 3/lakehouse)* → **`1.0.0`** *(stable GA freeze)* → **`2.0.0`** *(distributed stream federation)*.
 
 - [`PROJECT.md`](./PROJECT.md) — Scope, engineering budgets, and phased boundaries
 - [`docs/ROADMAP.md`](./docs/ROADMAP.md) — SemVer roadmap and Storypole ticket map

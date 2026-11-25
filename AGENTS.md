@@ -22,7 +22,7 @@ cookies, zero persisted raw IPs, and an event-stream-first SQLite WAL store behi
 traits.
 
 - [`PROJECT.md`](./PROJECT.md) — product boundaries, engineering budgets, phased roadmap
-- [`docs/ROADMAP.md`](./docs/ROADMAP.md) — `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0` → `1.0.0` milestones and `RM-*` map
+- [`docs/ROADMAP.md`](./docs/ROADMAP.md) — `0.1.0` → `0.6.0` → `1.0.0` → `2.0.0` milestones and `RM-*` map
 - [`docs/SPEC-ARCHITECTURE.md`](./docs/SPEC-ARCHITECTURE.md) — crate DAG, `Storage` traits, ring buffer, SQLite schema
 - [`docs/SPEC-PRIVACY.md`](./docs/SPEC-PRIVACY.md) — `HMAC-SHA256` salt rotation, 30m sessions, bots, GeoIP, cardinality caps
 - [`docs/SPEC-API.md`](./docs/SPEC-API.md) — `/v1/*` HTTP contract, scoped auth, `collect.js`, `pixel.gif`, Astro/CF SSR
@@ -104,7 +104,7 @@ storypole verify <KEY> --run
 Everything in Tier 3 plus `cargo build --workspace --release`, `./scripts/check-collector-size.sh`, `./scripts/check-memory-budget.sh`, `outfeed plan -d . --no-llm`, and the `RM-17` release harness (`SIGTERM` drain, midnight rollover, 100k cardinality bomb, 1M-event `p95 < 25 ms`, Litestream/R2 restore drill).
 
 ### 3.5 Zero Inline Scope Creep (`storypole defer`)
-Unrelated bugs, `0.2.0` UI ideas, `0.3.0` funnel/adapter work, or `0.4.0` plugin/webhook work discovered mid-ticket must not leak into the current diff:
+Unrelated bugs, `0.2.0` storage/Arrow work, `0.3.0` Web UI ideas, `0.4.0` funnel/heatmap features, or `0.5.0`/`0.6.0` adapter/plugin work discovered mid-ticket must not leak into the current diff:
 ```bash
 storypole defer "<title>" --kind <bug|tech-debt|feature|refactor|spike> \
   --crate-name <crate> --symbols "<crate::path::symbol>" --files "<path>"

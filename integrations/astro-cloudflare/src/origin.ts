@@ -1,4 +1,5 @@
 import type {
+  AllowedOriginsOptions,
   CloudflareRequestCf,
   NormalizedBeaconPayload,
   PropValue,
@@ -21,7 +22,7 @@ export function parseHostname(raw: string | null | undefined): string | null {
   }
 }
 
-export function isPreviewOrLocalHost(host: string | null | undefined): boolean {
+export function isLocalHost(host: string | null | undefined): boolean {
   if (!host) return true;
   const h = host.toLowerCase();
   return (
@@ -29,18 +30,31 @@ export function isPreviewOrLocalHost(host: string | null | undefined): boolean {
     h === "127.0.0.1" ||
     h === "::1" ||
     h === "[::1]" ||
-    h.endsWith(".localhost") ||
-    h.endsWith(".workers.dev") ||
-    h.endsWith(".pages.dev")
+    h.endsWith(".localhost")
   );
 }
 
-export function parseAllowedOrigins(raw: string | undefined): Set<string> {
+export function isPreviewHost(host: string | null | undefined): boolean {
+  if (!host) return false;
+  const h = host.toLowerCase();
+  return h.endsWith(".workers.dev") || h.endsWith(".pages.dev");
+}
+
+export function isPreviewOrLocalHost(host: string | null | undefined): boolean {
+  return isLocalHost(host) || isPreviewHost(host);
+}
+
+export function parseAllowedOrigins(
+  raw: string | undefined,
+  opts: AllowedOriginsOptions = {},
+): Set<string> {
   const out = new Set<string>();
   if (!raw) return out;
   for (const part of raw.split(",")) {
     const host = parseHostname(part);
-    if (host && !isPreviewOrLocalHost(host)) out.add(host);
+    if (host && (opts.allowLocal || !isLocalHost(host))) {
+      out.add(host);
+    }
   }
   return out;
 }
@@ -58,13 +72,20 @@ export function isAllowedAnalyticsOrigin(
   request: Request,
   allowed: ReadonlySet<string>,
   payloadUrl?: string,
+  opts: AllowedOriginsOptions = {},
 ): boolean {
   if (allowed.size === 0) return false;
   const reqHost = extractRequestHost(request, payloadUrl);
-  if (!reqHost || isPreviewOrLocalHost(reqHost) || !allowed.has(reqHost)) return false;
+  if (!reqHost || (!opts.allowLocal && isLocalHost(reqHost)) || !allowed.has(reqHost)) {
+    return false;
+  }
   if (payloadUrl !== undefined) {
     const payloadHost = parseHostname(payloadUrl);
-    if (!payloadHost || isPreviewOrLocalHost(payloadHost) || !allowed.has(payloadHost)) {
+    if (
+      !payloadHost ||
+      (!opts.allowLocal && isLocalHost(payloadHost)) ||
+      !allowed.has(payloadHost)
+    ) {
       return false;
     }
   }
@@ -116,8 +137,8 @@ export function parseBeaconPayload(
 
 export function buildAccessHeaders(env: RotameterEnv): Record<string, string> {
   const headers: Record<string, string> = {};
-  const id = (env.CF_ACCESS_CLIENT_ID ?? env.ROTAMETER_ACCESS_CLIENT_ID)?.trim();
-  const secret = (env.CF_ACCESS_CLIENT_SECRET ?? env.ROTAMETER_ACCESS_CLIENT_SECRET)?.trim();
+  const id = env.ROTAMETER_ACCESS_CLIENT_ID?.trim() || env.CF_ACCESS_CLIENT_ID?.trim();
+  const secret = env.ROTAMETER_ACCESS_CLIENT_SECRET?.trim() || env.CF_ACCESS_CLIENT_SECRET?.trim();
   if (id && secret) {
     headers["CF-Access-Client-Id"] = id;
     headers["CF-Access-Client-Secret"] = secret;

@@ -89,3 +89,43 @@ test("Astro route adapters resolve locals.runtime.env and locals.cfContext", asy
   assert.equal(tasks.length, 1);
   await Promise.all(tasks);
 });
+
+test("trackServerHit honors explicitly listed preview hosts while blocking unlisted previews and localhost", async () => {
+  const stagingEnv: RotameterEnv = {
+    ...PROD_ENV,
+    ROTAMETER_ALLOWED_ORIGINS: "staging.colinwolff.workers.dev,localhost",
+  };
+
+  let sentCount = 0;
+  const ok = await trackServerHit(
+    new Request("https://staging.colinwolff.workers.dev/status"),
+    stagingEnv,
+    undefined,
+    {
+      fetcher: async () => {
+        sentCount += 1;
+        return new Response(null, { status: 202 });
+      },
+    },
+  );
+  assert.equal(ok, true);
+  assert.equal(sentCount, 1);
+
+  const blockedPreview = await trackServerHit(
+    new Request("https://branch.colinwolff.workers.dev/status"),
+    stagingEnv,
+  );
+  assert.equal(blockedPreview, false);
+
+  const blockedLocal = await trackServerHit(
+    new Request("http://localhost:4321/status"),
+    stagingEnv,
+  );
+  assert.equal(blockedLocal, false);
+
+  const allowlistOnlyLocal = await trackServerHit(
+    new Request("https://staging.colinwolff.workers.dev/status"),
+    { ...PROD_ENV, ROTAMETER_ALLOWED_ORIGINS: "localhost" },
+  );
+  assert.equal(allowlistOnlyLocal, false);
+});

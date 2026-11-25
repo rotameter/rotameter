@@ -125,3 +125,79 @@ test("handleEventProxy enforces size cap, drops preview hosts, and relays via wa
   assert.equal(forwarded?.headers.get("Sec-GPC"), "1");
   assert.deepEqual(forwarded?.body.props, { plan: "pro" });
 });
+
+test("handleEventProxy allows explicitly listed preview hosts while still blocking unlisted previews and localhost", async () => {
+  const stagingEnv: RotameterEnv = {
+    ...PROD_ENV,
+    ROTAMETER_SITE: "staging.colinwolff.dev",
+    ROTAMETER_ALLOWED_ORIGINS: "staging.colinwolff.workers.dev,staging.colinwolff.pages.dev,localhost",
+  };
+
+  for (const allowedHost of ["staging.colinwolff.workers.dev", "staging.colinwolff.pages.dev"]) {
+    let forwardedUrl = "";
+    const req = new Request(`https://${allowedHost}/api/e`, {
+      method: "POST",
+      headers: { origin: `https://${allowedHost}` },
+      body: JSON.stringify({ url: `https://${allowedHost}/posts/preview` }),
+    });
+    const res = await handleEventProxy(req, stagingEnv, undefined, {
+      fetcher: async (input) => {
+        forwardedUrl = String(input);
+        return new Response(null, { status: 202 });
+      },
+    });
+    assert.equal(res.status, 202);
+    assert.equal(forwardedUrl, "https://analytics.internal.example/v1/events");
+  }
+
+  for (const blockedHost of ["pr-99.colinwolff.workers.dev", "pr-99.colinwolff.pages.dev", "localhost:4321"]) {
+    const req = new Request(`https://${blockedHost}/api/e`, {
+      method: "POST",
+      headers: { origin: `https://${blockedHost}` },
+      body: JSON.stringify({ url: `https://${blockedHost}/posts/preview` }),
+    });
+    assert.equal((await handleEventProxy(req, stagingEnv)).status, 204);
+  }
+
+  const localAllowedRes = await handleEventProxy(
+    new Request("http://localhost:4321/api/e", {
+      method: "POST",
+      headers: { origin: "http://localhost:4321" },
+      body: JSON.stringify({ url: "http://localhost:4321/posts/local" }),
+    }),
+    stagingEnv,
+    undefined,
+    {
+      allowLocal: true,
+      fetcher: async () => new Response(null, { status: 202 }),
+    },
+  );
+  assert.equal(localAllowedRes.status, 202);
+
+  let precedenceHeaders: Headers | undefined;
+  const precedenceEnv: RotameterEnv = {
+    ...PROD_ENV,
+    CF_ACCESS_CLIENT_ID: "generic-cf-id",
+    CF_ACCESS_CLIENT_SECRET: "generic-cf-secret",
+    ROTAMETER_ACCESS_CLIENT_ID: "rotameter-specific-id",
+    ROTAMETER_ACCESS_CLIENT_SECRET: "rotameter-specific-secret",
+  };
+  const precedenceRes = await handleEventProxy(
+    new Request("https://colinwolff.dev/api/e", {
+      method: "POST",
+      headers: { origin: "https://colinwolff.dev" },
+      body: JSON.stringify({ url: "https://colinwolff.dev/posts/precedence" }),
+    }),
+    precedenceEnv,
+    undefined,
+    {
+      fetcher: async (_input, init) => {
+        precedenceHeaders = new Headers(init?.headers);
+        return new Response(null, { status: 202 });
+      },
+    },
+  );
+  assert.equal(precedenceRes.status, 202);
+  assert.equal(precedenceHeaders?.get("CF-Access-Client-Id"), "rotameter-specific-id");
+  assert.equal(precedenceHeaders?.get("CF-Access-Client-Secret"), "rotameter-specific-secret");
+});

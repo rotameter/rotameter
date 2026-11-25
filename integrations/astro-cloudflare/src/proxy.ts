@@ -71,8 +71,8 @@ export async function forwardAnalyticsEvent(
   const payload = parseBeaconPayload(rawBody, siteId);
   if (!payload) return false;
 
-  const allowed = parseAllowedOrigins(env.ROTAMETER_ALLOWED_ORIGINS);
-  if (!isAllowedAnalyticsOrigin(request, allowed, payload.url)) return false;
+  const allowed = parseAllowedOrigins(env.ROTAMETER_ALLOWED_ORIGINS, opts);
+  if (!isAllowedAnalyticsOrigin(request, allowed, payload.url, opts)) return false;
 
   const fetcher = opts.fetcher ?? fetch;
   const timeoutMs = opts.timeoutMs ?? 1500;
@@ -105,8 +105,8 @@ export async function handleEventProxy(
   if (!siteId) return new Response(null, { status: 204 });
 
   const payload = parseBeaconPayload(rawBody, siteId);
-  const allowed = parseAllowedOrigins(env.ROTAMETER_ALLOWED_ORIGINS);
-  if (!payload || !isAllowedAnalyticsOrigin(request, allowed, payload.url)) {
+  const allowed = parseAllowedOrigins(env.ROTAMETER_ALLOWED_ORIGINS, opts);
+  if (!payload || !isAllowedAnalyticsOrigin(request, allowed, payload.url, opts)) {
     return new Response(null, { status: 204 });
   }
 

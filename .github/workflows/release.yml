@@ -168,7 +168,7 @@ jobs:
           npm run typecheck
           npm run build
           npm test
-          node -e "import('./dist/index.js').then(m => { if (!m.handleEventProxy || !m.trackServerHit) process.exit(1); }); import('./dist/astro.js').then(m => { if (!m.createEventProxyRoute) process.exit(1); })"
+          node -e "Promise.all([import('./dist/index.js'), import('./dist/astro.js'), import('./dist/beacon.js')]).then(([idx, astro, beacon]) => { if (!idx.handleEventProxy || !idx.trackServerHit || !astro.createEventProxyRoute || !beacon.initRotameterBeacon) process.exit(1); }).catch((err) => { console.error(err); process.exit(1); })"
 
       - name: Publish @rotameter/astro-cloudflare to npm
         working-directory: integrations/astro-cloudflare

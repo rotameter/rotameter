@@ -1,7 +1,8 @@
 import {
   baseUrl,
   buildForwardHeaders,
-  isPreviewOrLocalHost,
+  isLocalHost,
+  isPreviewHost,
   parseAllowedOrigins,
   parseHostname,
   sanitizeProps,
@@ -26,10 +27,15 @@ export async function trackServerHit(
 
   const targetUrl = opts.url ?? request.url;
   const hitHost = parseHostname(targetUrl) ?? parseHostname(request.headers.get("host"));
-  if (isPreviewOrLocalHost(hitHost)) return false;
+  if (!hitHost || (!opts.allowLocal && isLocalHost(hitHost))) return false;
 
-  const allowed = parseAllowedOrigins(env.ROTAMETER_ALLOWED_ORIGINS);
-  if (allowed.size > 0 && (!hitHost || !allowed.has(hitHost))) return false;
+  const hasAllowlist = Boolean(env.ROTAMETER_ALLOWED_ORIGINS?.trim());
+  const allowed = parseAllowedOrigins(env.ROTAMETER_ALLOWED_ORIGINS, opts);
+  if (hasAllowlist) {
+    if (!allowed.has(hitHost)) return false;
+  } else if (isPreviewHost(hitHost)) {
+    return false;
+  }
 
   const referrer = opts.referrer ?? request.headers.get("referer")?.trim();
   const props = sanitizeProps(opts.props);

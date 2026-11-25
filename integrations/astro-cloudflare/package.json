@@ -12,6 +12,10 @@
     "./astro": {
       "types": "./dist/astro.d.ts",
       "import": "./dist/astro.js"
+    },
+    "./beacon": {
+      "types": "./dist/beacon.d.ts",
+      "import": "./dist/beacon.js"
     }
   },
   "files": [

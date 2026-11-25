@@ -3,6 +3,8 @@ export {
   buildForwardHeaders,
   extractRequestHost,
   isAllowedAnalyticsOrigin,
+  isLocalHost,
+  isPreviewHost,
   isPreviewOrLocalHost,
   parseAllowedOrigins,
   parseBeaconPayload,
@@ -16,6 +18,7 @@ export {
 } from "./proxy.ts";
 export { trackServerHit } from "./ssr.ts";
 export type {
+  AllowedOriginsOptions,
   CloudflareRequestCf,
   CollectProxyOptions,
   EventProxyOptions,

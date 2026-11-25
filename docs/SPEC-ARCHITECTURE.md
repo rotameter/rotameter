@@ -42,9 +42,9 @@
 
 ---
 
-## 2. Pluggable Storage Trait Boundaries
+## 2. Pluggable Storage Trait Boundaries & `ADR-0008` Seams
 
-Storage sits behind narrow async/blocking traits so `rotameter-store-sqlite` can be swapped or supplemented without altering `rotameter-core` or `rotameter-server`:
+Storage sits behind narrow traits so `rotameter-store-sqlite` can be swapped, split across OLTP and OLAP engines, or migrated without altering `rotameter-core` or `rotameter-server`:
 
 ```rust
 pub struct StorageCapabilities {
@@ -54,19 +54,29 @@ pub struct StorageCapabilities {
     pub supports_sql_funnels: bool,
 }
 
-pub trait ControlPlaneStore: Send + Sync { /* upsert/get/list/delete orgs, sites & hashed API keys */ }
-pub trait EventIngestStore: Send + Sync  { /* write_batch(events, session_deltas, rollup_deltas) */ }
-pub trait AnalyticsQueryStore: Send + Sync { /* summary, timeseries, breakdown, realtime, purge */ }
+pub trait ControlPlaneStore: Send + Sync { /* OLTP: orgs, sites, hashed API keys, rotating salts */ }
+pub trait EventIngestStore: Send + Sync  { /* OLAP: write_batch(events, session_deltas, rollup_deltas) */ }
+pub trait AnalyticsQueryStore: Send + Sync { /* OLAP: summary, timeseries, breakdown, realtime, purge */ }
 ```
 
-Additional pluggable seams for single-node self-hosting and future multi-tenant SaaS (`ADR-0007`):
-- **`SaltProvider` (`rotameter-core`):** Abstracts current/previous rotating salt window lookup (`daily`/`weekly`/`monthly`) so multi-node deployments can share salts cleanly via DB/KMS/Redis without changing hashing logic.
-- **`IngestPolicy` (`rotameter-server`):** Per-site/org pre-enqueue rate-limit and quota hook so multi-tenant operators can isolate noisy neighbors or enforce plan limits outside core OSS logic.
+### OLTP / OLAP Split, Arrow Exchange & 3-Layer Adapter Strategy (`ADR-0008`)
+- **Single-DB default, split at any time:** Engines supporting both OLTP and OLAP (SQLite, PostgreSQL, MySQL/MariaDB, MongoDB) run on a single connection by default, while `ControlPlaneStore` (OLTP) and `EventIngestStore` + `AnalyticsQueryStore` (OLAP) can run on independent backends (e.g., SQLite/Postgres + DuckDB/ClickHouse) with full migration support.
+- **Runtime-agnostic async traits (`0.2.0`):** Trait methods evolve to return `std::future::Future`s (zero `tokio` dependency in `rotameter-core`), letting network databases run non-blocking while embedded SQLite/DuckDB execute via `spawn_blocking`.
+- **Feature-gated `rotameter-arrow` exchange & dual-layer backup (`0.2.0`):** Canonical Arrow/Parquet schemas (`events`, `sessions`, `rollups`, `QueryResult`) with zero-copy `WriteBatch <-> RecordBatch` adapters power portable `manifest.json` + `control_plane.json` + partitioned `.parquet` archives (`rotameter backup --format portable`, `restore`, `migrate`) and batched warehouse sinks (`0.5.0`), while SQLite retains `VACUUM INTO` + Litestream fast paths and default binary size stays `< 25 MB`.
+- **3-layer adapter architecture:**
+  1. *Shared SQL AST (`rotameter-store-sql`, `sea-query` + `sqlx`):* Compiles queries across SQLite, PostgreSQL (monthly `RANGE (ts_ms)` partitions + `COPY`), and MySQL/MariaDB (InnoDB clustered PKs) while keeping per-dialect fast-path hooks.
+  2. *Arrow / Parquet + DuckDB + ADBC / Flight SQL:* `rotameter-store-duckdb` (`0.2.0`, zero-copy Arrow ingest), ClickHouse (`0.5.0`, `FORMAT ArrowStream` + `AggregatingMergeTree`), and generic ADBC / Arrow Flight SQL (`0.5.0` for Pinot, Snowflake, BigQuery, Trino, BI tools, and out-of-process plugins).
+  3. *Thin dedicated adapters (`0.6.0` on demand):* Non-SQL/non-Arrow engines (MongoDB, Cloudflare `D1`/Analytics Engine) and optional `DataFusion` S3/Iceberg lakehouse querying.
 
-### Future Backend Compatibility Notes (`v2.0+`)
-- **PostgreSQL / PlanetScale (MySQL):** Map `dim_strings` and `sessions` directly; partition `events` by month (`RANGE (ts_ms)`).
-- **ClickHouse / DuckDB:** `events` denormalizes string dimensions into `LowCardinality(String)` columns; `rollups_*` become materialized views / `AggregatingMergeTree` with `uniqState`.
-- **Cloudflare Analytics Engine / D1:** `EventIngestStore` writes analytics points directly (`StorageCapabilities { supports_raw_event_log: false, ... }`) while `ControlPlaneStore` stays in D1/KV.
+### Progressive Multi-Node Scaling Ladder & Seams
+- **Rung 1 — Single node (`0.1.0`–`0.2.0`):** Embedded SQLite or SQLite/DuckDB with `InMemorySaltProvider` and local `SessionTracker` (`< 40 MB` idle RSS).
+- **Rung 2 — Stateless query replicas + sticky ingest (`0.2.0` seams, zero Redis/Kafka):** `--role=all|ingest|query` separates horizontally scalable stateless query/UI nodes from consistent-hashed ingest writers, sharing rotating salts via `ControlPlaneStore` (`SaltProvider`).
+- **Rung 3 — Active-active multi-node ingest (`0.5.0`–`0.6.0`):** Engine-side session/rollup materialization (declared via `StorageCapabilities`, e.g., ClickHouse `CollapsingMergeTree`) or optional Redis/Valkey `SessionStateStore` for SQL OLAP.
+- **Rung 4 — Partitioned Arrow stream (`2.0.0`):** Stateless edge collectors emit partitioned Arrow IPC batches over Kafka/NATS/R2 to stateful sessionizer workers.
+
+Additional pluggable seams for single-node self-hosting and multi-tenant SaaS (`ADR-0007`):
+- **`SaltProvider` (`rotameter-core`):** Abstracts current/previous rotating salt window lookup (`daily`/`weekly`/`monthly`) so multi-node deployments share salts via Control Plane DB or KMS without changing hashing logic.
+- **`IngestPolicy` (`rotameter-server`):** Per-site/org pre-enqueue rate-limit and quota hook isolating noisy neighbors or enforcing plan limits outside core OSS logic.
 
 ---
 

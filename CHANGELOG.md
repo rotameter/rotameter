@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Adopted `ADR-0008` (OLTP/OLAP storage trait split with single-DB default, feature-gated `rotameter-arrow` canonical exchange and portable Parquet/JSON backup/restore/migrate, 3-layer DB adapter strategy, dual-granularity webhook/Arrow sink seams, and 4-rung multi-node scaling ladder) and re-sequenced the roadmap across `0.1.0` -> `0.6.0` -> `1.0.0` -> `2.0.0` (`docs/ROADMAP.md`, `PROJECT.md`, `docs/SPEC-ARCHITECTURE.md`).
+
 ## [0.1.0] - 2026-11-22
 
 ### Fixed

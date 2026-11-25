@@ -4,7 +4,7 @@
 
 **Rotameter** is a single-binary, privacy-first, headless web analytics engine written in Rust (`MIT OR Apache-2.0`). It is engineered from a clean sheet to deliver modern web analytics—real session metrics, custom events, clean breakdown queries, CLI automation, an MCP server for AI agents, and a flight-instrument TUI—inside the footprint of a single **`1 vCPU / 1 GB RAM`** virtual machine (`VM.Standard.E2.1.Micro`).
 
-It fills the structural gap between ultra-lightweight page counters (which run in `< 40 MB` RAM without session metrics or structured query APIs) and heavyweight product analytics suites (which require 2–4 GB+ RAM for ClickHouse, PostgreSQL, or Node/Elixir stacks). Rotameter invents its own clean `/v1/*` contract rather than inheriting legacy wire protocols, while keeping an event-stream-first storage layout ready to support a decoupled Web UI (`0.2.0`), multi-step conversion funnels & multi-backend storage (`0.3.0`), and plugins/event sinks (`0.4.0`) without schema rewrites.
+It fills the structural gap between ultra-lightweight page counters (which run in `< 40 MB` RAM without session metrics or structured query APIs) and heavyweight product analytics suites (which require 2–4 GB+ RAM for ClickHouse, PostgreSQL, or Node/Elixir stacks). Rotameter invents its own clean `/v1/*` contract rather than inheriting legacy wire protocols, while keeping an event-stream-first storage layout and `ADR-0008` OLTP/OLAP + Apache Arrow seams ready to scale from a single VM to multi-node clusters and data lakes without schema rewrites.
 
 ---
 
@@ -15,10 +15,10 @@ It fills the structural gap between ultra-lightweight page counters (which run i
 | **Idle memory (RSS)** | `< 40 MB` | Coexist comfortably with `cloudflared`, Litestream, and OS services on a `1 GB` VM. |
 | **Peak memory (RSS)** | `< 128 MB` | Bounded ring buffer + bounded session LRU + SQLite cache caps prevent OOM under traffic spikes or query storms. |
 | **Static single binary** | `< 25 MB` (`musl` stripped) | Zero runtime dependencies (`glibc`-independent Linux binaries for `amd64` and `arm64`, plus macOS `arm64`/`amd64`). |
-| **Client collector (`collect.js`)** | `< 1.5 KB` gzip | Sub-kilobyte footprint; zero cookies, zero `localStorage` tracking, zero dependencies. |
+| **Client collector (`collect.js`)** | `< 1.5 KB` gzip | Sub-kilobyte footprint; zero cookies, zero `localStorage` tracking, zero dependencies (optional extensions stay separate). |
 | **Privacy invariant** | Zero PII on disk | Daily CSPRNG salt (`HMAC-SHA256`), zero persistent raw IPs in DB or access logs. |
-| **Storage abstraction** | Pluggable `Storage` traits | SQLite WAL ships in `0.1.0`; Postgres, ClickHouse, DuckDB, Cloudflare Analytics Engine/D1, and MySQL/PlanetScale plug in cleanly later. |
-| **Core purity** | `rotameter-core` is OS/async-free | Zero `tokio`, zero `rusqlite`, zero filesystem calls inside `rotameter-core` for fast property testing and future backend/WASM portability. |
+| **Storage abstraction** | OLTP/OLAP split + Arrow seams | SQLite WAL ships in `0.1.0`; `0.2.0` locks in OLTP/OLAP split, feature-gated `rotameter-arrow`, & DuckDB; `0.5.0`–`0.6.0` add SQL AST (`PG`/`MySQL`), ClickHouse, ADBC/Flight, MongoDB, CF D1/AE, & DataFusion (`ADR-0008`). |
+| **Core purity** | `rotameter-core` is OS/async-free | Zero `tokio`, `rusqlite`, `arrow`, or filesystem calls inside `rotameter-core` for fast property testing and backend portability. |
 | **Safety** | `#![forbid(unsafe_code)]` | Enforced across application crates; zero `.unwrap()` / `.expect()` in non-test paths. |
 | **License** | `MIT OR Apache-2.0` | Standard permissive dual license across the Rust ecosystem. |
 
@@ -26,7 +26,7 @@ It fills the structural gap between ultra-lightweight page counters (which run i
 
 ## 3. Phased Roadmap & Explicit Boundaries
 
-Following Rust/Cargo SemVer practices, pre-GA feature phases advance through `0.1.0` → `0.2.0` → `0.3.0` → `0.4.0` before locking long-term stability at `1.0.0` (while keeping HTTP routes on `/v1/*`).
+Following Rust/Cargo SemVer practices, pre-GA feature phases advance through `0.1.0` → `0.6.0` before locking long-term stability at `1.0.0` (while keeping HTTP routes on `/v1/*`) and evolving distributed federation in `2.0.0`.
 
 ### `0.1.0` — Headless Engine, API, CLI, MCP & TUI (Current Target)
 - **Engine & Storage:** Bounded async ingest ring-buffer + batched SQLite WAL writer, graceful `SIGTERM` drain, interned dimension dictionary, ordered per-session event log + hourly/daily/path rollups.
@@ -37,31 +37,32 @@ Following Rust/Cargo SemVer practices, pre-GA feature phases advance through `0.
 - **Operations:** Multi-arch static `musl` & macOS builds, OCI container images, `systemd` hardening, Cloudflare Tunnel + Access integration, `VACUUM INTO` backups + Litestream → R2 replication.
 
 **Explicit `0.1.0` Non-Goals:**
-- No built-in Web dashboard UI (`0.2.0`).
-- No user accounts, passwords, OIDC, or team RBAC (`0.2.0`).
-- No Google Tag Manager (`.tpl`/sGTM) or Cloudflare Zaraz templates (`0.2.0`).
+- No built-in Web dashboard UI (`0.3.0`), multi-user RBAC (`0.3.0`/`0.6.0`), or GTM/Zaraz templates (`0.6.0`).
 - No legacy Plausible/GoatCounter/Matomo wire-API compatibility shims.
-- No multi-step conversion funnels, Sankey/path user flows, or retention cohorts (`0.3.0`).
-- No distributed multi-node clustering or custom hand-rolled TSDB storage engine (`Storage` traits carry SQLite WAL in `0.1.0`).
-- No outbound webhook/event sink runtime or WASM plugins (`0.4.0`).
+- No multi-step conversion funnels, user flows, cohorts, or heatmaps (`0.4.0`).
+- No distributed multi-node clustering, Arrow/DuckDB/network DB adapters (`0.2.0`/`0.5.0`/`0.6.0`), or webhooks/WASM plugins (`0.5.0`).
 
-### `0.2.0` — Decoupled Web UI, Tag Managers & Remote MCP
-- Optional static Web UI served behind `--ui=on|off` (default `off`), talking strictly to the `/v1/*` API.
-- Multi-user accounts, session auth, OIDC/SSO, and role-based site permissions.
-- Packaged Google Tag Manager (Web `.tpl` + Server-Side sGTM) and Cloudflare Zaraz Managed Component.
-- Optional Streamable HTTP `/mcp` server endpoint and opt-in `--allow-admin` MCP write tools.
+### `0.2.0` — Storage Architecture, Arrow Portability & Embedded OLAP (`ADR-0008`)
+- Split `ControlPlaneStore` (OLTP) and `AnalyticsDataPlane` (OLAP) with single-DB default and runtime-agnostic `std::future::Future` traits; add DB-backed `SaltProvider`, `--role=all|ingest|query`, and raw-append capability seams.
+- Feature-gated `rotameter-arrow` canonical exchange schemas + dual-layer portable Parquet/JSON `backup`, `restore`, and cross-DB `migrate`, validated by opt-in `rotameter-store-duckdb` without inflating the default SQLite binary.
 
-### `0.3.0` — Product Analytics & Multi-Backend Scale
-- Multi-step conversion funnels (ordered & unordered, per-session window, drop-off inspection) built directly over the `0.1.0` ordered `events(site_id, session_id, seq_in_session, ...)` stream.
-- User flows / page transition graphs, retention cohorts, engaged-time & scroll-depth heartbeats, revenue/goal attribution, and Google Search Console sync.
-- Arbitrary compound boolean filter ASTs (`AND` / `OR` / `NOT`, regex matchers) and dynamic query planning.
-- Additional `Storage` crate backends: PostgreSQL, ClickHouse, DuckDB, Cloudflare Analytics Engine / D1, MySQL / MariaDB / PlanetScale, and an optional custom columnar segment store if single-node SQLite limits are ever reached.
+### `0.3.0` — Initial Web UI & Self-Hoster Essentials
+- Optional static Web UI served behind `--ui=on|off` (default `off`) over `/v1/*` covering `0.1.0`–`0.2.0` features, simple admin login / OIDC, and optional Streamable HTTP `/mcp` with opt-in `--allow-admin` tools.
 
-### `0.4.0` — Plugins, Webhooks & Event Sinks
-- Outbound webhooks and event sinks (Slack/Discord/`ntfy` alerts, scheduled digests, S3/R2/warehouse exports) plus optional feature-gated sandboxed WASM transforms (`BeforeIngest`/`AfterFlush`) with zero baseline RSS regression.
+### `0.4.0` — Product Analytics, Advanced Tracking & Web UI v2
+- Multi-step conversion funnels, user flows/streams, retention cohorts, goal/revenue attribution, Google Search Console sync, and compound filter AST (`AND`/`OR`/`NOT` + regex).
+- Opt-in privacy-safe click/scroll heatmaps and engaged-time heartbeats shipped as a separate collector extension (preserving base `collect.js <= 1.5 KB` gzip), paired with major Web UI builders and explorers.
 
-### `1.0.0` — Stable GA Freeze
-- Long-term SemVer compatibility lock for `/v1/*`, `Storage` traits, SQLite migrations, and CLI/MCP interfaces once production soak completes.
+### `0.5.0` — Multi-Node Scale, Tier 2 DBs, Plugins & Arrow Sinks
+- Shared SQL AST (`rotameter-store-sql`: PostgreSQL, MySQL/MariaDB InnoDB), ClickHouse (`FORMAT ArrowStream` / `AggregatingMergeTree`), and generic ADBC / Arrow Flight SQL (Pinot, warehouses, BI).
+- Dual-granularity webhooks/WASM hooks (`BeforeIngest`/`AfterFlush`) and batched Arrow IPC/Parquet sinks (S3/R2/Iceberg) + out-of-process Arrow Flight/ADBC storage plugins.
+
+### `0.6.0` — Enterprise Multi-Tenancy, Tag Managers & Tier 3 / Lakehouse Backends
+- Full multi-org RBAC, optional Redis/Valkey `SessionStateStore` for active-active multi-node ingest, on-demand Tier 3 adapters (MongoDB, Cloudflare D1/Analytics Engine, optional DataFusion S3/Iceberg lakehouse), and packaged GTM `.tpl`/sGTM & Cloudflare Zaraz templates.
+
+### `1.0.0` & `2.0.0` — Stable GA Freeze & Distributed Horizon
+- **`1.0.0`:** Long-term SemVer lock for `/v1/*`, `Storage` traits, Arrow canonical schema v1, migration lineage, and CLI/MCP interfaces.
+- **`2.0.0`:** Stateless edge collectors → partitioned Arrow IPC streams (Kafka/NATS/R2) → stateful sessionizer worker federation.
 
 ---
 

@@ -11,13 +11,13 @@ use rotameter_core::normalize::{
 use rotameter_core::privacy::{utc_hour_floor_ms, utc_yyyymmdd};
 use rotameter_core::session::SessionDelta;
 use rotameter_core::storage::{RollupDelta, SessionUpsert};
-use rotameter_core::types::{
-    Channel, DeviceType, EventKind, EventProps, Site, UtmParams, ViewportClass,
-};
+use rotameter_core::types::{Channel, EventKind, EventProps, Site, UtmParams, ViewportClass};
+use rotameter_core::ua::ClassifiedUa;
 
 use crate::format::now_ms;
 use crate::local_import::LocalFoldState;
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn record_session_and_rollup(
     ctx: &mut LocalFoldState<'_>,
     delta: &SessionDelta,
@@ -26,6 +26,8 @@ pub(crate) fn record_session_and_rollup(
     channel: Channel,
     viewport_width: Option<u16>,
     is_pv: bool,
+    classified_ua: &ClassifiedUa,
+    country: String,
 ) {
     let site_id = ctx.site.site_id;
     ctx.session_map
@@ -49,11 +51,11 @@ pub(crate) fn record_session_and_rollup(
             ref_host,
             channel,
             utm: UtmParams::default(),
-            country: "(unknown)".to_string(),
+            country,
             region: "(unknown)".to_string(),
-            browser: "Other".to_string(),
-            os: "Other".to_string(),
-            device_type: DeviceType::Unknown,
+            browser: classified_ua.browser.clone(),
+            os: classified_ua.os.clone(),
+            device_type: classified_ua.device_type,
             viewport_class: ViewportClass::from_width(viewport_width),
         });
     let hour = utc_hour_floor_ms(delta.started_at_ms);

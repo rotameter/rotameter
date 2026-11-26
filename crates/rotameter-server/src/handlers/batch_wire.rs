@@ -23,6 +23,9 @@ pub(crate) struct BatchEventItem {
     pub(crate) props: Option<BTreeMap<String, serde_json::Value>>,
     pub(crate) ts: Option<String>,
     pub(crate) visitor_hint: Option<String>,
+    pub(crate) user_agent: Option<String>,
+    pub(crate) country: Option<String>,
+    pub(crate) ip: Option<String>,
     #[serde(default)]
     pub(crate) allow_automated: bool,
 }

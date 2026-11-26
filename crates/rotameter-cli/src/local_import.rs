@@ -4,12 +4,14 @@
 use std::collections::HashMap;
 
 use rotameter_client::types::{BatchEventItem, SiteRef};
+use rotameter_core::bot::{BotFilterDecision, PrefetchHeaders, classify_traffic};
 use rotameter_core::cardinality::{CardinalityGuard, OVERFLOW_BUCKET};
 use rotameter_core::id::SiteId;
 use rotameter_core::privacy::{InMemorySaltProvider, SessionId, resolve_visitor_candidates};
 use rotameter_core::session::{DEFAULT_SESSION_TIMEOUT_MS, SessionTracker};
 use rotameter_core::storage::{IngestEvent, RollupDelta, SessionUpsert, WriteBatch};
 use rotameter_core::types::{DimensionKind, EventKind, Site};
+use rotameter_core::ua::classify_user_agent;
 use rotameter_store_sqlite::SqliteStore;
 
 use crate::cli::GlobalOpts;
@@ -68,18 +70,41 @@ pub(crate) fn ingest_local(
 }
 
 fn fold_local_item(ctx: &mut LocalFoldState<'_>, item: &BatchEventItem) -> Result<bool, CliError> {
+    let ua_opt = item
+        .user_agent
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+    if matches!(
+        classify_traffic(ua_opt, PrefetchHeaders::default(), false, false),
+        BotFilterDecision::Drop(_)
+    ) {
+        return Ok(false);
+    }
     let Some((ts_ms, event_kind, norm_url, norm_ref, props)) = normalize_local_item(ctx.site, item)
     else {
         return Ok(false);
     };
-    let hint = item.visitor_hint.as_deref().unwrap_or("import");
+    let (identity, ua_hash) =
+        if let Some(ip) = item.ip.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+            (ip, ua_opt.unwrap_or(""))
+        } else if let Some(hint) = item
+            .visitor_hint
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+        {
+            (hint, "")
+        } else {
+            ("import", ua_opt.unwrap_or(""))
+        };
     let candidates = resolve_visitor_candidates(
         ctx.salts,
         ctx.site.site_id,
         ctx.site.salt_rotation,
         ts_ms,
-        hint,
-        "",
+        identity,
+        ua_hash,
     )?;
     let fallback = ctx.store.lookup_active_session_sync(
         ctx.site.site_id,
@@ -125,6 +150,14 @@ fn fold_local_item(ctx: &mut LocalFoldState<'_>, item: &BatchEventItem) -> Resul
         path: path.clone(),
         props,
     });
+    let classified_ua = classify_user_agent(ua_opt.unwrap_or(""));
+    let country = item
+        .country
+        .as_deref()
+        .map(str::trim)
+        .map(str::to_ascii_uppercase)
+        .filter(|c| !matches!(c.as_str(), "" | "XX" | "T1"))
+        .unwrap_or_else(|| "(unknown)".to_string());
     record_session_and_rollup(
         ctx,
         &delta,
@@ -133,6 +166,8 @@ fn fold_local_item(ctx: &mut LocalFoldState<'_>, item: &BatchEventItem) -> Resul
         norm_ref.channel,
         item.viewport_width,
         is_pv,
+        &classified_ua,
+        country,
     );
     Ok(true)
 }

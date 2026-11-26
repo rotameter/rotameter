@@ -75,7 +75,29 @@ Single-event ingest returning **`202 Accepted`** (empty body or `{"accepted": 1}
 ```
 
 ### 3.4 `POST /v1/events/batch`
-Server-side / log-importer batch ingest (requires `rm_ing_` or `rm_adm_` Bearer token), accepting up to **`500` events** per request (`202 Accepted` with `{ "accepted": N, "rejected": M }`). Supports explicit `ts` (RFC 3339) and optional synthetic `visitor_hint` (hashed with the same daily salt, never stored raw) for offline log imports (`rotameter import`).
+Server-side / log-importer batch ingest (requires `rm_ing_` or `rm_adm_` Bearer token), accepting up to **`500` events** per request (`202 Accepted` with `{ "accepted": N, "rejected": M }`). Each item supports explicit `ts` (RFC 3339), optional `visitor_hint`, optional `user_agent` (for browser/OS/bot classification), optional `country` (ISO-3166-1 alpha-2), and optional ephemeral `ip` (hashed with the rotating daily salt + UA and immediately discarded—never persisted raw).
+
+### 3.5 Streaming Proxy Log Receivers (Apache, Nginx, Caddy)
+`rotameter import` streams access logs incrementally without writing raw IPs to disk (`--batch-size`, `--flush-interval`, `--max-queue`, `--no-proxy-filter`, `caddy-json` / `clf` / `jsonl` presets) and drains cleanly on `SIGTERM`:
+
+- **Apache (`CustomLog` piped stdin):**
+  ```apache
+  LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" rotameter_combined
+  CustomLog "|/usr/local/bin/rotameter --url https://analytics.example.com --token rm_ing_... import example.com --stdin" rotameter_combined
+  ```
+- **Nginx (`syslog` Unix datagram socket, zero disk log):**
+  ```nginx
+  access_log syslog:server=unix:/run/rotameter-nginx.sock,nohostname combined;
+  # Run: rotameter --url https://analytics.example.com --token rm_ing_... import example.com --unix-socket /run/rotameter-nginx.sock
+  ```
+- **Caddy (`net unix//` stream JSON socket, zero disk log):**
+  ```caddyfile
+  log {
+    output net unix//run/rotameter-caddy.sock
+    format json
+  }
+  # Run: rotameter --url https://analytics.example.com --token rm_ing_... import example.com --unix-socket /run/rotameter-caddy.sock --input-format caddy-json
+  ```
 
 ---
 

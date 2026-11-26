@@ -1,82 +1,150 @@
 #![forbid(unsafe_code)]
-//! `rotameter import` command handler (`JSONL` and `CLF` with `--dry-run`).
+//! `rotameter import` command handler (one-shot file, `--stdin`/`-`, `--unix-socket`, `--follow`).
 
-use rotameter_client::types::{BatchEventsRequest, MAX_BATCH_EVENTS, SiteRef};
+use std::io::{BufRead, BufReader};
+use std::path::Path;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+use rotameter_client::types::SiteRef;
 
 use crate::cli::GlobalOpts;
-use crate::cli_sub::ImportArgs;
-use crate::context::{prefer_local_db, print_formatted, remote_client};
+use crate::cli_sub::{ImportArgs, ImportFormat};
 use crate::exit::CliError;
-use crate::import_parse::parse_import_file;
+use crate::import_file::{print_import_summary, run_dry_run_file, run_oneshot_file};
+use crate::import_follow::{install_shutdown_hook, stream_follow_file};
+use crate::import_socket::{resolve_socket_mode, stream_unix_socket};
+use crate::import_stream::{ImportChannel, run_streaming_pipeline};
 
 pub(crate) fn run_import(global: &GlobalOpts, args: &ImportArgs) -> Result<(), CliError> {
     let site_ref = SiteRef::parse(&args.site)?;
-    let parsed = parse_import_file(&site_ref, &args.file, args.input_format)?;
+    let source = resolve_source(args)?;
+    let is_streaming = !matches!(source, ImportSource::File(_));
+    let apply_proxy_filter =
+        !args.no_proxy_filter && (is_streaming || args.input_format != ImportFormat::Jsonl);
 
     if args.dry_run {
-        let payload = serde_json::json!({
-            "dry_run": true,
-            "site": site_ref.to_string(),
-            "parsed": parsed.items.len(),
-            "skipped": parsed.skipped,
-        });
-        return print_formatted(
-            global.format,
-            &["DRY_RUN", "SITE", "PARSED", "SKIPPED"],
-            &[vec![
-                "true".to_string(),
-                site_ref.to_string(),
-                parsed.items.len().to_string(),
-                parsed.skipped.to_string(),
-            ]],
-            &payload,
-            global.quiet,
-        );
+        return match source {
+            ImportSource::File(p) => {
+                run_dry_run_file(global, args, &site_ref, Some(p), apply_proxy_filter)
+            }
+            ImportSource::Stdin => {
+                run_dry_run_file(global, args, &site_ref, None, apply_proxy_filter)
+            }
+            ImportSource::Follow(_) | ImportSource::UnixSocket(_) => Err(CliError::usage(
+                "`--dry-run` is not supported with `--follow` or `--unix-socket`",
+            )),
+        };
     }
 
-    let (accepted, rejected) = if prefer_local_db(global) {
-        #[cfg(feature = "sqlite")]
-        {
-            crate::local_import::ingest_local(global, &site_ref, &parsed.items)?
+    match source {
+        ImportSource::File(path) => {
+            run_oneshot_file(global, args, &site_ref, path, apply_proxy_filter)
         }
-        #[cfg(not(feature = "sqlite"))]
-        {
-            return Err(CliError::usage(
-                "local `--db` import requires the `sqlite` feature",
-            ));
+        ImportSource::Stdin => {
+            run_streaming(global, args, &site_ref, apply_proxy_filter, |ch, stop| {
+                let stdin = std::io::stdin();
+                for line_res in BufReader::new(stdin.lock()).lines() {
+                    if stop.load(Ordering::Relaxed) {
+                        break;
+                    }
+                    let line = line_res
+                        .map_err(|err| CliError::runtime(format!("failed reading stdin: {err}")))?;
+                    ch.push_line(&line);
+                }
+                Ok(())
+            })
+        }
+        ImportSource::Follow(path) => {
+            run_streaming(global, args, &site_ref, apply_proxy_filter, |ch, stop| {
+                stream_follow_file(path, ch, stop)
+            })
+        }
+        ImportSource::UnixSocket(path) => {
+            let mode = resolve_socket_mode(args.socket_mode, args.input_format);
+            run_streaming(global, args, &site_ref, apply_proxy_filter, |ch, stop| {
+                let ch_cb = Arc::clone(ch);
+                let cb = Arc::new(move |line: &str| ch_cb.push_line(line));
+                stream_unix_socket(path, mode, stop, &cb)
+            })
+        }
+    }
+}
+
+enum ImportSource<'a> {
+    File(&'a Path),
+    Follow(&'a Path),
+    Stdin,
+    UnixSocket(&'a Path),
+}
+
+fn resolve_source(args: &ImportArgs) -> Result<ImportSource<'_>, CliError> {
+    let file_is_dash = args.file.as_deref() == Some(Path::new("-"));
+    let use_stdin = args.stdin || file_is_dash;
+    let has_socket = args.unix_socket.is_some();
+    let has_path = args.file.as_deref().is_some_and(|p| p != Path::new("-"));
+
+    let count = usize::from(use_stdin) + usize::from(has_socket) + usize::from(has_path);
+    if count == 0 {
+        return Err(CliError::usage(
+            "provide an input `<file>`, `-`, `--stdin`, or `--unix-socket <path>`",
+        ));
+    }
+    if count > 1 {
+        return Err(CliError::usage(
+            "input sources (`<file>`, `--stdin`, `--unix-socket`) are mutually exclusive",
+        ));
+    }
+    if args.follow && !has_path {
+        return Err(CliError::usage("`--follow` requires a log `<file>` path"));
+    }
+
+    if use_stdin {
+        Ok(ImportSource::Stdin)
+    } else if let Some(sock) = args.unix_socket.as_deref() {
+        Ok(ImportSource::UnixSocket(sock))
+    } else if let Some(path) = args.file.as_deref() {
+        if args.follow {
+            Ok(ImportSource::Follow(path))
+        } else {
+            Ok(ImportSource::File(path))
         }
     } else {
-        let client = remote_client(global)?;
-        let chunk_size = args.batch_size.clamp(1, MAX_BATCH_EVENTS);
-        let (mut acc, mut rej) = (0_u64, 0_u64);
-        for chunk in parsed.items.chunks(chunk_size) {
-            let res = client.post_events_batch(&BatchEventsRequest {
-                events: chunk.to_vec(),
-            })?;
-            acc += res.accepted;
-            rej += res.rejected;
-        }
-        (acc, rej)
-    };
+        Err(CliError::usage("missing import source"))
+    }
+}
 
-    let payload = serde_json::json!({
-        "site": site_ref.to_string(),
-        "parsed": parsed.items.len(),
-        "skipped": parsed.skipped,
-        "accepted": accepted,
-        "rejected": rejected,
-    });
-    print_formatted(
-        global.format,
-        &["SITE", "PARSED", "SKIPPED", "ACCEPTED", "REJECTED"],
-        &[vec![
-            site_ref.to_string(),
-            parsed.items.len().to_string(),
-            parsed.skipped.to_string(),
-            accepted.to_string(),
-            rejected.to_string(),
-        ]],
-        &payload,
-        global.quiet,
+fn run_streaming<F>(
+    global: &GlobalOpts,
+    args: &ImportArgs,
+    site_ref: &SiteRef,
+    apply_proxy_filter: bool,
+    producer: F,
+) -> Result<(), CliError>
+where
+    F: FnOnce(&Arc<ImportChannel>, &Arc<AtomicBool>) -> Result<(), CliError>,
+{
+    let shutdown = Arc::new(AtomicBool::new(false));
+    install_shutdown_hook(Arc::clone(&shutdown));
+    let stats = run_streaming_pipeline(
+        global,
+        site_ref,
+        args.input_format,
+        apply_proxy_filter,
+        args.batch_size,
+        args.flush_interval_ms,
+        args.max_queue,
+        &shutdown,
+        producer,
+    )?;
+    print_import_summary(
+        global,
+        site_ref,
+        stats.parsed,
+        stats.skipped,
+        stats.accepted,
+        stats.rejected,
+        stats.dropped_backpressure,
+        stats.dropped_upstream,
     )
 }

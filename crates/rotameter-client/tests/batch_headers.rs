@@ -75,6 +75,9 @@ async fn cf_access_headers_and_batch_endpoint_and_limit_guard() {
         props: None,
         ts: Some("2026-11-22T12:00:00Z".to_string()),
         visitor_hint: Some("hint-1".to_string()),
+        user_agent: None,
+        country: None,
+        ip: None,
     };
     let too_many = BatchEventsRequest {
         events: vec![item.clone(); 501],

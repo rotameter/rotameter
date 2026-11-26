@@ -1,6 +1,8 @@
 #![forbid(unsafe_code)]
 //! Authenticated server-to-server `POST /v1/events/batch` ingestion (`<= 500` events).
 
+use std::borrow::Cow;
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
@@ -17,7 +19,9 @@ use rotameter_core::ua::{ClassifiedUa, classify_user_agent};
 use crate::auth::{AuthContext, extract_optional_auth};
 use crate::error::ApiError;
 use crate::handlers::batch_wire::{BatchEventItem, BatchEventsRequest, MAX_BATCH_EVENTS};
-use crate::handlers::headers::{extract_client_ip, extract_prefetch, header_str, parse_props};
+use crate::handlers::headers::{
+    extract_client_ip, extract_prefetch, header_str, normalize_country, parse_props,
+};
 use crate::ingest::types::QueuedEvent;
 use crate::state::{AppState, now_ms};
 
@@ -105,17 +109,30 @@ async fn build_batch_queued(
     if ctx.auth.scope == KeyScope::Ingest && ctx.auth.site_id != Some(site.site_id) {
         return Ok(None);
     }
+    let item_ua = item
+        .user_agent
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+    let effective_ua = item_ua.unwrap_or(ctx.ua_str);
     let Some((ts_ms, event_kind, norm_url, norm_ref, props)) =
-        normalize_batch_item(&site, ctx, item)
+        normalize_batch_item(&site, ctx, item, effective_ua)
     else {
         return Ok(None);
     };
-    let (identity, ua_hash) = item
+    let item_ip = item.ip.as_deref().map(str::trim).filter(|s| !s.is_empty());
+    let (identity, ua_hash) = if let Some(ip) = item_ip {
+        (ip, effective_ua)
+    } else if let Some(hint) = item
         .visitor_hint
         .as_deref()
         .map(str::trim)
         .filter(|s| !s.is_empty())
-        .map_or((ctx.req_ip, ctx.ua_str), |hint| (hint, ""));
+    {
+        (hint, "")
+    } else {
+        (ctx.req_ip, effective_ua)
+    };
     let candidates = resolve_visitor_candidates(
         state.salt_provider.as_ref(),
         site.site_id,
@@ -125,6 +142,17 @@ async fn build_batch_queued(
         ua_hash,
     )
     .map_err(ApiError::from)?;
+    let classified_ua = match item_ua {
+        Some(ua) => Cow::Owned(classify_user_agent(ua)),
+        None => Cow::Borrowed(ctx.classified_ua),
+    };
+    let (country, region) = if let Some(c) = normalize_country(item.country.clone()) {
+        (c, "(unknown)".to_string())
+    } else if let Some((c, r)) = item_ip.and_then(|ip| state.geoip.resolve_ip(ip)) {
+        (c, r)
+    } else {
+        (ctx.country.to_string(), ctx.region.to_string())
+    };
 
     Ok(Some(QueuedEvent {
         site_id: site.site_id,
@@ -136,11 +164,11 @@ async fn build_batch_queued(
         ref_host: norm_ref.source,
         channel: norm_ref.channel,
         utm: norm_url.utm,
-        country: ctx.country.to_string(),
-        region: ctx.region.to_string(),
-        browser: ctx.classified_ua.browser.clone(),
-        os: ctx.classified_ua.os.clone(),
-        device_type: ctx.classified_ua.device_type,
+        country,
+        region,
+        browser: classified_ua.browser.clone(),
+        os: classified_ua.os.clone(),
+        device_type: classified_ua.device_type,
         viewport_class: ViewportClass::from_width(item.viewport_width),
     }))
 }
@@ -149,6 +177,7 @@ fn normalize_batch_item(
     site: &Site,
     ctx: &BatchContext<'_>,
     item: &BatchEventItem,
+    effective_ua: &str,
 ) -> Option<(
     i64,
     EventKind,
@@ -159,7 +188,7 @@ fn normalize_batch_item(
     if site.respect_gpc && ctx.gpc_header {
         return None;
     }
-    let ua_opt = (!ctx.ua_str.is_empty()).then_some(ctx.ua_str);
+    let ua_opt = (!effective_ua.is_empty()).then_some(effective_ua);
     if matches!(
         classify_traffic(ua_opt, ctx.prefetch, false, item.allow_automated),
         BotFilterDecision::Drop(_)

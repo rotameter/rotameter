@@ -73,6 +73,12 @@ impl GeoIpResolver {
             header_region.unwrap_or_else(|| "(unknown)".to_string()),
         )
     }
+
+    pub(crate) fn resolve_ip(&self, client_ip: &str) -> Option<(String, String)> {
+        self.mmdb
+            .as_ref()
+            .and_then(|reader| lookup_mmdb(reader, client_ip))
+    }
 }
 
 fn lookup_mmdb(reader: &Reader<Vec<u8>>, client_ip: &str) -> Option<(String, String)> {

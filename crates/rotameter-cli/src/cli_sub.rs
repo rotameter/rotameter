@@ -158,23 +158,51 @@ pub struct RealtimeArgs {
 /// Input log format accepted by `rotameter import`.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, ValueEnum)]
 pub enum ImportFormat {
-    /// Auto-detect `JSONL` vs `CLF` from non-empty lines.
+    /// Auto-detect `JSONL`, `caddy-json`, or `CLF` from non-empty lines.
     #[default]
     Auto,
     /// Line-delimited JSON hit objects.
     Jsonl,
-    /// Nginx/Caddy Common or Combined Log Format.
+    /// Nginx/Caddy/Apache Common or Combined Log Format.
     Clf,
+    /// Caddy structured JSON access logs.
+    #[value(name = "caddy-json")]
+    CaddyJson,
 }
 
-/// Options for `rotameter import <site> <file>`.
+/// Unix socket mode for `rotameter import --unix-socket`.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, ValueEnum)]
+pub enum SocketMode {
+    /// Auto-detect datagram (`syslog`) vs stream (`net unix//`) framing.
+    #[default]
+    Auto,
+    /// Unix datagram socket (e.g. Nginx `access_log syslog:server=unix:...`).
+    Dgram,
+    /// Unix stream socket (e.g. Caddy `output net unix//...`).
+    Stream,
+}
+
+/// Options for `rotameter import`.
 #[derive(Debug, Args)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct ImportArgs {
     /// Target site identifier (`site_...` or `slug`).
     pub site: String,
-    /// Input `JSONL` or access log file path.
-    pub file: PathBuf,
-    /// Input line parser (`auto`, `jsonl`, or `clf`).
+    /// Input `JSONL` or access log file path (use `-` or `--stdin` for standard input).
+    pub file: Option<PathBuf>,
+    /// Read log lines incrementally from `stdin` (Apache `CustomLog "|..."` pipe mode).
+    #[arg(long)]
+    pub stdin: bool,
+    /// Listen on a Unix domain socket (`--socket-mode` selects datagram vs stream).
+    #[arg(long)]
+    pub unix_socket: Option<PathBuf>,
+    /// Unix socket mode (`auto`, `dgram`, or `stream`).
+    #[arg(long, value_enum, default_value_t = SocketMode::Auto)]
+    pub socket_mode: SocketMode,
+    /// Tail an appending log file continuously, handling log rotation / truncation.
+    #[arg(long)]
+    pub follow: bool,
+    /// Input line parser (`auto`, `jsonl`, `clf`, or `caddy-json`).
     #[arg(long = "input-format", value_enum, default_value_t = ImportFormat::Auto)]
     pub input_format: ImportFormat,
     /// Parse and validate without writing or sending batches.
@@ -183,4 +211,17 @@ pub struct ImportArgs {
     /// Events per batch upload (`1..=500`).
     #[arg(long, default_value_t = 500)]
     pub batch_size: usize,
+    /// Maximum flush wait in milliseconds during streaming (`--stdin`, `--unix-socket`, `--follow`).
+    #[arg(
+        long = "flush-interval",
+        alias = "flush-interval-ms",
+        default_value_t = 2_000
+    )]
+    pub flush_interval_ms: u64,
+    /// Bounded in-memory queue capacity before non-blocking backpressure drops.
+    #[arg(long, default_value_t = 4_096)]
+    pub max_queue: usize,
+    /// Disable proxy noise filtering (static assets, non-GET/HEAD, non-200/404 statuses).
+    #[arg(long)]
+    pub no_proxy_filter: bool,
 }

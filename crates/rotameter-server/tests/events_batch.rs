@@ -117,3 +117,82 @@ async fn batch_ingest_auth_cap_mixed_items_and_visitor_hint() {
     );
     state.ingest.shutdown(Duration::from_secs(2)).await;
 }
+
+#[tokio::test]
+async fn batch_ingest_enriches_per_item_ua_country_and_ephemeral_ip() {
+    let admin = "rm_adm_batch_enrich_token_1234";
+    let (state, app) = in_memory_app(admin).await;
+    let _ = request(
+        &app,
+        Method::POST,
+        "/v1/admin/sites",
+        Some(admin),
+        &[],
+        Some(&json!({ "slug": "proxy.dev" })),
+    )
+    .await;
+
+    let payload = json!({
+        "events": [
+            {
+                "site_id": "proxy.dev",
+                "url": "https://proxy.dev/docs",
+                "ip": "203.0.113.10",
+                "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36",
+                "country": "de"
+            },
+            {
+                "site_id": "proxy.dev",
+                "url": "https://proxy.dev/about",
+                "ip": "203.0.113.10",
+                "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36",
+                "country": "DE"
+            },
+            {
+                "site_id": "proxy.dev",
+                "url": "https://proxy.dev/bot-hit",
+                "ip": "203.0.113.11",
+                "user_agent": "Googlebot/2.1 (+http://www.google.com/bot.html)"
+            }
+        ]
+    });
+    let (st, res_b) = request(
+        &app,
+        Method::POST,
+        "/v1/events/batch",
+        Some(admin),
+        &[],
+        Some(&payload),
+    )
+    .await;
+    assert_eq!(
+        (
+            st,
+            as_json(&res_b)["accepted"].as_u64(),
+            as_json(&res_b)["rejected"].as_u64()
+        ),
+        (StatusCode::ACCEPTED, Some(2), Some(1))
+    );
+    state.ingest.flush_now().await;
+
+    let (_, qb) = request(
+        &app,
+        Method::POST,
+        "/v1/query",
+        Some(admin),
+        &[],
+        Some(&json!({
+            "site_id": "proxy.dev",
+            "range": { "preset": "24h" },
+            "metrics": ["visitors", "pageviews"],
+            "group_by": ["browser", "country"]
+        })),
+    )
+    .await;
+    let q = as_json(&qb);
+    assert_eq!(q["summary"]["visitors"].as_u64(), Some(1));
+    assert_eq!(q["summary"]["pageviews"].as_u64(), Some(2));
+    assert_eq!(q["rows"][0]["key"]["country"].as_str(), Some("DE"));
+    assert_eq!(q["rows"][0]["key"]["browser"].as_str(), Some("Chrome 131"));
+    state.ingest.shutdown(Duration::from_secs(2)).await;
+}

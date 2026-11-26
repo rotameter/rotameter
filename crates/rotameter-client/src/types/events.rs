@@ -60,8 +60,17 @@ pub struct BatchEventItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ts: Option<String>,
     /// Optional synthetic visitor hint hashed with the rotating salt for log imports.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub visitor_hint: Option<String>,
+    /// Optional per-item `User-Agent` string for browser/OS/bot classification.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub user_agent: Option<String>,
+    /// Optional ISO-3166-1 alpha-2 country override for log imports.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub country: Option<String>,
+    /// Optional ephemeral client IP hashed with the rotating salt and immediately discarded.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ip: Option<String>,
 }
 
 /// Server-to-server batch ingest request accepted by `POST /v1/events/batch`.

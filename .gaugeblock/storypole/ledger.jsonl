@@ -337,3 +337,5 @@
 {"event":"status_changed","task_id":"499dbc44-5d07-40c1-ab43-211db009d76d","from":"blocked","to":"ready","reason":"Dependency RM-31 verified","timestamp_ms":1795715096455}
 {"event":"status_changed","task_id":"62977a61-3aa1-4b74-a4cf-3982c828a024","from":"blocked","to":"ready","reason":"Dependency RM-31 verified","timestamp_ms":1795715096455}
 {"event":"status_changed","task_id":"910c403d-03bb-476e-97e0-aa180a2ba930","from":"blocked","to":"ready","reason":"Dependency RM-31 verified","timestamp_ms":1795715096455}
+{"event":"task_claimed","task_id":"910c403d-03bb-476e-97e0-aa180a2ba930","claim":{"agent_id":"antigravity","claimed_at_epoch_ms":1795715578153,"lease_expires_at_epoch_ms":1795719178153,"git_branch":"feat/rm-30-streaming-log-import","base_commit_sha":null}}
+{"event":"status_changed","task_id":"910c403d-03bb-476e-97e0-aa180a2ba930","from":"ready","to":"in_progress","reason":"Claimed by antigravity","timestamp_ms":1795715578153}

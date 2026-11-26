@@ -68,6 +68,9 @@ fn sigterm_drains_ten_thousand_queued_events_with_zero_loss() {
                 props: None,
                 ts: Some(ts.clone()),
                 visitor_hint: Some(format!("v-{b}-{i}")),
+                user_agent: None,
+                country: None,
+                ip: None,
             })
             .collect();
         let res = client

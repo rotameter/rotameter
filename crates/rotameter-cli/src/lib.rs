@@ -14,7 +14,13 @@ mod cmd_site_ops;
 mod context;
 pub mod exit;
 pub mod format;
+mod import_caddy;
+mod import_file;
+mod import_filter;
+mod import_follow;
 mod import_parse;
+mod import_socket;
+mod import_stream;
 #[cfg(feature = "sqlite")]
 mod local_import;
 #[cfg(feature = "sqlite")]

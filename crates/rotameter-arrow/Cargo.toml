@@ -1,0 +1,27 @@
+[package]
+name = "rotameter-arrow"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Feature-gated Arrow Schema v1, Parquet Zstd codecs, SHA-256 manifest, and tar.zst archive exchange for Rotameter"
+
+[dependencies]
+arrow-array.workspace = true
+arrow-schema.workspace = true
+hmac-sha256.workspace = true
+parquet.workspace = true
+rotameter-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tar.workspace = true
+thiserror.workspace = true
+zstd.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

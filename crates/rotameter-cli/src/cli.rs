@@ -5,6 +5,9 @@ use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand};
 
+pub use crate::cli_exchange::{
+    BackupArgs, BackupFormat, ExchangePlane, MigrateArgs, OutputFmtArg, RestoreArgs,
+};
 use crate::cli_sub::{ImportArgs, KeyArgs, QueryArgs, RealtimeArgs, SiteArgs};
 use crate::cmd_seed::SeedArgs;
 use crate::format::OutputFormat;
@@ -54,7 +57,7 @@ pub struct GlobalOpts {
     #[arg(long, global = true)]
     pub analytics_db: Option<String>,
     /// Output format (`table`, `json`, or `csv`).
-    #[arg(long, value_enum, global = true, default_value_t = OutputFormat::Table)]
+    #[arg(long, value_enum, default_value_t = OutputFormat::Table)]
     pub format: OutputFormat,
     /// Suppress non-essential headers/status lines.
     #[arg(long, short = 'q', global = true)]
@@ -78,8 +81,12 @@ pub enum Command {
     Import(ImportArgs),
     /// Generate realistic synthetic multi-day and realtime traffic into a local SQLite DB.
     Seed(SeedArgs),
-    /// Create a consistent online `SQLite VACUUM INTO` snapshot backup.
+    /// Create a consistent online `SQLite VACUUM INTO` snapshot or portable Parquet bundle.
     Backup(BackupArgs),
+    /// Restore a verified portable Arrow/Parquet directory or `.tar.zst` archive.
+    Restore(RestoreArgs),
+    /// Stream data between storage DSNs in-memory via Arrow or via `--stage-dir`.
+    Migrate(MigrateArgs),
     /// Verify local `SQLite` WAL health or remote `/v1/health` readiness.
     Doctor(DoctorArgs),
     /// Start the `stdio` Model Context Protocol server.
@@ -126,13 +133,6 @@ pub struct ServeArgs {
     pub salt_store: Option<String>,
 }
 
-/// Options for `rotameter backup <dest>`.
-#[derive(Debug, Clone, Args)]
-pub struct BackupArgs {
-    /// Destination file path for `SQLite VACUUM INTO`.
-    pub dest: PathBuf,
-}
-
 /// Options for `rotameter doctor`.
 #[derive(Debug, Default, Clone, Args)]
 pub struct DoctorArgs {
@@ -142,4 +142,7 @@ pub struct DoctorArgs {
     /// Force local `SQLite` WAL verification.
     #[arg(long)]
     pub local: bool,
+    /// Output format override (`table`, `json`, or `csv`).
+    #[command(flatten)]
+    pub output: OutputFmtArg,
 }

@@ -24,6 +24,16 @@ impl DeviceType {
     pub const fn as_u8(self) -> u8 {
         self as u8
     }
+
+    /// Decodes a compact integer stored in `sessions.device_type` or Arrow exchange columns.
+    pub const fn from_u8(raw: u8) -> Self {
+        match raw {
+            1 => Self::Desktop,
+            2 => Self::Mobile,
+            3 => Self::Tablet,
+            _ => Self::Unknown,
+        }
+    }
 }
 
 /// Coarse Tailwind-aligned viewport bucket computed from reported viewport width.
@@ -63,6 +73,18 @@ impl ViewportClass {
     pub const fn as_u8(self) -> u8 {
         self as u8
     }
+
+    /// Decodes a compact integer stored in `sessions.viewport_class` or Arrow exchange columns.
+    pub const fn from_u8(raw: u8) -> Self {
+        match raw {
+            1 => Self::Xs,
+            2 => Self::Sm,
+            3 => Self::Md,
+            4 => Self::Lg,
+            5 => Self::Xl,
+            _ => Self::Unknown,
+        }
+    }
 }
 
 /// Marketing / acquisition channel classification (`SPEC-PRIVACY.md` §5).
@@ -93,6 +115,19 @@ impl Channel {
             Self::Referral => "Referral",
             Self::PaidCampaign => "Paid / Campaign",
             Self::Email => "Email",
+        }
+    }
+
+    /// Parses a canonical display label or snake-case channel identifier.
+    pub fn parse(raw: &str) -> Option<Self> {
+        match raw.trim().to_ascii_lowercase().as_str() {
+            "direct" => Some(Self::Direct),
+            "organic search" | "organic_search" => Some(Self::OrganicSearch),
+            "organic social" | "organic_social" => Some(Self::OrganicSocial),
+            "referral" => Some(Self::Referral),
+            "paid / campaign" | "paid_campaign" => Some(Self::PaidCampaign),
+            "email" => Some(Self::Email),
+            _ => None,
         }
     }
 }

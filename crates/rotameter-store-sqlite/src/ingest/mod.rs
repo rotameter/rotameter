@@ -2,7 +2,7 @@
 //! `EventIngestStore` implementation for [`SqliteStore`].
 
 mod path_rollups;
-mod writer;
+pub(crate) mod writer;
 
 use rotameter_core::error::CoreError;
 use rotameter_core::id::SiteId;

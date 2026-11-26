@@ -5,12 +5,17 @@ use std::path::PathBuf;
 
 use clap::{Args, Subcommand, ValueEnum};
 
+use crate::cli_exchange::OutputFmtArg;
+
 /// `rotameter site` subcommand tree.
 #[derive(Debug, Args)]
 pub struct SiteArgs {
     /// Site operation to run.
     #[command(subcommand)]
     pub action: SiteCommand,
+    /// Output format override (`table`, `json`, or `csv`).
+    #[command(flatten)]
+    pub output: OutputFmtArg,
 }
 
 /// Site management actions.
@@ -76,6 +81,9 @@ pub struct KeyArgs {
     /// API key operation to run.
     #[command(subcommand)]
     pub action: KeyCommand,
+    /// Output format override (`table`, `json`, or `csv`).
+    #[command(flatten)]
+    pub output: OutputFmtArg,
 }
 
 /// API key management actions.
@@ -137,6 +145,9 @@ pub struct QueryArgs {
     /// Breakdown row pagination offset.
     #[arg(long, default_value_t = 0)]
     pub offset: u32,
+    /// Output format override (`table`, `json`, or `csv`).
+    #[command(flatten)]
+    pub output: OutputFmtArg,
 }
 
 /// Options for `rotameter realtime <site>`.
@@ -153,6 +164,9 @@ pub struct RealtimeArgs {
     /// Optional maximum number of polls when `--watch` is enabled.
     #[arg(long)]
     pub max_ticks: Option<u32>,
+    /// Output format override (`table`, `json`, or `csv`).
+    #[command(flatten)]
+    pub output: OutputFmtArg,
 }
 
 /// Input log format accepted by `rotameter import`.
@@ -224,4 +238,7 @@ pub struct ImportArgs {
     /// Disable proxy noise filtering (static assets, non-GET/HEAD, non-200/404 statuses).
     #[arg(long)]
     pub no_proxy_filter: bool,
+    /// Output format override (`table`, `json`, or `csv`).
+    #[command(flatten)]
+    pub output: OutputFmtArg,
 }

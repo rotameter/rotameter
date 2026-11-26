@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
     "crates/rotameter-core",
+    "crates/rotameter-arrow",
     "crates/rotameter-store-sqlite",
     "crates/rotameter-server",
     "crates/rotameter-client",
@@ -23,6 +24,8 @@ repository = "https://github.com/rotameter/rotameter"
 
 [workspace.dependencies]
 aho-corasick = "1.1"
+arrow-array = { version = "60", default-features = false }
+arrow-schema = { version = "60", default-features = false }
 axum = { version = "0.8", default-features = false, features = ["http1", "json", "query", "tokio", "matched-path"] }
 chrono = { version = "0.4", default-features = false, features = ["std"] }
 chrono-tz = "0.10"
@@ -32,11 +35,13 @@ getrandom = "0.4"
 hmac-sha256 = "1.1"
 http-body-util = "0.1"
 maxminddb = "0.33"
+parquet = { version = "60", default-features = false, features = ["arrow", "zstd"] }
 ratatui = { version = "0.30", default-features = false, features = ["crossterm"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls-webpki-roots"] }
 rusqlite = { version = "0.43", features = ["bundled"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+tar = "0.4"
 tempfile = "3"
 thiserror = "2.0"
 tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "macros", "net", "signal", "sync", "time"] }
@@ -45,7 +50,9 @@ tower = { version = "0.5", default-features = false, features = ["util"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "fmt", "std"] }
 url = "2.5"
+zstd = "0.14"
 rotameter-core = { path = "crates/rotameter-core", version = "0.1.1" }
+rotameter-arrow = { path = "crates/rotameter-arrow", version = "0.1.1" }
 rotameter-store-sqlite = { path = "crates/rotameter-store-sqlite", version = "0.1.1" }
 rotameter-server = { path = "crates/rotameter-server", version = "0.1.1" }
 rotameter-client = { path = "crates/rotameter-client", version = "0.1.1" }

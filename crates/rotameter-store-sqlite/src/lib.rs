@@ -4,6 +4,7 @@
 pub mod backup;
 pub mod config;
 mod control_plane;
+mod exchange;
 mod ingest;
 mod intern;
 pub mod migrations;

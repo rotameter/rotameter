@@ -2,6 +2,7 @@
 //! Pluggable OLTP/OLAP storage trait boundaries (`ControlPlaneStore`, `AnalyticsDataPlane`).
 
 pub mod csv;
+pub mod exchange;
 pub mod ingest;
 pub mod models;
 
@@ -16,6 +17,9 @@ use crate::session::SessionSnapshot;
 use crate::types::{ApiKeyRecord, Org, SaltRotation, Site};
 
 pub use csv::format_query_result_csv;
+pub use exchange::{
+    ControlPlaneSnapshot, RollupDailyRow, RollupHourlyRow, RollupPathDailyRow, RotatingSaltRecord,
+};
 pub use ingest::{IngestEvent, RollupDelta, SessionUpsert, WriteBatch};
 pub use models::{
     BreakdownRow, KpiSummary, QueryMeta, QueryResult, RealtimePage, RealtimePulse,

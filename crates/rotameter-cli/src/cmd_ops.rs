@@ -1,11 +1,17 @@
 #![forbid(unsafe_code)]
 //! `rotameter backup` (`VACUUM INTO`) and `rotameter doctor` health checks.
 
-use crate::cli::{BackupArgs, DoctorArgs, GlobalOpts};
+use crate::cli::{BackupArgs, BackupFormat, DoctorArgs, GlobalOpts};
 use crate::context::{prefer_local_db, print_formatted, remote_client};
 use crate::exit::CliError;
 
 pub(crate) fn run_backup(global: &GlobalOpts, args: &BackupArgs) -> Result<(), CliError> {
+    if args.format == BackupFormat::Portable
+        || args.archive
+        || args.dest.to_string_lossy().ends_with(".tar.zst")
+    {
+        return crate::cmd_portable::run_portable_backup(global, args);
+    }
     #[cfg(feature = "sqlite")]
     {
         let (store, _, _) = crate::context::open_local_store(global)?;

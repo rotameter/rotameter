@@ -2,10 +2,12 @@
 //! Unified feature-gated CLI library for Rotameter.
 
 pub mod cli;
+pub mod cli_exchange;
 pub mod cli_sub;
 mod cmd_import;
 mod cmd_key;
 mod cmd_ops;
+mod cmd_portable;
 mod cmd_query;
 mod cmd_realtime;
 pub mod cmd_seed;
@@ -29,6 +31,12 @@ mod local_import_norm;
 mod local_keys;
 #[cfg(feature = "sqlite")]
 mod local_sites;
+#[cfg(all(feature = "sqlite", feature = "arrow"))]
+mod portable_export;
+#[cfg(all(feature = "sqlite", feature = "arrow"))]
+mod portable_import;
+#[cfg(all(feature = "sqlite", feature = "arrow"))]
+mod portable_migrate;
 #[cfg(feature = "sqlite")]
 mod seed_catalog;
 #[cfg(feature = "sqlite")]
@@ -77,7 +85,10 @@ where
     }
 }
 
-fn dispatch(parsed: Cli) -> Result<(), CliError> {
+fn dispatch(mut parsed: Cli) -> Result<(), CliError> {
+    if let Some(fmt) = subcommand_output_format(&parsed.command) {
+        parsed.global.format = fmt;
+    }
     let g = &parsed.global;
     match parsed.command {
         Command::Serve(args) => serve_cmd::run_serve(g, &args),
@@ -88,9 +99,26 @@ fn dispatch(parsed: Cli) -> Result<(), CliError> {
         Command::Import(args) => cmd_import::run_import(g, &args),
         Command::Seed(args) => cmd_seed::run_seed(g, &args),
         Command::Backup(args) => cmd_ops::run_backup(g, &args),
+        Command::Restore(args) => cmd_portable::run_restore(g, &args),
+        Command::Migrate(args) => cmd_portable::run_migrate(&args),
         Command::Doctor(args) => cmd_ops::run_doctor(g, &args),
         Command::Mcp => run_mcp(g),
         Command::Tui => run_tui(g),
+    }
+}
+
+const fn subcommand_output_format(cmd: &Command) -> Option<format::OutputFormat> {
+    match cmd {
+        Command::Site(a) => a.output.format,
+        Command::Key(a) => a.output.format,
+        Command::Query(a) => a.output.format,
+        Command::Realtime(a) => a.output.format,
+        Command::Import(a) => a.output.format,
+        Command::Seed(a) => a.output.format,
+        Command::Restore(a) => a.output.format,
+        Command::Migrate(a) => a.output.format,
+        Command::Doctor(a) => a.output.format,
+        Command::Serve(_) | Command::Backup(_) | Command::Mcp | Command::Tui => None,
     }
 }
 
@@ -122,9 +150,11 @@ fn run_tui(_global: &cli::GlobalOpts) -> Result<(), CliError> {
 
 /// Returns metadata for all workspace components compiled under the active feature set.
 pub fn enabled_components() -> Vec<ComponentInfo> {
-    let components = [
+    let mut components = vec![
         rotameter_core::component_info(),
         rotameter_client::component_info(),
+        #[cfg(feature = "arrow")]
+        rotameter_arrow::component_info(),
         #[cfg(feature = "server")]
         rotameter_server::component_info(),
         #[cfg(feature = "sqlite")]
@@ -134,7 +164,8 @@ pub fn enabled_components() -> Vec<ComponentInfo> {
         #[cfg(feature = "tui")]
         rotameter_tui::component_info(),
     ];
-    components.to_vec()
+    let _ = &mut components;
+    components
 }
 
 /// Formats the CLI version banner listing enabled workspace components.

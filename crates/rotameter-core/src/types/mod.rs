@@ -36,6 +36,16 @@ impl SaltRotation {
             Self::Monthly => "monthly",
         }
     }
+
+    /// Parses a `SQLite` / wire salt rotation name (`daily`, `weekly`, or `monthly`).
+    pub fn parse(raw: &str) -> Option<Self> {
+        match raw.trim().to_ascii_lowercase().as_str() {
+            "daily" => Some(Self::Daily),
+            "weekly" => Some(Self::Weekly),
+            "monthly" => Some(Self::Monthly),
+            _ => None,
+        }
+    }
 }
 
 /// Authorization scope attached to a hashed API key.

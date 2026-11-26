@@ -13,7 +13,7 @@ use rotameter_core::types::{SaltRotation, Site};
 #[cfg(feature = "sqlite")]
 use serde::Serialize;
 
-use crate::cli::GlobalOpts;
+use crate::cli::{GlobalOpts, OutputFmtArg};
 #[cfg(feature = "sqlite")]
 use crate::context::{open_local_store, print_formatted, resolve_db_path};
 use crate::exit::CliError;
@@ -46,6 +46,9 @@ pub struct SeedArgs {
     /// Purge existing analytics data for the target site before seeding.
     #[arg(long)]
     pub reset: bool,
+    /// Output format override (`table`, `json`, or `csv`).
+    #[command(flatten)]
+    pub output: OutputFmtArg,
 }
 
 #[cfg(feature = "sqlite")]

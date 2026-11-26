@@ -85,3 +85,85 @@ salt_store = "memory"
     );
     assert!(bad_salt.is_err());
 }
+
+#[test]
+fn duckdb_limits_follow_cli_env_config_precedence_with_vm_defaults() {
+    let dir = tempfile::tempdir().unwrap();
+    let cfg_path = dir.path().join("rotameter.toml");
+    std::fs::write(
+        &cfg_path,
+        r#"
+[storage]
+duckdb_memory_limit = "384MB"
+duckdb_threads = 2
+"#,
+    )
+    .unwrap();
+
+    let base_global = GlobalOpts {
+        config: Some(cfg_path),
+        ..GlobalOpts::default()
+    };
+
+    let defaults =
+        resolve_serve_settings_with(&GlobalOpts::default(), &ServeArgs::default(), env_from(&[]))
+            .unwrap();
+    assert_eq!(defaults.duckdb_memory_limit, "256MB");
+    assert_eq!(defaults.duckdb_threads, 1);
+
+    let from_cfg =
+        resolve_serve_settings_with(&base_global, &ServeArgs::default(), env_from(&[])).unwrap();
+    assert_eq!(from_cfg.duckdb_memory_limit, "384MB");
+    assert_eq!(from_cfg.duckdb_threads, 2);
+
+    let from_env = resolve_serve_settings_with(
+        &base_global,
+        &ServeArgs::default(),
+        env_from(&[
+            ("ROTAMETER_DUCKDB_MEMORY_LIMIT", "512MB"),
+            ("ROTAMETER_DUCKDB_THREADS", "4"),
+        ]),
+    )
+    .unwrap();
+    assert_eq!(from_env.duckdb_memory_limit, "512MB");
+    assert_eq!(from_env.duckdb_threads, 4);
+
+    let parsed = Cli::try_parse_from([
+        "rotameter",
+        "serve",
+        "--duckdb-memory-limit",
+        "192MB",
+        "--duckdb-threads",
+        "3",
+    ])
+    .unwrap();
+    let Command::Serve(serve_args) = parsed.command else {
+        panic!("expected serve command");
+    };
+    let from_cli = resolve_serve_settings_with(
+        &base_global,
+        &serve_args,
+        env_from(&[
+            ("ROTAMETER_DUCKDB_MEMORY_LIMIT", "512MB"),
+            ("ROTAMETER_DUCKDB_THREADS", "4"),
+        ]),
+    )
+    .unwrap();
+    assert_eq!(from_cli.duckdb_memory_limit, "192MB");
+    assert_eq!(from_cli.duckdb_threads, 3);
+
+    let zero_env = resolve_serve_settings_with(
+        &GlobalOpts::default(),
+        &ServeArgs::default(),
+        env_from(&[("ROTAMETER_DUCKDB_THREADS", "0")]),
+    );
+    assert!(zero_env.is_err());
+
+    let parsed_zero = Cli::try_parse_from(["rotameter", "serve", "--duckdb-threads", "0"]).unwrap();
+    let Command::Serve(zero_args) = parsed_zero.command else {
+        panic!("expected serve command");
+    };
+    assert!(
+        resolve_serve_settings_with(&GlobalOpts::default(), &zero_args, env_from(&[])).is_err()
+    );
+}

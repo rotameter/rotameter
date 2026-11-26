@@ -195,3 +195,12 @@ fn duckdb_matches_sqlite_query_realtime_and_purge_parity() {
             >= 5
     );
 }
+
+#[test]
+fn duckdb_config_defaults_match_target_vm_budget() {
+    let cfg = rotameter_store_duckdb::DuckDbConfig::default();
+    assert_eq!(cfg.memory_limit.as_deref(), Some("256MB"));
+    assert_eq!(cfg.threads, Some(1));
+    let store = DuckDbStore::open_in_memory(&cfg).unwrap();
+    store.checkpoint().unwrap();
+}

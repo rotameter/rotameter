@@ -14,8 +14,21 @@ use rotameter_store_sqlite::SqliteStore;
 use crate::cli::ExchangePlane;
 use crate::exit::CliError;
 use crate::portable_export::export_portable;
+use crate::serve_parse::{env_non_empty, env_u32};
 
 const CHUNK_SIZE: usize = 4_096;
+
+fn duckdb_config_from_env() -> Result<DuckDbConfig, CliError> {
+    let mut cfg = DuckDbConfig::default();
+    let env_fn = |k: &str| std::env::var(k).ok();
+    if let Some(limit) = env_non_empty(&env_fn, "ROTAMETER_DUCKDB_MEMORY_LIMIT") {
+        cfg.memory_limit = Some(limit);
+    }
+    if let Some(threads) = env_u32(&env_fn, "ROTAMETER_DUCKDB_THREADS")? {
+        cfg.threads = Some(threads);
+    }
+    Ok(cfg)
+}
 
 pub(crate) fn restore_to_duckdb(
     source: &Path,
@@ -27,7 +40,8 @@ pub(crate) fn restore_to_duckdb(
             "DuckDB is analytics-only; pass `--plane analytics` when restoring to `duckdb://`",
         ));
     }
-    let dst = DuckDbStore::open(duck_path, &DuckDbConfig::default())?;
+    let cfg = duckdb_config_from_env()?;
+    let dst = DuckDbStore::open(duck_path, &cfg)?;
     if source.is_file() || source.to_string_lossy().ends_with(".tar.zst") {
         let tmp = tempfile::tempdir()
             .map_err(|err| CliError::runtime(format!("cannot create unpack staging dir: {err}")))?;
@@ -101,7 +115,8 @@ pub(crate) fn migrate_sqlite_to_duckdb(
         return Ok(manifest.row_counts);
     }
 
-    let dst = DuckDbStore::open(duck_path, &DuckDbConfig::default())?;
+    let cfg = duckdb_config_from_env()?;
+    let dst = DuckDbStore::open(duck_path, &cfg)?;
     let mut counts = PortableRowCounts::default();
 
     let mut offset = 0_usize;

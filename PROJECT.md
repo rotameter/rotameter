@@ -47,15 +47,15 @@ Following Rust/Cargo SemVer practices, pre-GA feature phases advance through `0.
 - Feature-gated `rotameter-arrow` canonical exchange schemas + dual-layer portable Parquet/JSON `backup`, `restore`, and cross-DB `migrate`, validated by opt-in `rotameter-store-duckdb` without inflating the default SQLite binary.
 
 ### `0.3.0` — Initial Web UI & Self-Hoster Essentials
-- Optional static Web UI served behind `--ui=on|off` (default `off`) over `/v1/*` covering `0.1.0`–`0.2.0` features, simple admin login / OIDC, and optional Streamable HTTP `/mcp` with opt-in `--allow-admin` tools.
+- Optional static Web UI (`ui/` Bun workspaces, CAD/flight-instrument `tokens.css`, `@base-ui/react` + TanStack Router/Query/Table/Virtual + `uPlot`, Cargo `ui` feature behind `--ui=on|off` default `off` + `--ui-dir`) covering `0.1.0`–`0.2.0` features (`overview`, `breakdowns`, `realtime`, `admin`, single-node `cluster` health, CSV/Parquet export), `/v1/capabilities`, simple admin login / OIDC (`/v1/auth/*` + CF Access), and optional Streamable HTTP `/mcp` with opt-in `--allow-admin` tools (`docs/SPEC-UI.md`, `ADR-0009`).
 
 ### `0.4.0` — Product Analytics, Advanced Tracking & Web UI v2
 - Multi-step conversion funnels, user flows/streams, retention cohorts, goal/revenue attribution, Google Search Console sync, and compound filter AST (`AND`/`OR`/`NOT` + regex).
-- Opt-in privacy-safe click/scroll heatmaps and engaged-time heartbeats shipped as a separate collector extension (preserving base `collect.js <= 1.5 KB` gzip), paired with major Web UI builders and explorers.
+- Opt-in privacy-safe click/scroll heatmaps and engaged-time heartbeats shipped as a separate collector extension (preserving base `collect.js <= 1.5 KB` gzip), paired with lazy-loaded `@rotameter/plugin-*` builders, heatmaps, funnels, and freeze-on-interact live event streams (`docs/SPEC-UI.md`).
 
 ### `0.5.0` — Multi-Node Scale, Tier 2 DBs, Plugins & Arrow Sinks
-- Shared SQL AST (`rotameter-store-sql`: PostgreSQL, MySQL/MariaDB InnoDB), ClickHouse (`FORMAT ArrowStream` / `AggregatingMergeTree`), and generic ADBC / Arrow Flight SQL (Pinot, warehouses, BI).
-- Dual-granularity webhooks/WASM hooks (`BeforeIngest`/`AfterFlush`) and batched Arrow IPC/Parquet sinks (S3/R2/Iceberg) + out-of-process Arrow Flight/ADBC storage plugins.
+- Shared SQL AST (`rotameter-store-sql`: PostgreSQL, MySQL/MariaDB InnoDB), ClickHouse (`FORMAT ArrowStream` / `AggregatingMergeTree`), and generic ADBC / Arrow Flight SQL (Pinot, warehouses, BI), expanding `@rotameter/plugin-cluster` with multinode roster and replication lag views.
+- Dual-granularity webhooks/WASM hooks (`BeforeIngest`/`AfterFlush`), batched Arrow IPC/Parquet sinks (S3/R2/Iceberg), out-of-process Arrow Flight/ADBC storage plugins, and Tier 2 third-party runtime UI plugin loader (`RM-24`, `docs/SPEC-UI.md`).
 
 ### `0.6.0` — Enterprise Multi-Tenancy, Tag Managers & Tier 3 / Lakehouse Backends
 - Full multi-org RBAC, optional Redis/Valkey `SessionStateStore` for active-active multi-node ingest, on-demand Tier 3 adapters (MongoDB, Cloudflare D1/Analytics Engine, optional DataFusion S3/Iceberg lakehouse), and packaged GTM `.tpl`/sGTM & Cloudflare Zaraz templates.
@@ -70,12 +70,13 @@ Following Rust/Cargo SemVer practices, pre-GA feature phases advance through `0.
 
 | Document | Scope |
 | --- | --- |
-| [`AGENTS.md`](./AGENTS.md) | Engineering contract, Storypole discipline, Rust/size/memory gates |
+| [`AGENTS.md`](./AGENTS.md) | Engineering contract, Storypole discipline, Rust/size/memory/UI gates |
 | [`docs/COMPARISON-FEATURES.md`](./docs/COMPARISON-FEATURES.md) | Feature-by-feature matrix vs. GoatCounter, Plausible CE, Umami, Matomo, GA4 |
 | [`docs/COMPARISON-METRICS.md`](./docs/COMPARISON-METRICS.md) | Metric-by-metric matrix and exact Rotameter mathematical definitions |
 | [`docs/SPEC-ARCHITECTURE.md`](./docs/SPEC-ARCHITECTURE.md) | Workspace crates, `Storage` traits, ring-buffer pipeline, SQLite WAL schema |
 | [`docs/SPEC-PRIVACY.md`](./docs/SPEC-PRIVACY.md) | Hashing, salt windows, session state machine, bots, GeoIP, cardinality caps |
 | [`docs/SPEC-API.md`](./docs/SPEC-API.md) | `/v1/*` HTTP contract, auth scopes, `collect.js`, `pixel.gif`, Astro/CF Workers SSR |
 | [`docs/SPEC-INTERFACES.md`](./docs/SPEC-INTERFACES.md) | CLI commands, `stdio` MCP tool schemas, `ratatui` TUI anatomy & keybindings |
+| [`docs/SPEC-UI.md`](./docs/SPEC-UI.md) | Web UI architecture (`0.3.0+`), `tokens.css`, WCAG 2.2 AA, Plugin SDK & topology contract |
 | [`docs/SPEC-OPERATIONS.md`](./docs/SPEC-OPERATIONS.md) | Multi-arch builds, E2.1.Micro `systemd`, Tunnel/Access, Litestream/R2, benchmarks |
 | [`docs/decisions/README.md`](./docs/decisions/README.md) | MADR 4.0 architectural decision index |

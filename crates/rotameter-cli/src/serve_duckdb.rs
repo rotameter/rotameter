@@ -26,11 +26,8 @@ impl DuckDbServerStore {
     /// # Errors
     ///
     /// Returns [`CoreError::Storage`] if initialization fails.
-    pub(crate) fn open(path: impl AsRef<Path>) -> Result<Self, CoreError> {
-        Ok(Self(Arc::new(DuckDbStore::open(
-            path,
-            &DuckDbConfig::default(),
-        )?)))
+    pub(crate) fn open(path: impl AsRef<Path>, config: &DuckDbConfig) -> Result<Self, CoreError> {
+        Ok(Self(Arc::new(DuckDbStore::open(path, config)?)))
     }
 }
 

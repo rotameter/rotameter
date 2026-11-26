@@ -11,7 +11,7 @@ pub mod store;
 
 use rotameter_core::ComponentInfo;
 
-pub use store::{DuckDbConfig, DuckDbStore};
+pub use store::{DEFAULT_MEMORY_LIMIT, DEFAULT_THREADS, DuckDbConfig, DuckDbStore};
 
 /// Returns static metadata describing `rotameter-store-duckdb`.
 pub const fn component_info() -> ComponentInfo {

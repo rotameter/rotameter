@@ -36,6 +36,8 @@ pub(crate) struct StorageTomlSection {
     pub(crate) db: Option<String>,
     pub(crate) control_db: Option<String>,
     pub(crate) analytics_db: Option<String>,
+    pub(crate) duckdb_memory_limit: Option<String>,
+    pub(crate) duckdb_threads: Option<u32>,
 }
 
 pub(crate) fn parse_role(raw: Option<&str>) -> Result<ServeRoleSetting, CliError> {
@@ -100,6 +102,22 @@ where
     F: Fn(&str) -> Option<String>,
 {
     env_fn(key).and_then(|v| clean_opt(Some(&v)))
+}
+
+pub(crate) fn env_u32<F>(env_fn: &F, key: &str) -> Result<Option<u32>, CliError>
+where
+    F: Fn(&str) -> Option<String>,
+{
+    let Some(raw) = env_non_empty(env_fn, key) else {
+        return Ok(None);
+    };
+    let parsed: u32 = raw
+        .parse()
+        .map_err(|_| CliError::usage(format!("invalid integer value `{raw}` for {key}")))?;
+    if parsed == 0 {
+        return Err(CliError::usage(format!("{key} must be >= 1")));
+    }
+    Ok(Some(parsed))
 }
 
 pub(crate) fn clean_opt(raw: Option<&str>) -> Option<String> {

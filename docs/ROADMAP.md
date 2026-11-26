@@ -43,10 +43,10 @@ Rotameter follows Rust/Cargo SemVer conventions (`0.x` minor milestones keep sin
 
 ---
 
-## `0.3.0` — Initial Web UI & Self-Hoster Essentials (`RM-18`, `RM-20`)
+## `0.3.0` — Initial Web UI & Self-Hoster Essentials (`RM-18`: `RM-37`..`RM-40`, `RM-20`)
 
-- Optional static Web dashboard UI served behind `--ui=on|off` (default `off`) over `/v1/*` covering `0.1.0`–`0.2.0` capabilities (overview, realtime, breakdowns, Parquet/CSV export, site/key admin).
-- Simple self-hoster admin authentication and OIDC/SSO (full multi-org RBAC deferred to `0.6.0`).
+- Optional static Web dashboard UI (`Bun` workspaces under `ui/`, CAD/flight-instrument `tokens.css`, `@base-ui/react`, TanStack Router/Query/Table/Virtual, `uPlot`) embedded behind Cargo feature `ui` + `--ui=on|off` (default `off`) + `--ui-dir <path>` override (`SPEC-UI.md`, `ADR-0009`).
+- Covers `0.1.0`–`0.2.0` capabilities via lazy-loaded `@rotameter/plugin-*` modules (`overview`, `breakdowns` + CSV/Parquet export, `realtime`, `admin` sites/keys, single-node `cluster` health/role status), `/v1/capabilities` handshake, and simple admin login / OIDC (`/v1/auth/*` + CF Access; full multi-org RBAC deferred to `0.6.0`).
 - Optional Streamable HTTP `/mcp` server endpoint and opt-in `--allow-admin` MCP tools (`RM-20`).
 
 ---
@@ -55,15 +55,15 @@ Rotameter follows Rust/Cargo SemVer conventions (`0.x` minor milestones keep sin
 
 - Multi-step conversion funnels (ordered & unordered), user flows/streams, retention cohorts, revenue/goal attribution, Google Search Console sync, and compound boolean filter AST (`AND`/`OR`/`NOT` + regex).
 - Opt-in privacy-safe click/scroll heatmaps and engaged-time heartbeats shipped as a separate collector extension module so base `collect.js` stays `<= 1,536 bytes` gzip.
-- Major Web UI expansion: interactive event/goal definitions, funnel builders, path stream explorers, and heatmap overlays.
+- Lazy-loaded Web UI v2 plugins (`@rotameter/plugin-funnels`, `@rotameter/plugin-heatmaps`, `@rotameter/plugin-streams` with freeze-on-interact + `stream_base_url`, and `@rotameter/plugin-builder` consuming `@rotameter/plugin-sdk` visualizations; `SPEC-UI.md`).
 
 ---
 
 ## `0.5.0` — Multi-Node Scale, Tier 2 DBs, Plugins & Arrow Sinks (`RM-22`, `RM-24`)
 
-- **Shared SQL AST (`rotameter-store-sql` via `sea-query` + `sqlx`):** Multi-node **PostgreSQL** (monthly partitions + `COPY`) and **MySQL / MariaDB (InnoDB)** with per-dialect fast paths.
+- **Shared SQL AST (`rotameter-store-sql` via `sea-query` + `sqlx`):** Multi-node **PostgreSQL** (monthly partitions + `COPY`) and **MySQL / MariaDB (InnoDB)** with per-dialect fast paths; expands `@rotameter/plugin-cluster` with multinode roster and replication lag readouts (`topology === "cluster"`).
 - **Columnar & Warehouse Adapters:** **ClickHouse** (`FORMAT ArrowStream` + `AggregatingMergeTree`) and generic **ADBC / Arrow Flight SQL** (Apache Pinot, Snowflake, BigQuery, Trino, BI tools).
-- **Dual-Granularity Extensibility:** Lightweight hot-path webhooks (`BeforeIngest`/`AfterFlush`, Slack/Discord/`ntfy`, optional WASM) plus batched Arrow IPC/Parquet sinks (S3/R2/Iceberg) and out-of-process Arrow Flight/ADBC storage plugins.
+- **Dual-Granularity Extensibility:** Lightweight hot-path webhooks (`BeforeIngest`/`AfterFlush`, Slack/Discord/`ntfy`, optional WASM), batched Arrow IPC/Parquet sinks (S3/R2/Iceberg), out-of-process Arrow Flight/ADBC storage plugins, and Tier 2 third-party runtime UI plugin loader + iframe sandbox (`SPEC-UI.md`).
 
 ---
 

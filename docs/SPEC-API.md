@@ -199,3 +199,23 @@ On first boot / fresh DB initialization, `rotameter serve` idempotently seeds th
 - **Site slug & identifier:** Generates a persistent immutable `site_id` (`site_...`) with `display_name = "Self (Local)"` and `slug` derived from `--public-url` host (e.g., `analytics.example.com`) when set, defaulting otherwise to `_self`, overrideable via `--self-site-id` / `ROTAMETER_SELF_SITE_ID` / `[server] self_site_id`.
 - **Three-way disable switch (precedence `CLI flag > env var > config`):** `--no-self-site` (or `--self-site=false`), `ROTAMETER_SELF_SITE=false`, or `[server] self_site = false` skips creating/enabling the self-site and omits any self-tracking in `v1.5` UI responses.
 - **Loop guard:** Internal `/v1/query`, `/v1/sites/*/realtime`, `/v1/admin/*`, and `/v1/health` requests against the self-site never synthesize self-referential ingest events.
+
+---
+
+## 7. Web UI Capability & Admin Auth Endpoints (`0.3.0`)
+
+See [`SPEC-UI.md`](./SPEC-UI.md) and [`ADR-0009`](./decisions/0009-web-ui-architecture-and-design-system.md) for the full Web UI contract. All fields strictly follow `/v1/*` and `snake_case`.
+
+- **`GET /v1/capabilities`:** Unauthenticated/boot capability handshake returning:
+  ```json
+  {
+    "topology": "single",
+    "node_role": "all",
+    "features": { "ui": true, "arrow_export": false, "oidc": false, "streams": false },
+    "auth_methods": ["session", "bearer", "cf_access"],
+    "endpoints": { "query": "/v1", "stream": "/v1" }
+  }
+  ```
+  When `node_role === "ingest"`, the UI gates query routes and renders the Node Role Telemetry view.
+- **Query Cluster Metadata (`POST /v1/query` `meta`):** Extends `meta` (`total_rows`, `query_ms`, `truncated_by_cardinality_cap`) with optional cluster fields `watermark_ts`, `partial_nodes`, and `served_by_node`.
+- **Operator Auth (`/v1/auth/*`):** `POST /v1/auth/login`, `POST /v1/auth/logout`, `GET /v1/auth/me`, `GET /v1/auth/oidc/start`, and `GET /v1/auth/oidc/callback` issue `HttpOnly; SameSite=Lax; Secure` operator session cookies with CSRF protection, alongside optional Cloudflare Access header/JWT trust and Bearer token passthrough. Visitor collection (`collect.js`, `pixel.gif`, `/v1/events`) remains **100% cookieless**.

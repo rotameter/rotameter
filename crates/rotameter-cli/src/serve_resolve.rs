@@ -11,7 +11,7 @@ use crate::context::{resolve_config_path, resolve_db_path};
 use crate::exit::CliError;
 use crate::serve_cmd::ServeSettings;
 use crate::serve_parse::{
-    clean_opt, env_bool, env_non_empty, parse_role, parse_salt_store, read_toml_config,
+    clean_opt, env_bool, env_non_empty, env_u32, parse_role, parse_salt_store, read_toml_config,
 };
 
 /// Resolves `rotameter serve` settings with strict precedence (`CLI > env > config`).
@@ -122,6 +122,7 @@ where
             .or_else(|| clean_opt(srv.salt_store.as_deref()))
             .as_deref(),
     )?;
+    let (duckdb_memory_limit, duckdb_threads) = resolve_duckdb_limits(args, &env_fn, &sto)?;
 
     Ok(ServeSettings {
         bind_addr,
@@ -136,7 +137,34 @@ where
         geoip_mmdb,
         mmdb_path,
         trusted_proxy_headers,
+        duckdb_memory_limit,
+        duckdb_threads,
     })
+}
+
+fn resolve_duckdb_limits<F>(
+    args: &ServeArgs,
+    env_fn: &F,
+    sto: &crate::serve_parse::StorageTomlSection,
+) -> Result<(String, u32), CliError>
+where
+    F: Fn(&str) -> Option<String>,
+{
+    let memory_limit = clean_opt(args.duckdb_memory_limit.as_deref())
+        .or_else(|| env_non_empty(env_fn, "ROTAMETER_DUCKDB_MEMORY_LIMIT"))
+        .or_else(|| clean_opt(sto.duckdb_memory_limit.as_deref()))
+        .unwrap_or_else(|| "256MB".to_string());
+    let threads = args
+        .duckdb_threads
+        .or(env_u32(env_fn, "ROTAMETER_DUCKDB_THREADS")?)
+        .or(sto.duckdb_threads)
+        .unwrap_or(1);
+    if threads == 0 {
+        return Err(CliError::usage(
+            "`--duckdb-threads` / `ROTAMETER_DUCKDB_THREADS` must be >= 1",
+        ));
+    }
+    Ok((memory_limit, threads))
 }
 
 fn resolve_control_db_path<F>(global: &GlobalOpts, env_fn: &F, config_db: Option<&str>) -> String

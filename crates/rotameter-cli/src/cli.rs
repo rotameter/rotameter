@@ -131,6 +131,12 @@ pub struct ServeArgs {
     /// Rotating visitor salt store (`db` or `memory`).
     #[arg(long)]
     pub salt_store: Option<String>,
+    /// `DuckDB` `memory_limit` when `--analytics-db duckdb://...` is active (`ROTAMETER_DUCKDB_MEMORY_LIMIT`, default `256MB`).
+    #[arg(long)]
+    pub duckdb_memory_limit: Option<String>,
+    /// `DuckDB` worker thread cap when `--analytics-db duckdb://...` is active (`ROTAMETER_DUCKDB_THREADS`, default `1`).
+    #[arg(long)]
+    pub duckdb_threads: Option<u32>,
 }
 
 /// Options for `rotameter doctor`.

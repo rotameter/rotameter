@@ -27,6 +27,7 @@ traits.
 - [`docs/SPEC-PRIVACY.md`](./docs/SPEC-PRIVACY.md) — `HMAC-SHA256` salt rotation, 30m sessions, bots, GeoIP, cardinality caps
 - [`docs/SPEC-API.md`](./docs/SPEC-API.md) — `/v1/*` HTTP contract, scoped auth, `collect.js`, `pixel.gif`, Astro/CF SSR
 - [`docs/SPEC-INTERFACES.md`](./docs/SPEC-INTERFACES.md) — CLI, `stdio` read-only MCP, `ratatui` TUI
+- [`docs/SPEC-UI.md`](./docs/SPEC-UI.md) — Web UI (`0.3.0+`) architecture, CSS tokens, WCAG 2.2 AA, Plugin SDK
 - [`docs/SPEC-OPERATIONS.md`](./docs/SPEC-OPERATIONS.md) — multi-arch `musl`/macOS builds, `systemd`, Litestream/R2, load gates
 - [`docs/decisions/README.md`](./docs/decisions/README.md) — MADR 4.0 architectural decisions
 
@@ -110,6 +111,13 @@ storypole defer "<title>" --kind <bug|tech-debt|feature|refactor|spike> \
   --crate-name <crate> --symbols "<crate::path::symbol>" --files "<path>"
 ```
 
+### 3.6 Web UI Architecture & Token Guardrails (`0.3.0+`)
+- **Workspace & packaging:** Frontend code lives in `Bun` workspaces under `ui/` (`apps/web`, `packages/ui`, `packages/plugin-sdk`, `packages/plugin-*`) and compiles to static `ui/dist/` (`<= 250 KB` gzip initial load, `<= 1.5 MB` compressed embedded asset budget behind Cargo feature `ui` + `--ui=on|off` / `--ui-dir`). Zero Node/Bun runtime at serving time.
+- **Tokens only:** Never hardcode colors, drop-shadows, or pixel row heights in components or plugins — always reference `tokens.css` semantic `--*` variables and read `--density-table-row-h` dynamically via `getComputedStyle` + `MutationObserver`.
+- **SDK & primitive boundary:** Never bypass `useDashboardQuery()` / `updateQuery()` (no raw `window.location`) or `@rotameter/ui` primitives inside `@rotameter/plugin-*`.
+- **Lazy plugin isolation & charting:** Keep `0.3.0` (`overview`, `breakdowns`, `realtime`, `admin`, `cluster`) and `0.4.0` (`funnels`, `heatmaps`, `streams`, `builder`) isolated as lazy-loaded `@rotameter/plugin-*` modules (`0 KB` initial cost for `0.4.0` in `0.3.0`). Zero ECharts in `0.3.0`; never add WebGL dependencies unless explicitly approved against the deferred threshold criteria in `docs/SPEC-UI.md`.
+- **Accessibility & privacy:** Enforce WCAG 2.2 AA (`>= 4.5:1` contrast, `2px` `:focus-visible` ring, non-color chart encoding + tabular fallback, `>= 24×24px` target sizes); keep visitor collection (`collect.js`, `pixel.gif`, `/v1/events`) 100% cookieless even when `/v1/auth/*` uses `HttpOnly` admin session cookies.
+
 ---
 
 ## 4. Dogfooding the `gaugeblock` Suite
@@ -134,7 +142,7 @@ Workspace configuration and state live under `.gaugeblock/` and `.agents/`:
 
 1. **Brief & lease:** `storypole next` → `storypole claim <KEY> <AGENT_ID> --branch feat/<slug>` → `storypole show <KEY>`.
 2. **Slice context:** `miter skeleton <path>` / `miter lookup <Symbol> --context` / `miter impact <Symbol> --depth 2` before reading full files.
-3. **Decide:** Record architectural decisions as MADR 4.0 files in `docs/decisions/` and update [`docs/decisions/README.md`](./docs/decisions/README.md).
+3. **Decide & plan:** Record architectural decisions as MADR 4.0 files in `docs/decisions/` and update [`docs/decisions/README.md`](./docs/decisions/README.md). Attach a Storypole execution plan (`storypole plan set` / `storypole_set_plan`) when a ticket spans multiple files or carries non-trivial architectural context (recommended for complex work, not required for trivial single-file fixes).
 4. **Implement (Tier 1):** Small modules (`< 250` lines), docstrings on public items, tests beside code, `miter verify --path crates/<dir>`.
 5. **Defer:** Push out-of-scope discoveries to `storypole defer`.
 6. **Commit (Tier 2):** Per-crate fmt/clippy/nextest + `miter audit --threshold 250` + `chalkline docs check -d .` + `CHANGELOG.md` line.

@@ -58,6 +58,10 @@ pub struct ServeSettings {
     pub mmdb_path: Option<PathBuf>,
     /// Whether `CF-*` proxy headers are trusted on unauthenticated sockets.
     pub trusted_proxy_headers: bool,
+    /// `DuckDB` `memory_limit` pragma value when analytics uses `duckdb://`.
+    pub duckdb_memory_limit: String,
+    /// `DuckDB` worker thread cap when analytics uses `duckdb://`.
+    pub duckdb_threads: u32,
 }
 
 #[cfg(all(feature = "server", feature = "sqlite"))]
@@ -126,14 +130,17 @@ pub(crate) fn run_serve(global: &GlobalOpts, args: &ServeArgs) -> Result<(), Cli
         Some(StorageDsn::DuckDb(analytics_path)) => {
             #[cfg(feature = "duckdb")]
             {
+                let duck_cfg = rotameter_store_duckdb::DuckDbConfig {
+                    memory_limit: Some(settings.duckdb_memory_limit),
+                    threads: Some(settings.duckdb_threads),
+                };
                 let analytics = Arc::new(
-                    crate::serve_duckdb::DuckDbServerStore::open(&analytics_path).map_err(
-                        |err| {
+                    crate::serve_duckdb::DuckDbServerStore::open(&analytics_path, &duck_cfg)
+                        .map_err(|err| {
                             CliError::runtime(format!(
                                 "failed to open analytics DuckDB store: {err}"
                             ))
-                        },
-                    )?,
+                        })?,
                 );
                 ServerStores::split(control, analytics)
             }

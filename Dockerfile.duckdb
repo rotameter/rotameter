@@ -1,0 +1,33 @@
+# syntax=docker/dockerfile:1.7
+
+FROM rust:1.99-bookworm AS builder
+WORKDIR /src
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends cmake g++ pkg-config \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY Cargo.toml Cargo.lock ./
+COPY assets ./assets
+COPY crates ./crates
+
+RUN cargo build --release --locked \
+    -p rotameter-cli \
+    --bin rotameter \
+    --no-default-features \
+    --features server,sqlite,duckdb \
+ && strip /src/target/release/rotameter
+
+FROM gcr.io/distroless/cc-debian12:nonroot
+
+COPY --from=builder /src/target/release/rotameter /usr/local/bin/rotameter
+COPY LICENSE-MIT LICENSE-APACHE THIRD_PARTY_NOTICES /usr/share/doc/rotameter/
+
+ENV ROTAMETER_DUCKDB_MEMORY_LIMIT=256MB \
+    ROTAMETER_DUCKDB_THREADS=1
+
+VOLUME ["/var/lib/rotameter"]
+EXPOSE 8000
+
+ENTRYPOINT ["/usr/local/bin/rotameter"]
+CMD ["serve", "--bind", "0.0.0.0:8000", "--db", "sqlite:///var/lib/rotameter/control.db", "--analytics-db", "duckdb:///var/lib/rotameter/analytics.duckdb"]

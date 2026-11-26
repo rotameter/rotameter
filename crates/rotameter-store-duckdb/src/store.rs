@@ -11,13 +11,27 @@ use rotameter_core::storage::{AnalyticsDataPlane, BoxFuture, StorageCapabilities
 
 use crate::schema::init_schema;
 
+/// Default `DuckDB` `memory_limit` tuned for `1 vCPU / 1 GB RAM` target VMs.
+pub const DEFAULT_MEMORY_LIMIT: &str = "256MB";
+/// Default `DuckDB` worker thread cap tuned for `1 vCPU / 1 GB RAM` target VMs.
+pub const DEFAULT_THREADS: u32 = 1;
+
 /// Runtime configuration options for [`DuckDbStore`].
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DuckDbConfig {
-    /// Optional memory limit string passed to `DuckDB` `SET memory_limit = ...` (e.g. `"512MB"`).
+    /// Optional memory limit string passed to `DuckDB` `SET memory_limit = ...` (e.g. `"256MB"`).
     pub memory_limit: Option<String>,
     /// Optional worker thread cap passed to `DuckDB` `SET threads = ...`.
     pub threads: Option<u32>,
+}
+
+impl Default for DuckDbConfig {
+    fn default() -> Self {
+        Self {
+            memory_limit: Some(DEFAULT_MEMORY_LIMIT.to_string()),
+            threads: Some(DEFAULT_THREADS),
+        }
+    }
 }
 
 /// Bundled `DuckDB` OLAP backend implementing [`AnalyticsDataPlane`].

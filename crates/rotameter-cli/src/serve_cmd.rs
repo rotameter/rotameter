@@ -66,11 +66,8 @@ pub struct ServeSettings {
 
 #[cfg(all(feature = "server", feature = "sqlite"))]
 pub(crate) fn run_serve(global: &GlobalOpts, args: &ServeArgs) -> Result<(), CliError> {
-    use std::sync::Arc;
+    use rotameter_server::{GeoIpMode, SaltStoreMode, ServerConfig, ServerRole};
 
-    use rotameter_server::{GeoIpMode, SaltStoreMode, ServerConfig, ServerRole, ServerStores};
-
-    use crate::serve_store::SqliteServerStore;
     use crate::storage_dsn::StorageDsn;
 
     let settings = resolve_serve_settings(global, args)?;
@@ -114,25 +111,73 @@ pub(crate) fn run_serve(global: &GlobalOpts, args: &ServeArgs) -> Result<(), Cli
     };
 
     rotameter_server::init_tracing();
+    let stores = open_server_stores(
+        &control_path,
+        analytics_dsn,
+        settings.duckdb_memory_limit,
+        settings.duckdb_threads,
+    )?;
+
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .map_err(|err| CliError::runtime(format!("failed to build Tokio runtime: {err}")))?;
+    rt.block_on(rotameter_server::serve(config, stores))
+        .map_err(|err| CliError::runtime(format!("server exited with error: {err}")))
+}
+
+#[cfg(all(feature = "server", feature = "sqlite"))]
+fn open_server_stores(
+    control_path: &std::path::Path,
+    analytics_dsn: Option<crate::storage_dsn::StorageDsn>,
+    duckdb_memory_limit: String,
+    duckdb_threads: u32,
+) -> Result<rotameter_server::ServerStores, CliError> {
+    use std::sync::Arc;
+
+    use rotameter_server::ServerStores;
+
+    use crate::serve_store::SqliteServerStore;
+    use crate::storage_dsn::StorageDsn;
+
     let now_ms = crate::format::now_ms();
     let control = Arc::new(
-        SqliteServerStore::open(&control_path, now_ms)
+        SqliteServerStore::open(control_path, now_ms)
             .map_err(|err| CliError::runtime(format!("failed to open SQLite store: {err}")))?,
     );
-    let stores = match analytics_dsn {
-        None => ServerStores::unified(control),
+    match analytics_dsn {
+        None => {
+            let _ = (duckdb_memory_limit, duckdb_threads);
+            #[cfg(feature = "arrow")]
+            let exporter = Arc::new(crate::live_backup::LiveBackupAdapter::UnifiedSqlite(
+                control.inner(),
+            ));
+            let s = ServerStores::unified(control);
+            #[cfg(feature = "arrow")]
+            let s = s.with_backup_exporter(exporter);
+            Ok(s)
+        }
         Some(StorageDsn::Sqlite(analytics_path)) => {
+            let _ = (duckdb_memory_limit, duckdb_threads);
             let analytics = Arc::new(SqliteServerStore::open(&analytics_path, now_ms).map_err(
                 |err| CliError::runtime(format!("failed to open analytics SQLite store: {err}")),
             )?);
-            ServerStores::split(control, analytics)
+            #[cfg(feature = "arrow")]
+            let exporter = Arc::new(crate::live_backup::LiveBackupAdapter::SplitSqlite {
+                control: control.inner(),
+                analytics: analytics.inner(),
+            });
+            let s = ServerStores::split(control, analytics);
+            #[cfg(feature = "arrow")]
+            let s = s.with_backup_exporter(exporter);
+            Ok(s)
         }
         Some(StorageDsn::DuckDb(analytics_path)) => {
             #[cfg(feature = "duckdb")]
             {
                 let duck_cfg = rotameter_store_duckdb::DuckDbConfig {
-                    memory_limit: Some(settings.duckdb_memory_limit),
-                    threads: Some(settings.duckdb_threads),
+                    memory_limit: Some(duckdb_memory_limit),
+                    threads: Some(duckdb_threads),
                 };
                 let analytics = Arc::new(
                     crate::serve_duckdb::DuckDbServerStore::open(&analytics_path, &duck_cfg)
@@ -142,24 +187,21 @@ pub(crate) fn run_serve(global: &GlobalOpts, args: &ServeArgs) -> Result<(), Cli
                             ))
                         })?,
                 );
-                ServerStores::split(control, analytics)
+                let exporter = Arc::new(crate::live_backup::LiveBackupAdapter::SplitDuckDb {
+                    control: control.inner(),
+                    analytics: analytics.inner(),
+                });
+                Ok(ServerStores::split(control, analytics).with_backup_exporter(exporter))
             }
             #[cfg(not(feature = "duckdb"))]
             {
-                let _ = analytics_path;
-                return Err(CliError::usage(
+                let _ = (analytics_path, duckdb_memory_limit, duckdb_threads);
+                Err(CliError::usage(
                     "DuckDB analytics backend requires `--features duckdb`",
-                ));
+                ))
             }
         }
-    };
-
-    let rt = tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-        .map_err(|err| CliError::runtime(format!("failed to build Tokio runtime: {err}")))?;
-    rt.block_on(rotameter_server::serve(config, stores))
-        .map_err(|err| CliError::runtime(format!("server exited with error: {err}")))
+    }
 }
 
 #[cfg(not(all(feature = "server", feature = "sqlite")))]

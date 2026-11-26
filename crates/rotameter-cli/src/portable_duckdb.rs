@@ -18,7 +18,7 @@ use crate::serve_parse::{env_non_empty, env_u32};
 
 const CHUNK_SIZE: usize = 4_096;
 
-fn duckdb_config_from_env() -> Result<DuckDbConfig, CliError> {
+pub(crate) fn duckdb_config_from_env() -> Result<DuckDbConfig, CliError> {
     let mut cfg = DuckDbConfig::default();
     let env_fn = |k: &str| std::env::var(k).ok();
     if let Some(limit) = env_non_empty(&env_fn, "ROTAMETER_DUCKDB_MEMORY_LIMIT") {

@@ -23,6 +23,8 @@ mod import_follow;
 mod import_parse;
 mod import_socket;
 mod import_stream;
+#[cfg(all(feature = "server", feature = "sqlite", feature = "arrow"))]
+mod live_backup;
 #[cfg(feature = "sqlite")]
 mod local_import;
 #[cfg(feature = "sqlite")]
@@ -33,6 +35,8 @@ mod local_keys;
 mod local_sites;
 #[cfg(all(feature = "sqlite", feature = "duckdb"))]
 mod portable_duckdb;
+#[cfg(all(feature = "sqlite", feature = "duckdb"))]
+mod portable_duckdb_export;
 #[cfg(all(feature = "sqlite", feature = "arrow"))]
 mod portable_export;
 #[cfg(all(feature = "sqlite", feature = "arrow"))]

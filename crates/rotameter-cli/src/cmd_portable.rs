@@ -6,12 +6,34 @@ use crate::exit::CliError;
 
 #[cfg(all(feature = "sqlite", feature = "arrow"))]
 pub(crate) fn run_portable_backup(global: &GlobalOpts, args: &BackupArgs) -> Result<(), CliError> {
+    use crate::serve_parse::clean_opt;
+    use crate::storage_dsn::StorageDsn;
+
     let (store, now_ms, _) = crate::context::open_local_store(global)?;
     let archive = args.archive || args.dest.to_string_lossy().ends_with(".tar.zst");
-    let manifest = crate::portable_export::export_portable(&store, &args.dest, archive, now_ms)?;
+    let ana_dsn = clean_opt(global.analytics_db.as_deref())
+        .or_else(|| clean_opt(std::env::var("ROTAMETER_ANALYTICS_DB").ok().as_deref()));
+    let manifest = match ana_dsn.as_deref().map(StorageDsn::parse).transpose()? {
+        Some(StorageDsn::DuckDb(p)) => export_duck(&store, &p, &args.dest, archive, now_ms)?,
+        Some(StorageDsn::Sqlite(p)) => {
+            let ana = rotameter_store_sqlite::SqliteStore::open(
+                &p,
+                rotameter_store_sqlite::SqliteConfig::default(),
+                now_ms,
+            )?;
+            crate::portable_export::export_portable(&ana, &args.dest, archive, now_ms)?
+        }
+        None => crate::portable_export::export_portable(&store, &args.dest, archive, now_ms)?,
+    };
+    let fmt = if archive {
+        "portable-tar-zst"
+    } else {
+        "portable"
+    };
+    let dest_s = args.dest.display().to_string();
     let payload = serde_json::json!({
-        "dest": args.dest.display().to_string(),
-        "format": if archive { "portable-tar-zst" } else { "portable" },
+        "dest": dest_s,
+        "format": fmt,
         "events": manifest.row_counts.events,
         "sessions": manifest.row_counts.sessions,
         "files": manifest.files.len(),
@@ -21,13 +43,8 @@ pub(crate) fn run_portable_backup(global: &GlobalOpts, args: &BackupArgs) -> Res
         global.format,
         &["DEST", "FORMAT", "EVENTS", "SESSIONS", "STATUS"],
         &[vec![
-            args.dest.display().to_string(),
-            if archive {
-                "portable-tar-zst"
-            } else {
-                "portable"
-            }
-            .to_string(),
+            dest_s,
+            fmt.to_string(),
             manifest.row_counts.events.to_string(),
             manifest.row_counts.sessions.to_string(),
             "ok".to_string(),
@@ -35,6 +52,29 @@ pub(crate) fn run_portable_backup(global: &GlobalOpts, args: &BackupArgs) -> Res
         &payload,
         global.quiet,
     )
+}
+
+#[cfg(all(feature = "sqlite", feature = "arrow"))]
+fn export_duck(
+    ctrl: &rotameter_store_sqlite::SqliteStore,
+    duck_path: &std::path::Path,
+    dest: &std::path::Path,
+    archive: bool,
+    now_ms: i64,
+) -> Result<rotameter_arrow::PortableManifest, CliError> {
+    #[cfg(feature = "duckdb")]
+    {
+        crate::portable_duckdb_export::export_duckdb_path_portable(
+            ctrl, duck_path, dest, archive, now_ms,
+        )
+    }
+    #[cfg(not(feature = "duckdb"))]
+    {
+        let _ = (ctrl, duck_path, dest, archive, now_ms);
+        Err(CliError::usage(
+            "DuckDB portable backup requires `--features duckdb`",
+        ))
+    }
 }
 
 #[cfg(all(feature = "sqlite", feature = "arrow"))]

@@ -1,6 +1,9 @@
 #![forbid(unsafe_code)]
 //! Opt-in `DuckDB` OLAP [`rotameter_core::storage::AnalyticsDataPlane`] storage backend (`RM-34`).
 
+mod export;
+mod export_read;
+mod export_read_sessions;
 mod ingest;
 mod ingest_rollups;
 mod query;

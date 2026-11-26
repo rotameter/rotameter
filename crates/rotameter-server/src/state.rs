@@ -13,6 +13,7 @@ use rotameter_core::types::{ApiKeyRecord, KeyScope};
 
 use crate::config::{ServerConfig, ServerError, ServerRole};
 use crate::geoip::GeoIpResolver;
+use crate::handlers::admin_backup::LiveBackupExporter;
 use crate::ingest::IngestPipeline;
 use crate::rate_limit::IpRateLimiter;
 use crate::salt_store::ServerSaltStore;
@@ -25,6 +26,8 @@ pub struct ServerStores {
     pub control: Arc<dyn ControlPlaneStore>,
     /// Analytical OLAP data plane (`events`, `sessions`, `rollups`, queries).
     pub analytics: Arc<dyn AnalyticsDataPlane>,
+    /// Optional online portable `.tar.zst` exporter for `POST /v1/admin/backup`.
+    pub backup_exporter: Option<Arc<dyn LiveBackupExporter>>,
 }
 
 impl ServerStores {
@@ -36,6 +39,7 @@ impl ServerStores {
         Self {
             control: store.clone(),
             analytics: store,
+            backup_exporter: None,
         }
     }
 
@@ -44,7 +48,18 @@ impl ServerStores {
         control: Arc<dyn ControlPlaneStore>,
         analytics: Arc<dyn AnalyticsDataPlane>,
     ) -> Self {
-        Self { control, analytics }
+        Self {
+            control,
+            analytics,
+            backup_exporter: None,
+        }
+    }
+
+    /// Attaches an online portable `.tar.zst` exporter for `POST /v1/admin/backup`.
+    #[must_use]
+    pub fn with_backup_exporter(mut self, exporter: Arc<dyn LiveBackupExporter>) -> Self {
+        self.backup_exporter = Some(exporter);
+        self
     }
 }
 
@@ -54,6 +69,7 @@ pub struct AppState {
     pub(crate) role: ServerRole,
     pub(crate) control_plane: Arc<dyn ControlPlaneStore>,
     pub(crate) analytics: Arc<dyn AnalyticsDataPlane>,
+    pub(crate) backup_exporter: Option<Arc<dyn LiveBackupExporter>>,
     pub(crate) salt_store: ServerSaltStore,
     pub(crate) rate_limiter: Arc<IpRateLimiter>,
     pub(crate) geoip: Arc<GeoIpResolver>,
@@ -110,6 +126,7 @@ impl AppState {
             role: config.role,
             control_plane: stores.control,
             analytics: stores.analytics,
+            backup_exporter: stores.backup_exporter,
             salt_store,
             rate_limiter,
             geoip,

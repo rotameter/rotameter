@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 //! Axum `/v1/*` route registration for ingest, query, admin, collection, and health.
 
+pub(crate) mod admin_backup;
 pub(crate) mod admin_keys;
 pub(crate) mod admin_sites;
 pub(crate) mod admin_wire;
@@ -46,7 +47,8 @@ pub fn build_router(state: AppState) -> Router {
                 "/v1/admin/keys",
                 post(admin_keys::create_key).get(admin_keys::list_keys),
             )
-            .route("/v1/admin/keys/{key_id}", delete(admin_keys::revoke_key));
+            .route("/v1/admin/keys/{key_id}", delete(admin_keys::revoke_key))
+            .route("/v1/admin/backup", post(admin_backup::post_backup));
     }
     router.with_state(state)
 }

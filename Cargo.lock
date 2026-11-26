@@ -2191,6 +2191,7 @@ dependencies = [
  "rotameter-arrow",
  "rotameter-core",
  "rotameter-store-sqlite",
+ "serde_json",
  "tempfile",
 ]
 

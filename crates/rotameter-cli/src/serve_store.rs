@@ -47,6 +47,11 @@ impl SqliteServerStore {
             now_ms,
         )?)))
     }
+
+    /// Returns the underlying `Arc<SqliteStore>` handle.
+    pub fn inner(&self) -> Arc<SqliteStore> {
+        Arc::clone(&self.0)
+    }
 }
 
 async fn run_blocking<T, F>(f: F) -> Result<T, CoreError>

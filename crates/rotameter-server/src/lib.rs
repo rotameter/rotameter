@@ -18,6 +18,7 @@ use rotameter_core::ComponentInfo;
 pub use config::{
     GeoIpMode, RateLimitConfig, SaltStoreMode, ServerConfig, ServerError, ServerRole,
 };
+pub use handlers::admin_backup::LiveBackupExporter;
 pub use handlers::build_router;
 pub use serve::{init_tracing, serve};
 pub use state::{AppState, ServerStores};

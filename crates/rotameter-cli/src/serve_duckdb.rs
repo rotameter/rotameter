@@ -29,6 +29,10 @@ impl DuckDbServerStore {
     pub(crate) fn open(path: impl AsRef<Path>, config: &DuckDbConfig) -> Result<Self, CoreError> {
         Ok(Self(Arc::new(DuckDbStore::open(path, config)?)))
     }
+
+    pub(crate) fn inner(&self) -> Arc<DuckDbStore> {
+        Arc::clone(&self.0)
+    }
 }
 
 impl EventIngestStore for DuckDbServerStore {

@@ -15,6 +15,7 @@ chrono-tz.workspace = true
 duckdb.workspace = true
 rotameter-arrow.workspace = true
 rotameter-core.workspace = true
+serde_json.workspace = true
 
 [dev-dependencies]
 rotameter-store-sqlite.workspace = true

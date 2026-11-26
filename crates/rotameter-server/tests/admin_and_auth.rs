@@ -3,11 +3,10 @@
 
 mod common;
 
-use std::sync::Arc;
 use std::time::Duration;
 
 use axum::http::{Method, StatusCode};
-use rotameter_server::{AppState, ServerConfig, build_router};
+use rotameter_server::{AppState, ServerConfig, ServerStores, build_router};
 use rotameter_store_sqlite::{SqliteConfig, SqliteStore};
 use serde_json::json;
 
@@ -23,19 +22,20 @@ async fn bootstrap_admin_is_idempotent_and_sites_crud_works() {
         ..ServerConfig::default()
     };
 
-    let s1 = Arc::new(TestStore(
-        SqliteStore::open(&db, SqliteConfig::default(), 1_700_000_000_000).unwrap(),
-    ));
-    AppState::new(s1, &cfg)
+    let s1 =
+        TestStore::new(SqliteStore::open(&db, SqliteConfig::default(), 1_700_000_000_000).unwrap());
+    AppState::new(ServerStores::unified(s1), &cfg)
+        .await
         .unwrap()
         .ingest
         .shutdown(Duration::from_secs(1))
         .await;
 
-    let s2 = Arc::new(TestStore(
-        SqliteStore::open(&db, SqliteConfig::default(), 1_700_000_000_000).unwrap(),
-    ));
-    let state = AppState::new(s2, &cfg).unwrap();
+    let s2 =
+        TestStore::new(SqliteStore::open(&db, SqliteConfig::default(), 1_700_000_000_000).unwrap());
+    let state = AppState::new(ServerStores::unified(s2), &cfg)
+        .await
+        .unwrap();
     let app = build_router(state.clone());
 
     let (st, hb) = request(&app, Method::GET, "/v1/health", None, &[], None).await;

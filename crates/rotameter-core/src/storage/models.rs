@@ -19,6 +19,15 @@ pub struct StorageCapabilities {
     pub supports_multi_node_concurrent_writes: bool,
     /// Backend supports multi-step conversion funnel queries directly in SQL (`v2.0`).
     pub supports_sql_funnels: bool,
+    /// Backend supports raw append-only event ingestion with engine-side session/rollup materialization.
+    #[serde(default)]
+    pub supports_raw_append_only: bool,
+    /// Backend can host the transactional OLTP control plane (orgs, sites, API keys, salts).
+    #[serde(default)]
+    pub supports_control_plane: bool,
+    /// Backend can host the OLAP analytics data plane (ingest, query, realtime, retention).
+    #[serde(default)]
+    pub supports_analytics_data_plane: bool,
 }
 
 /// Headline KPI metrics matching `SPEC-API.md` §5.1 and `COMPARISON-METRICS.md`.

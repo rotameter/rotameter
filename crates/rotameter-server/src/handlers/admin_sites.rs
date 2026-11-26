@@ -19,15 +19,16 @@ pub(crate) async fn create_site(
     headers: HeaderMap,
     Json(req): Json<UpsertSiteRequest>,
 ) -> Result<(StatusCode, Json<SiteResponse>), ApiError> {
-    let auth = require_admin(&state, &headers)?;
+    let auth = require_admin(&state, &headers).await?;
     let raw_slug = req
         .slug
         .as_deref()
         .ok_or_else(|| ApiError::bad_request("missing_slug", "`slug` is required"))?;
     let slug = validate_slug(raw_slug).map_err(ApiError::from)?;
     if state
-        .store
+        .control_plane
         .resolve_site(auth.org_id, &SiteRef::Slug(slug.clone()))
+        .await
         .map_err(ApiError::from)?
         .is_some()
     {
@@ -53,7 +54,11 @@ pub(crate) async fn create_site(
         created_at_ms: now,
         updated_at_ms: now,
     };
-    let saved = state.store.upsert_site(&site).map_err(ApiError::from)?;
+    let saved = state
+        .control_plane
+        .upsert_site(&site)
+        .await
+        .map_err(ApiError::from)?;
     Ok((StatusCode::CREATED, Json(SiteResponse::from(saved))))
 }
 
@@ -63,15 +68,20 @@ pub(crate) async fn put_site(
     Path(raw_site): Path<String>,
     Json(req): Json<UpsertSiteRequest>,
 ) -> Result<(StatusCode, Json<SiteResponse>), ApiError> {
-    let auth = require_admin(&state, &headers)?;
+    let auth = require_admin(&state, &headers).await?;
     let site_ref = SiteRef::parse(&raw_site).map_err(ApiError::from)?;
     let existing = state
-        .store
+        .control_plane
         .resolve_site(auth.org_id, &site_ref)
+        .await
         .map_err(ApiError::from)?;
     let (site, status) =
         merge_site_for_put(auth.org_id, &site_ref, existing.as_ref(), req, now_ms())?;
-    let saved = state.store.upsert_site(&site).map_err(ApiError::from)?;
+    let saved = state
+        .control_plane
+        .upsert_site(&site)
+        .await
+        .map_err(ApiError::from)?;
     Ok((status, Json(SiteResponse::from(saved))))
 }
 
@@ -79,10 +89,11 @@ pub(crate) async fn list_sites(
     State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<Json<Vec<SiteResponse>>, ApiError> {
-    let auth = require_admin(&state, &headers)?;
+    let auth = require_admin(&state, &headers).await?;
     let sites = state
-        .store
+        .control_plane
         .list_sites(auth.org_id)
+        .await
         .map_err(ApiError::from)?;
     Ok(Json(sites.into_iter().map(SiteResponse::from).collect()))
 }
@@ -92,11 +103,12 @@ pub(crate) async fn get_site(
     headers: HeaderMap,
     Path(raw_site): Path<String>,
 ) -> Result<Json<SiteResponse>, ApiError> {
-    let auth = require_admin(&state, &headers)?;
+    let auth = require_admin(&state, &headers).await?;
     let site_ref = SiteRef::parse(&raw_site).map_err(ApiError::from)?;
     let site = state
-        .store
+        .control_plane
         .resolve_site(auth.org_id, &site_ref)
+        .await
         .map_err(ApiError::from)?
         .ok_or_else(|| ApiError::not_found("site_not_found", "unknown site identifier"))?;
     Ok(Json(SiteResponse::from(site)))
@@ -108,7 +120,7 @@ pub(crate) async fn delete_site(
     Path(raw_site): Path<String>,
     Query(query): Query<DeleteSiteQuery>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let auth = require_admin(&state, &headers)?;
+    let auth = require_admin(&state, &headers).await?;
     if !query.confirm {
         return Err(ApiError::bad_request(
             "confirm_required",
@@ -117,14 +129,23 @@ pub(crate) async fn delete_site(
     }
     let site_ref = SiteRef::parse(&raw_site).map_err(ApiError::from)?;
     let site = state
-        .store
+        .control_plane
         .resolve_site(auth.org_id, &site_ref)
+        .await
         .map_err(ApiError::from)?
         .ok_or_else(|| ApiError::not_found("site_not_found", "unknown site identifier"))?;
     let deleted = state
-        .store
+        .control_plane
         .delete_site(site.site_id)
+        .await
         .map_err(ApiError::from)?;
+    if deleted {
+        state
+            .analytics
+            .purge_before(site.site_id, i64::MAX)
+            .await
+            .map_err(ApiError::from)?;
+    }
     Ok(Json(
         serde_json::json!({ "deleted": deleted, "site_id": site.site_id }),
     ))

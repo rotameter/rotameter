@@ -1,7 +1,6 @@
 #![forbid(unsafe_code)]
 //! Tracing setup, `TcpListener` lifecycle, and graceful `SIGTERM`/`SIGINT` drain.
 
-use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::net::TcpListener;
@@ -9,7 +8,7 @@ use tracing_subscriber::EnvFilter;
 
 use crate::config::{ServerConfig, ServerError};
 use crate::handlers::build_router;
-use crate::state::{AppState, ServerStore};
+use crate::state::{AppState, ServerStores};
 
 /// Initializes `RUST_LOG`-configurable structured tracing subscriber for CLI/server runs.
 pub fn init_tracing() {
@@ -26,8 +25,8 @@ pub fn init_tracing() {
 /// # Errors
 ///
 /// Returns [`ServerError`] if initialization, socket binding, serving, or WAL checkpoint fails.
-pub async fn serve(config: ServerConfig, store: Arc<dyn ServerStore>) -> Result<(), ServerError> {
-    let state = AppState::new(store.clone(), &config)?;
+pub async fn serve(config: ServerConfig, stores: ServerStores) -> Result<(), ServerError> {
+    let state = AppState::new(stores.clone(), &config).await?;
     let router = build_router(state.clone());
 
     let listener = TcpListener::bind(config.bind_addr)
@@ -42,9 +41,16 @@ pub async fn serve(config: ServerConfig, store: Arc<dyn ServerStore>) -> Result<
 
     let drain_timeout = Duration::from_secs(config.shutdown_timeout_secs.max(1));
     state.ingest.shutdown(drain_timeout).await;
-    store
-        .checkpoint_truncate()
-        .map_err(|err| ServerError::new(format!("final WAL checkpoint failed: {err}")))?;
+    stores
+        .analytics
+        .flush_shutdown()
+        .await
+        .map_err(|err| ServerError::new(format!("analytics shutdown flush failed: {err}")))?;
+    stores
+        .control
+        .flush_shutdown()
+        .await
+        .map_err(|err| ServerError::new(format!("control-plane shutdown flush failed: {err}")))?;
     tracing::info!("rotameter server drained and stopped cleanly");
     Ok(())
 }

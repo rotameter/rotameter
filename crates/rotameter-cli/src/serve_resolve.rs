@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-//! Precedence resolution (`CLI > env > config [server]`) for `rotameter serve`.
+//! Precedence resolution (`CLI > env > config [storage] / [server]`) for `rotameter serve`.
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::{Path, PathBuf};
@@ -16,6 +16,8 @@ use crate::serve_cmd::ServeSettings;
 struct RootTomlConfig {
     #[serde(default)]
     server: Option<ServerTomlSection>,
+    #[serde(default)]
+    storage: Option<StorageTomlSection>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -31,7 +33,14 @@ struct ServerTomlSection {
     trusted_proxy: Option<bool>,
 }
 
-/// Resolves `rotameter serve` settings with strict precedence (`CLI > env > config [server]`).
+#[derive(Debug, Default, Deserialize)]
+struct StorageTomlSection {
+    db: Option<String>,
+    control_db: Option<String>,
+    analytics_db: Option<String>,
+}
+
+/// Resolves `rotameter serve` settings with strict precedence (`CLI > env > config`).
 ///
 /// # Errors
 ///
@@ -56,7 +65,10 @@ pub fn resolve_serve_settings_with<F>(
 where
     F: Fn(&str) -> Option<String>,
 {
-    let srv = read_server_section(resolve_config_path(global, &env_fn).as_deref())?;
+    let root = read_toml_config(resolve_config_path(global, &env_fn).as_deref())?;
+    let srv = root.server.unwrap_or_default();
+    let sto = root.storage.unwrap_or_default();
+
     let bind_raw = clean_opt(args.bind.as_deref())
         .or_else(|| env_non_empty(&env_fn, "ROTAMETER_BIND"))
         .or_else(|| clean_opt(srv.bind.as_deref()));
@@ -67,7 +79,16 @@ where
         None => SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 8000),
     };
 
-    let db_path = resolve_db_path(global, &env_fn, srv.db.as_deref());
+    let cfg_control_db = sto
+        .control_db
+        .as_deref()
+        .or(sto.db.as_deref())
+        .or(srv.db.as_deref());
+    let db_path = resolve_control_db_path(global, &env_fn, cfg_control_db);
+    let analytics_db = clean_opt(global.analytics_db.as_deref())
+        .or_else(|| env_non_empty(&env_fn, "ROTAMETER_ANALYTICS_DB"))
+        .or_else(|| clean_opt(sto.analytics_db.as_deref()));
+
     let bootstrap_admin_key = clean_opt(args.bootstrap_admin_key.as_deref())
         .or_else(|| env_non_empty(&env_fn, "ROTAMETER_BOOTSTRAP_ADMIN_KEY"))
         .or_else(|| clean_opt(srv.bootstrap_admin_key.as_deref()));
@@ -119,6 +140,7 @@ where
     Ok(ServeSettings {
         bind_addr,
         db_path,
+        analytics_db,
         bootstrap_admin_key,
         public_url,
         self_site_enabled,
@@ -129,14 +151,27 @@ where
     })
 }
 
-fn read_server_section(path: Option<&Path>) -> Result<ServerTomlSection, CliError> {
+fn resolve_control_db_path<F>(global: &GlobalOpts, env_fn: &F, config_db: Option<&str>) -> String
+where
+    F: Fn(&str) -> Option<String>,
+{
+    if let Some(cli_db) = clean_opt(global.db.as_deref()) {
+        return cli_db;
+    }
+    if let Some(env_ctrl) = env_non_empty(env_fn, "ROTAMETER_CONTROL_DB") {
+        return env_ctrl;
+    }
+    resolve_db_path(global, env_fn, config_db)
+}
+
+fn read_toml_config(path: Option<&Path>) -> Result<RootTomlConfig, CliError> {
     let Some(p) = path else {
-        return Ok(ServerTomlSection::default());
+        return Ok(RootTomlConfig::default());
     };
     let raw = match std::fs::read_to_string(p) {
         Ok(s) => s,
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
-            return Ok(ServerTomlSection::default());
+            return Ok(RootTomlConfig::default());
         }
         Err(err) => {
             return Err(CliError::runtime(format!(
@@ -145,9 +180,8 @@ fn read_server_section(path: Option<&Path>) -> Result<ServerTomlSection, CliErro
             )));
         }
     };
-    let parsed: RootTomlConfig = toml::from_str(&raw)
-        .map_err(|err| CliError::usage(format!("invalid TOML in `{}`: {err}", p.display())))?;
-    Ok(parsed.server.unwrap_or_default())
+    toml::from_str(&raw)
+        .map_err(|err| CliError::usage(format!("invalid TOML in `{}`: {err}", p.display())))
 }
 
 fn env_bool<F>(env_fn: &F, key: &str) -> Result<Option<bool>, CliError>

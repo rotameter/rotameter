@@ -6,10 +6,7 @@ use rotameter_core::privacy::{MS_PER_DAY, MS_PER_HOUR, utc_yyyymmdd};
 use rotameter_core::query::{
     Dimension, Granularity, Metric, QueryFormat, QuerySpec, RangePreset, TimeRange,
 };
-use rotameter_core::storage::{
-    AnalyticsQueryStore, ControlPlaneStore, EventIngestStore, IngestEvent, RollupDelta,
-    SessionUpsert, WriteBatch,
-};
+use rotameter_core::storage::{IngestEvent, RollupDelta, SessionUpsert, WriteBatch};
 use rotameter_core::types::{
     Channel, DeviceType, EventKind, EventProps, SaltRotation, Site, UtmParams, ViewportClass,
 };
@@ -24,7 +21,7 @@ fn open_site(tz: &str) -> (tempfile::TempDir, SqliteStore, Site) {
     )
     .unwrap_or_else(|_| std::process::abort());
     let org = store
-        .ensure_default_org(1_700_000_000_000)
+        .ensure_default_org_sync(1_700_000_000_000)
         .unwrap_or_else(|_| std::process::abort());
     let site = Site {
         site_id: SiteId::from_uuidv7_parts(1_700_000_000_000, [9; 10]),
@@ -41,7 +38,7 @@ fn open_site(tz: &str) -> (tempfile::TempDir, SqliteStore, Site) {
         created_at_ms: 1_700_000_000_000,
         updated_at_ms: 1_700_000_000_000,
     };
-    let _ = store.upsert_site(&site);
+    let _ = store.upsert_site_sync(&site);
     (dir, store, site)
 }
 
@@ -130,7 +127,7 @@ fn summary_previous_window_and_iana_timezone_day_bucketing() {
         "/docs",
         false,
     );
-    store.write_batch(&batch).unwrap();
+    store.write_batch_sync(&batch).unwrap();
 
     let spec = QuerySpec {
         site_id: SiteRef::Id(site.site_id),
@@ -150,7 +147,7 @@ fn summary_previous_window_and_iana_timezone_day_bucketing() {
     };
 
     let res = store
-        .query(&site, &spec, jan15_la + 6 * MS_PER_HOUR)
+        .query_sync(&site, &spec, jan15_la + 6 * MS_PER_HOUR)
         .unwrap();
     assert_eq!(res.summary.visitors, 1);
     assert_eq!(res.summary.pageviews, 2);
@@ -173,7 +170,7 @@ fn summary_previous_window_and_iana_timezone_day_bucketing() {
         ..spec
     };
     let full = store
-        .query(&site, &full_spec, jan15_la + MS_PER_DAY)
+        .query_sync(&site, &full_spec, jan15_la + MS_PER_DAY)
         .unwrap();
     assert_eq!(full.timeseries.len(), 2);
     assert_eq!(full.timeseries[0].visits, 1);

@@ -17,7 +17,7 @@ use common::{as_json, in_memory_app, request};
 #[tokio::test]
 async fn collect_js_headers_body_and_privacy_invariants() {
     let admin = "rm_adm_collect_edge_token_1234";
-    let (state, app) = in_memory_app(admin);
+    let (state, app) = in_memory_app(admin).await;
 
     let req = Request::builder()
         .method(Method::GET)
@@ -56,7 +56,7 @@ async fn collect_js_headers_body_and_privacy_invariants() {
 #[tokio::test]
 async fn pixel_gif_handles_missing_unknown_sites_and_custom_events() {
     let admin = "rm_adm_pixel_edge_token_123456";
-    let (state, app) = in_memory_app(admin);
+    let (state, app) = in_memory_app(admin).await;
 
     for uri in ["/v1/pixel.gif", "/v1/pixel.gif?site=unknown-site.dev"] {
         let req = Request::builder()

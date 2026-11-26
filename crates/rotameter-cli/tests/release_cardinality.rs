@@ -8,10 +8,7 @@ use rotameter_core::cardinality::{CardinalityGuard, CardinalityOutcome, OVERFLOW
 use rotameter_core::id::{OrgId, SiteId, SiteRef};
 use rotameter_core::normalize::normalize_url;
 use rotameter_core::query::{Dimension, Metric, QueryFormat, QuerySpec, TimeRange};
-use rotameter_core::storage::{
-    AnalyticsQueryStore, ControlPlaneStore, EventIngestStore, IngestEvent, SessionUpsert,
-    WriteBatch,
-};
+use rotameter_core::storage::{IngestEvent, SessionUpsert, WriteBatch};
 use rotameter_core::types::{
     Channel, DeviceType, DimensionKind, EventKind, EventProps, SaltRotation, Site, UtmParams,
     ViewportClass,
@@ -78,8 +75,8 @@ fn cardinality_bomb_100k_paths_caps_at_10k_and_collapses_to_other() {
         .timestamp_millis();
     let dir = tempfile::tempdir().unwrap();
     let store = SqliteStore::open(dir.path().join("bomb.db"), SqliteConfig::default(), ts).unwrap();
-    let org = store.ensure_default_org(ts).unwrap();
-    let site = store.upsert_site(&bomb_site(org.org_id, ts)).unwrap();
+    let org = store.ensure_default_org_sync(ts).unwrap();
+    let site = store.upsert_site_sync(&bomb_site(org.org_id, ts)).unwrap();
 
     let mut guard = CardinalityGuard::with_defaults();
     let (mut accepted, mut overflowed) = (0_usize, 0_usize);
@@ -98,18 +95,18 @@ fn cardinality_bomb_100k_paths_caps_at_10k_and_collapses_to_other() {
         }
         push_path_hit(&mut batch, site.site_id, ts, i, outcome.as_str());
         if batch.events.len() >= 5_000 {
-            store.write_batch(&batch).unwrap();
+            store.write_batch_sync(&batch).unwrap();
             batch.events.clear();
             batch.sessions.clear();
         }
     }
     if !batch.events.is_empty() {
-        store.write_batch(&batch).unwrap();
+        store.write_batch_sync(&batch).unwrap();
     }
 
     assert_eq!((accepted, overflowed), (10_000, 90_000));
     let res = store
-        .query(
+        .query_sync(
             &site,
             &QuerySpec {
                 site_id: SiteRef::Id(site.site_id),

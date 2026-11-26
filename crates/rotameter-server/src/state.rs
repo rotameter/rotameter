@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-//! Shared server state, [`ServerStore`] trait, `CSPRNG` ID generation, and key bootstrap.
+//! Shared server state, [`ServerStores`] pair, `CSPRNG` ID generation, and key bootstrap.
 
 use std::sync::Arc;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
@@ -10,10 +10,7 @@ use rotameter_core::id::{KeyId, OrgId, SiteId};
 use rotameter_core::privacy::{
     InMemorySaltProvider, SaltBytes, SaltProvider, SessionId, compute_api_key_hash,
 };
-use rotameter_core::query::QuerySpec;
-use rotameter_core::storage::{
-    AnalyticsQueryStore, ControlPlaneStore, EventIngestStore, QueryResult,
-};
+use rotameter_core::storage::{AnalyticsDataPlane, ControlPlaneStore};
 use rotameter_core::types::{ApiKeyRecord, KeyScope};
 
 use crate::config::{ServerConfig, ServerError};
@@ -22,32 +19,41 @@ use crate::ingest::IngestPipeline;
 use crate::rate_limit::IpRateLimiter;
 use crate::self_site::ensure_self_site;
 
-/// Unified persistence trait required by `rotameter-server`.
-pub trait ServerStore:
-    ControlPlaneStore + EventIngestStore + AnalyticsQueryStore + Send + Sync + 'static
-{
-    /// Returns the highest applied backend schema migration version.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`CoreError::Storage`] if inspecting schema state fails.
-    fn schema_version(&self) -> Result<u32, CoreError>;
+/// Split OLTP control-plane and OLAP analytics data-plane stores wired into `rotameter-server`.
+#[derive(Clone)]
+pub struct ServerStores {
+    /// Transactional OLTP control plane (`orgs`, `sites`, `api_keys`).
+    pub control: Arc<dyn ControlPlaneStore>,
+    /// Analytical OLAP data plane (`events`, `sessions`, `rollups`, queries).
+    pub analytics: Arc<dyn AnalyticsDataPlane>,
+}
 
-    /// Flushes/truncates the storage write-ahead log on graceful shutdown.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`CoreError::Storage`] if the checkpoint fails.
-    fn checkpoint_truncate(&self) -> Result<(), CoreError>;
+impl ServerStores {
+    /// Creates a [`ServerStores`] pair backed by a single unified store implementing both traits.
+    pub fn unified<T>(store: Arc<T>) -> Self
+    where
+        T: ControlPlaneStore + AnalyticsDataPlane + 'static,
+    {
+        Self {
+            control: store.clone(),
+            analytics: store,
+        }
+    }
 
-    /// Formats a [`QueryResult`] into an `RFC 4180` CSV payload according to `spec`.
-    fn format_csv(&self, result: &QueryResult, spec: &QuerySpec) -> String;
+    /// Creates a [`ServerStores`] pair from distinct control-plane and analytics stores.
+    pub fn split(
+        control: Arc<dyn ControlPlaneStore>,
+        analytics: Arc<dyn AnalyticsDataPlane>,
+    ) -> Self {
+        Self { control, analytics }
+    }
 }
 
 /// Shared application state injected into every Axum route handler.
 #[derive(Clone)]
 pub struct AppState {
-    pub(crate) store: Arc<dyn ServerStore>,
+    pub(crate) control_plane: Arc<dyn ControlPlaneStore>,
+    pub(crate) analytics: Arc<dyn AnalyticsDataPlane>,
     pub(crate) salt_provider: Arc<dyn SaltProvider>,
     pub(crate) rate_limiter: Arc<IpRateLimiter>,
     pub(crate) geoip: Arc<GeoIpResolver>,
@@ -65,10 +71,12 @@ impl AppState {
     /// # Errors
     ///
     /// Returns [`ServerError`] if storage setup or bootstrap key validation fails.
-    pub fn new(store: Arc<dyn ServerStore>, config: &ServerConfig) -> Result<Self, ServerError> {
+    pub async fn new(stores: ServerStores, config: &ServerConfig) -> Result<Self, ServerError> {
         let now = now_ms();
-        let org = store
+        let org = stores
+            .control
             .ensure_default_org(now)
+            .await
             .map_err(|err| ServerError::new(format!("cannot ensure default org: {err}")))?;
 
         if let Some(raw_token) = config
@@ -77,18 +85,20 @@ impl AppState {
             .map(str::trim)
             .filter(|t| !t.is_empty())
         {
-            seed_bootstrap_admin_key(store.as_ref(), org.org_id, raw_token, now)?;
+            seed_bootstrap_admin_key(stores.control.as_ref(), org.org_id, raw_token, now).await?;
         }
 
-        let self_site_id = ensure_self_site(store.as_ref(), org.org_id, config, now)?;
+        let self_site_id =
+            ensure_self_site(stores.control.as_ref(), org.org_id, config, now).await?;
         let geoip = Arc::new(GeoIpResolver::from_config(config)?);
         let rate_limiter = Arc::new(IpRateLimiter::new(config.rate_limit));
         let salt_provider: Arc<dyn SaltProvider> =
             Arc::new(InMemorySaltProvider::new(|_| random_salt_or_fallback()));
-        let ingest = IngestPipeline::spawn(store.clone(), config);
+        let ingest = IngestPipeline::spawn(stores.analytics.clone(), config);
 
         Ok(Self {
-            store,
+            control_plane: stores.control,
+            analytics: stores.analytics,
             salt_provider,
             rate_limiter,
             geoip,
@@ -154,8 +164,8 @@ fn random_salt_or_fallback() -> SaltBytes {
     })
 }
 
-fn seed_bootstrap_admin_key(
-    store: &dyn ServerStore,
+async fn seed_bootstrap_admin_key(
+    control: &dyn ControlPlaneStore,
     org_id: OrgId,
     token: &str,
     now_ms: i64,
@@ -167,8 +177,9 @@ fn seed_bootstrap_admin_key(
         )));
     }
     let key_hash = compute_api_key_hash(token);
-    let existing = store
+    let existing = control
         .list_api_keys(org_id)
+        .await
         .map_err(|err| ServerError::new(format!("cannot check existing API keys: {err}")))?;
     if existing.iter().any(|k| k.key_hash == key_hash) {
         return Ok(());
@@ -176,7 +187,7 @@ fn seed_bootstrap_admin_key(
     let key_id = new_key_id()
         .map_err(|err| ServerError::new(format!("cannot mint bootstrap key id: {err}")))?;
     let key_prefix: String = token.chars().take(12).collect();
-    store
+    control
         .create_api_key(&ApiKeyRecord {
             key_id,
             org_id,
@@ -189,6 +200,7 @@ fn seed_bootstrap_admin_key(
             last_used_ms: None,
             revoked_at_ms: None,
         })
+        .await
         .map_err(|err| ServerError::new(format!("cannot seed bootstrap admin key: {err}")))?;
     tracing::info!("seeded ROTAMETER_BOOTSTRAP_ADMIN_KEY for default organization");
     Ok(())

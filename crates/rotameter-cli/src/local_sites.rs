@@ -5,7 +5,6 @@ use rotameter_client::types::{
     DeleteSiteResponse, SiteId, SiteRef, SiteResponse, UpsertSiteRequest,
 };
 use rotameter_core::id::validate_slug;
-use rotameter_core::storage::{AnalyticsQueryStore, ControlPlaneStore};
 use rotameter_core::types::Site;
 
 use crate::cli::GlobalOpts;
@@ -20,7 +19,7 @@ pub(crate) fn site_upsert(
     req: &UpsertSiteRequest,
 ) -> Result<SiteResponse, CliError> {
     let (store, now, org_id) = open_local_store(global)?;
-    let existing = store.resolve_site(org_id, site_ref)?;
+    let existing = store.resolve_site_sync(org_id, site_ref)?;
     let (site_id, slug, created_at_ms, is_self_site) = if let Some(prev) = &existing {
         let slug = match req.slug.as_deref() {
             Some(s) => validate_slug(s)?,
@@ -86,13 +85,13 @@ pub(crate) fn site_upsert(
         created_at_ms,
         updated_at_ms: now,
     };
-    Ok(site_to_response(store.upsert_site(&site)?))
+    Ok(site_to_response(store.upsert_site_sync(&site)?))
 }
 
 pub(crate) fn site_list(global: &GlobalOpts) -> Result<Vec<SiteResponse>, CliError> {
     let (store, _, org_id) = open_local_store(global)?;
     Ok(store
-        .list_sites(org_id)?
+        .list_sites_sync(org_id)?
         .into_iter()
         .map(site_to_response)
         .collect())
@@ -101,7 +100,7 @@ pub(crate) fn site_list(global: &GlobalOpts) -> Result<Vec<SiteResponse>, CliErr
 pub(crate) fn site_show(global: &GlobalOpts, site_ref: &SiteRef) -> Result<SiteResponse, CliError> {
     let (store, _, org_id) = open_local_store(global)?;
     let site = store
-        .resolve_site(org_id, site_ref)?
+        .resolve_site_sync(org_id, site_ref)?
         .ok_or_else(|| CliError::runtime(format!("unknown site `{site_ref}`")))?;
     Ok(site_to_response(site))
 }
@@ -113,9 +112,9 @@ pub(crate) fn site_purge(
 ) -> Result<(SiteId, u64), CliError> {
     let (store, _, org_id) = open_local_store(global)?;
     let site = store
-        .resolve_site(org_id, site_ref)?
+        .resolve_site_sync(org_id, site_ref)?
         .ok_or_else(|| CliError::runtime(format!("unknown site `{site_ref}`")))?;
-    let deleted = store.purge_before(site.site_id, before_ms)?;
+    let deleted = store.purge_before_sync(site.site_id, before_ms)?;
     Ok((site.site_id, deleted))
 }
 
@@ -129,9 +128,9 @@ pub(crate) fn site_delete(
     }
     let (store, _, org_id) = open_local_store(global)?;
     let site = store
-        .resolve_site(org_id, site_ref)?
+        .resolve_site_sync(org_id, site_ref)?
         .ok_or_else(|| CliError::runtime(format!("unknown site `{site_ref}`")))?;
-    let deleted = store.delete_site(site.site_id)?;
+    let deleted = store.delete_site_sync(site.site_id)?;
     Ok(DeleteSiteResponse {
         deleted,
         site_id: site.site_id,

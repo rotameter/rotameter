@@ -12,7 +12,7 @@ use rotameter_core::id::SiteRef;
 use rotameter_core::query::{
     Dimension, Granularity, Metric, QueryFormat, QuerySpec, RangePreset, TimeRange,
 };
-use rotameter_core::storage::{AnalyticsQueryStore, ControlPlaneStore, QueryResult};
+use rotameter_core::storage::QueryResult;
 use rotameter_core::types::Site;
 use rotameter_store_sqlite::{SqliteConfig, SqliteStore};
 use serde_json::Value;
@@ -51,7 +51,7 @@ fn query_30d(
         offset: 0,
         format: QueryFormat::Json,
     };
-    Ok(store.query(site, &spec, now)?)
+    Ok(store.query_sync(site, &spec, now)?)
 }
 
 fn seed_json(
@@ -102,9 +102,9 @@ fn seed_populates_multiday_queries_breakdowns_and_realtime_pulse() {
 
     let now = now_ms();
     let store = SqliteStore::open(&db, SqliteConfig::default(), now).unwrap();
-    let org = store.ensure_default_org(now).unwrap();
+    let org = store.ensure_default_org_sync(now).unwrap();
     let site = store
-        .resolve_site(org.org_id, &SiteRef::Slug("demo.local".to_string()))
+        .resolve_site_sync(org.org_id, &SiteRef::Slug("demo.local".to_string()))
         .unwrap()
         .unwrap();
 
@@ -117,7 +117,7 @@ fn seed_populates_multiday_queries_breakdowns_and_realtime_pulse() {
         assert!(query_30d(&store, &site, vec![dim], now).unwrap().rows.len() >= 2);
     }
 
-    let rt = store.realtime(&site, now).unwrap();
+    let rt = store.realtime_sync(&site, now).unwrap();
     assert!(rt.active_visitors >= 6);
     assert_ne!(rt.active_pages.len(), 0);
     assert!(rt.pulse.iter().map(|p| p.events).sum::<u64>() > 0);
@@ -137,9 +137,9 @@ fn seed_is_deterministic_supports_reset_and_validates_usage() {
     let _ = seed_json(&db1, "7", "30", "4", true).unwrap();
     let now = now_ms();
     let store = SqliteStore::open(&db1, SqliteConfig::default(), now).unwrap();
-    let org = store.ensure_default_org(now).unwrap();
+    let org = store.ensure_default_org_sync(now).unwrap();
     let site = store
-        .resolve_site(org.org_id, &SiteRef::Slug("demo.local".to_string()))
+        .resolve_site_sync(org.org_id, &SiteRef::Slug("demo.local".to_string()))
         .unwrap()
         .unwrap();
     let res = query_30d(&store, &site, Vec::new(), now).unwrap();

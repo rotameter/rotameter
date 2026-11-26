@@ -50,7 +50,7 @@ pub(crate) async fn post_event(
     let req: EventRequest = serde_json::from_slice(&body).map_err(|err| {
         ApiError::bad_request("invalid_json", format!("malformed payload: {err}"))
     })?;
-    let auth = extract_optional_auth(&state, &headers)?;
+    let auth = extract_optional_auth(&state, &headers).await?;
     let accepted = enqueue_normalized_hit(
         &state,
         &headers,
@@ -64,20 +64,21 @@ pub(crate) async fn post_event(
             props: req.props.as_ref(),
             require_user_agent: auth.is_none(),
         },
-    )?;
+    )
+    .await?;
     Ok((
         StatusCode::ACCEPTED,
         Json(serde_json::json!({ "accepted": u8::from(accepted) })),
     ))
 }
 
-pub(crate) fn enqueue_normalized_hit(
+pub(crate) async fn enqueue_normalized_hit(
     state: &AppState,
     headers: &HeaderMap,
     auth: Option<AuthContext>,
     hit: &HitInput<'_>,
 ) -> Result<bool, ApiError> {
-    let site = resolve_ingest_site(state, headers, auth, hit.site_id_raw)?;
+    let site = resolve_ingest_site(state, headers, auth, hit.site_id_raw).await?;
 
     let trusted_proxy = auth.is_some();
     let ip = extract_client_ip(headers, trusted_proxy);
@@ -148,7 +149,7 @@ pub(crate) fn enqueue_normalized_hit(
     Ok(true)
 }
 
-fn resolve_ingest_site(
+async fn resolve_ingest_site(
     state: &AppState,
     headers: &HeaderMap,
     auth: Option<AuthContext>,
@@ -168,8 +169,9 @@ fn resolve_ingest_site(
         None => state.default_org_id,
     };
     let site = state
-        .store
+        .control_plane
         .resolve_site(org_id, &site_ref)
+        .await
         .map_err(ApiError::from)?
         .ok_or_else(|| ApiError::not_found("site_not_found", "unknown site identifier"))?;
     if let Some(ctx) = auth {

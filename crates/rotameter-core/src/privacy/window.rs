@@ -98,7 +98,8 @@ pub fn resolve_salt_window(rotation: SaltRotation, ts_ms: i64) -> WindowResoluti
 /// Formats `ts_ms` as an integer UTC `YYYYMMDD` date key for `rollups_daily`.
 pub fn utc_yyyymmdd(ts_ms: i64) -> i32 {
     let (year, month, day) = civil_from_days(ts_ms.div_euclid(MS_PER_DAY));
-    year * 10_000 + i32::from(month) * 100 + i32::from(day)
+    year.saturating_mul(10_000)
+        .saturating_add(i32::from(month) * 100 + i32::from(day))
 }
 
 /// Floors `ts_ms` to the start of its UTC hour in milliseconds for `rollups_hourly`.

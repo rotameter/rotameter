@@ -7,9 +7,9 @@ use rotameter_core::cardinality::{CardinalityGuard, CardinalityLimits, OVERFLOW_
 use rotameter_core::id::SiteId;
 use rotameter_core::privacy::{MS_PER_DAY, SaltProvider};
 use rotameter_core::storage::{
-    AnalyticsQueryStore, BreakdownRow, ControlPlaneStore, EventIngestStore, IngestEvent,
-    KpiSummary, QueryMeta, QueryResult, RealtimePage, RealtimePulse, RealtimeSnapshot, RollupDelta,
-    SessionUpsert, StorageCapabilities, TimeseriesPoint, WriteBatch,
+    AnalyticsDataPlane, AnalyticsQueryStore, BreakdownRow, ControlPlaneStore, EventIngestStore,
+    IngestEvent, KpiSummary, QueryMeta, QueryResult, RealtimePage, RealtimePulse, RealtimeSnapshot,
+    RollupDelta, SessionUpsert, StorageCapabilities, TimeseriesPoint, WriteBatch,
 };
 use rotameter_core::types::{
     Channel, DeviceType, DimensionKind, EventKind, EventProps, UtmParams, ViewportClass,
@@ -76,6 +76,7 @@ fn write_batch_and_capabilities_round_trip() {
         _: &dyn ControlPlaneStore,
         _: &dyn EventIngestStore,
         _: &dyn AnalyticsQueryStore,
+        _: &dyn AnalyticsDataPlane,
     ) {
     }
 
@@ -85,6 +86,9 @@ fn write_batch_and_capabilities_round_trip() {
         supports_arbitrary_distinct_visitors: true,
         supports_multi_node_concurrent_writes: false,
         supports_sql_funnels: false,
+        supports_raw_append_only: false,
+        supports_control_plane: true,
+        supports_analytics_data_plane: true,
     };
     assert_eq!(
         serde_json::from_str::<StorageCapabilities>(&serde_json::to_string(&caps).unwrap())

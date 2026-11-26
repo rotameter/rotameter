@@ -68,7 +68,7 @@ pub(crate) async fn create_key(
     headers: HeaderMap,
     Json(req): Json<CreateKeyRequest>,
 ) -> Result<(StatusCode, Json<CreatedKeyResponse>), ApiError> {
-    let auth = require_admin(&state, &headers)?;
+    let auth = require_admin(&state, &headers).await?;
     let label = req.label.trim().to_string();
     if label.is_empty() || label.len() > 128 {
         return Err(ApiError::bad_request(
@@ -80,8 +80,9 @@ pub(crate) async fn create_key(
     let site_id = match (req.scope, req.site) {
         (KeyScope::Ingest | KeyScope::Read, Some(site_ref)) => {
             let site = state
-                .store
+                .control_plane
                 .resolve_site(auth.org_id, &site_ref)
+                .await
                 .map_err(ApiError::from)?
                 .ok_or_else(|| ApiError::not_found("site_not_found", "unknown site identifier"))?;
             Some(site.site_id)
@@ -105,7 +106,7 @@ pub(crate) async fn create_key(
     let key_id = new_key_id().map_err(ApiError::from)?;
     let created_at_ms = now_ms();
     state
-        .store
+        .control_plane
         .create_api_key(&ApiKeyRecord {
             key_id,
             org_id: auth.org_id,
@@ -118,6 +119,7 @@ pub(crate) async fn create_key(
             last_used_ms: None,
             revoked_at_ms: None,
         })
+        .await
         .map_err(ApiError::from)?;
 
     Ok((
@@ -139,10 +141,11 @@ pub(crate) async fn list_keys(
     State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<Json<Vec<KeyMetadataResponse>>, ApiError> {
-    let auth = require_admin(&state, &headers)?;
+    let auth = require_admin(&state, &headers).await?;
     let keys = state
-        .store
+        .control_plane
         .list_api_keys(auth.org_id)
+        .await
         .map_err(ApiError::from)?;
     Ok(Json(
         keys.into_iter().map(KeyMetadataResponse::from).collect(),
@@ -154,11 +157,12 @@ pub(crate) async fn revoke_key(
     headers: HeaderMap,
     Path(raw_key_id): Path<String>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let auth = require_admin(&state, &headers)?;
+    let auth = require_admin(&state, &headers).await?;
     let key_id = KeyId::from_str(&raw_key_id).map_err(ApiError::from)?;
     let owned = state
-        .store
+        .control_plane
         .list_api_keys(auth.org_id)
+        .await
         .map_err(ApiError::from)?
         .into_iter()
         .any(|k| k.key_id == key_id);
@@ -166,8 +170,9 @@ pub(crate) async fn revoke_key(
         return Err(ApiError::not_found("key_not_found", "unknown key_id"));
     }
     let revoked = state
-        .store
+        .control_plane
         .revoke_api_key(key_id, now_ms())
+        .await
         .map_err(ApiError::from)?;
     Ok(Json(
         serde_json::json!({ "revoked": revoked, "key_id": key_id }),

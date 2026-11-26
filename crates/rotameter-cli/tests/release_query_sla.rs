@@ -10,10 +10,7 @@ use rotameter_core::privacy::{MS_PER_DAY, utc_hour_floor_ms, utc_yyyymmdd};
 use rotameter_core::query::{
     Dimension, Granularity, Metric, QueryFormat, QuerySpec, RangePreset, TimeRange,
 };
-use rotameter_core::storage::{
-    AnalyticsQueryStore, ControlPlaneStore, EventIngestStore, IngestEvent, RollupDelta,
-    SessionUpsert, WriteBatch,
-};
+use rotameter_core::storage::{IngestEvent, RollupDelta, SessionUpsert, WriteBatch};
 use rotameter_core::types::{
     Channel, DeviceType, EventKind, EventProps, SaltRotation, Site, UtmParams, ViewportClass,
 };
@@ -44,8 +41,8 @@ fn seed_and_benchmark(
     let now_ms = 1_795_370_000_000_i64;
     let dir = tempfile::tempdir()?;
     let store = SqliteStore::open(dir.path().join("sla.db"), SqliteConfig::default(), now_ms)?;
-    let org = store.ensure_default_org(now_ms)?;
-    let site = store.upsert_site(&Site {
+    let org = store.ensure_default_org_sync(now_ms)?;
+    let site = store.upsert_site_sync(&Site {
         site_id: SiteId::from_uuidv7_parts(u64::try_from(now_ms).unwrap_or(0), [7; 10]),
         org_id: org.org_id,
         slug: "sla.dev".to_string(),
@@ -92,11 +89,11 @@ fn seed_and_benchmark(
         format: QueryFormat::default(),
     };
 
-    let _warmup = store.query(&site, &spec, now_ms)?;
+    let _warmup = store.query_sync(&site, &spec, now_ms)?;
     let mut samples_ms = Vec::with_capacity(30);
     for _ in 0..30 {
         let t0 = Instant::now();
-        let res = store.query(&site, &spec, now_ms)?;
+        let res = store.query_sync(&site, &spec, now_ms)?;
         assert_eq!(res.summary.pageviews, total_events as u64);
         samples_ms.push(t0.elapsed().as_secs_f64() * 1000.0);
     }
@@ -169,12 +166,12 @@ fn seed_events(
             total_duration_ms: 30_000,
         });
         if batch.events.len() >= 10_000 {
-            store.write_batch(&batch)?;
+            store.write_batch_sync(&batch)?;
             batch = WriteBatch::default();
         }
     }
     if !batch.events.is_empty() {
-        store.write_batch(&batch)?;
+        store.write_batch_sync(&batch)?;
     }
     Ok(())
 }

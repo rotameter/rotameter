@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Converted `ControlPlaneStore`, `EventIngestStore`, and `AnalyticsQueryStore` in `rotameter-core` to runtime-agnostic `BoxFuture` async traits (`std::future::Future` with zero `tokio` in core), introduced the `AnalyticsDataPlane` supertrait and OLTP/OLAP/raw-append capability flags on `StorageCapabilities`, moved `format_query_result_csv` into `rotameter-core`, added `0003_split_dim_strings` to decouple `dim_strings` from `sites` for split OLTP/OLAP `SQLite` stores, split `rotameter-server` `AppState` via `ServerStores::{unified, split}` with `tokio::task::spawn_blocking` in `SqliteServerStore`, and wired `--db`/`--control-db`, `--analytics-db`, and `[storage]` TOML DSN resolution into `rotameter-cli` (`RM-31`).
+
 ## [0.1.1] - 2026-11-25
 
 ### Added

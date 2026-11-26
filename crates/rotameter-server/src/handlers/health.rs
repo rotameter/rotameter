@@ -23,7 +23,11 @@ pub(crate) struct HealthResponse {
 pub(crate) async fn get_health(
     State(state): State<AppState>,
 ) -> Result<Json<HealthResponse>, ApiError> {
-    let schema_version = state.store.schema_version().map_err(ApiError::from)?;
+    let schema_version = state
+        .control_plane
+        .schema_version()
+        .await
+        .map_err(ApiError::from)?;
     let queue_depth = state.ingest.queue_depth();
     let queue_capacity = state.ingest.capacity().max(1);
     let queue_fill_pct = (queue_depth as f64 / queue_capacity as f64) * 100.0;

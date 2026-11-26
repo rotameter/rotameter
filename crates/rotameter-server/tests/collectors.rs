@@ -13,7 +13,7 @@ use common::{as_json, in_memory_app, request};
 #[tokio::test]
 async fn collect_js_and_pixel_gif_endpoints_work() {
     let admin = "rm_adm_collect_test_token_123456";
-    let (state, app) = in_memory_app(admin);
+    let (state, app) = in_memory_app(admin).await;
 
     let (st, js) = request(&app, Method::GET, "/v1/collect.js", None, &[], None).await;
     assert_eq!(st, StatusCode::OK);

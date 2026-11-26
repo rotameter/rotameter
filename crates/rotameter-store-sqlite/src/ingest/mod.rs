@@ -8,15 +8,20 @@ use rotameter_core::error::CoreError;
 use rotameter_core::id::SiteId;
 use rotameter_core::privacy::VisitorId;
 use rotameter_core::session::SessionSnapshot;
-use rotameter_core::storage::{EventIngestStore, WriteBatch};
+use rotameter_core::storage::{BoxFuture, EventIngestStore, WriteBatch};
 use rusqlite::{OptionalExtension, TransactionBehavior, params};
 
 use crate::config::map_sql_err;
 use crate::row_decode::decode_session_snapshot;
 use crate::store::SqliteStore;
 
-impl EventIngestStore for SqliteStore {
-    fn lookup_active_session(
+impl SqliteStore {
+    /// Synchronously looks up the latest active session for `(site_id, visitor_id)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError::Storage`] on query failure.
+    pub fn lookup_active_session_sync(
         &self,
         site_id: SiteId,
         visitor_id: VisitorId,
@@ -57,7 +62,12 @@ impl EventIngestStore for SqliteStore {
         })
     }
 
-    fn write_batch(&self, batch: &WriteBatch) -> Result<(), CoreError> {
+    /// Synchronously persists events, session upserts, and rollup deltas in one transaction.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError::Storage`] if the batch transaction fails to commit.
+    pub fn write_batch_sync(&self, batch: &WriteBatch) -> Result<(), CoreError> {
         if batch.events.is_empty() && batch.sessions.is_empty() && batch.rollups.is_empty() {
             return Ok(());
         }
@@ -80,5 +90,24 @@ impl EventIngestStore for SqliteStore {
             path_rollups::write_path_rollups(&tx, &batch.events, &path_ids, &batch.sessions)?;
             tx.commit().map_err(map_sql_err)
         })
+    }
+}
+
+impl EventIngestStore for SqliteStore {
+    fn lookup_active_session(
+        &self,
+        site_id: SiteId,
+        visitor_id: VisitorId,
+        min_last_event_ms: i64,
+    ) -> BoxFuture<'_, Result<Option<SessionSnapshot>, CoreError>> {
+        Box::pin(std::future::ready(self.lookup_active_session_sync(
+            site_id,
+            visitor_id,
+            min_last_event_ms,
+        )))
+    }
+
+    fn write_batch<'a>(&'a self, batch: &'a WriteBatch) -> BoxFuture<'a, Result<(), CoreError>> {
+        Box::pin(std::future::ready(self.write_batch_sync(batch)))
     }
 }

@@ -8,9 +8,7 @@ use rotameter_core::cardinality::{CardinalityGuard, OVERFLOW_BUCKET};
 use rotameter_core::id::SiteId;
 use rotameter_core::privacy::{InMemorySaltProvider, SessionId, resolve_visitor_candidates};
 use rotameter_core::session::{DEFAULT_SESSION_TIMEOUT_MS, SessionTracker};
-use rotameter_core::storage::{
-    ControlPlaneStore, EventIngestStore, IngestEvent, RollupDelta, SessionUpsert, WriteBatch,
-};
+use rotameter_core::storage::{IngestEvent, RollupDelta, SessionUpsert, WriteBatch};
 use rotameter_core::types::{DimensionKind, EventKind, Site};
 use rotameter_store_sqlite::SqliteStore;
 
@@ -37,7 +35,7 @@ pub(crate) fn ingest_local(
 ) -> Result<(u64, u64), CliError> {
     let (store, _, org_id) = open_local_store(global)?;
     let site = store
-        .resolve_site(org_id, site_ref)?
+        .resolve_site_sync(org_id, site_ref)?
         .ok_or_else(|| CliError::runtime(format!("unknown site `{site_ref}`")))?;
     let salts = InMemorySaltProvider::new(|_| {
         let mut seed = [0x42_u8; 32];
@@ -65,7 +63,7 @@ pub(crate) fn ingest_local(
     }
     ctx.write.sessions = ctx.session_map.into_values().collect();
     ctx.write.rollups = ctx.rollup_map.into_values().collect();
-    store.write_batch(&ctx.write)?;
+    store.write_batch_sync(&ctx.write)?;
     Ok((accepted, rejected))
 }
 
@@ -83,7 +81,7 @@ fn fold_local_item(ctx: &mut LocalFoldState<'_>, item: &BatchEventItem) -> Resul
         hint,
         "",
     )?;
-    let fallback = ctx.store.lookup_active_session(
+    let fallback = ctx.store.lookup_active_session_sync(
         ctx.site.site_id,
         candidates.current,
         ts_ms.saturating_sub(DEFAULT_SESSION_TIMEOUT_MS),

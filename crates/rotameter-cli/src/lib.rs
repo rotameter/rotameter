@@ -35,6 +35,7 @@ pub mod serve_cmd;
 mod serve_resolve;
 #[cfg(all(feature = "server", feature = "sqlite"))]
 pub mod serve_store;
+pub mod storage_dsn;
 
 use std::ffi::OsString;
 use std::process::ExitCode;

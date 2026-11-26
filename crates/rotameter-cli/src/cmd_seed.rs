@@ -9,8 +9,6 @@ use rotameter_core::id::{SiteId, SiteRef, validate_slug};
 #[cfg(feature = "sqlite")]
 use rotameter_core::privacy::MS_PER_DAY;
 #[cfg(feature = "sqlite")]
-use rotameter_core::storage::{AnalyticsQueryStore, ControlPlaneStore};
-#[cfg(feature = "sqlite")]
 use rotameter_core::types::{SaltRotation, Site};
 #[cfg(feature = "sqlite")]
 use serde::Serialize;
@@ -92,12 +90,12 @@ fn run_seed_impl(global: &GlobalOpts, args: &SeedArgs) -> Result<(), CliError> {
     let db = resolve_db_path(global, &|k| std::env::var(k).ok(), None);
     let (store, now, org_id) = open_local_store(global)?;
 
-    let existing = store.resolve_site(org_id, &SiteRef::Slug(slug.clone()))?;
+    let existing = store.resolve_site_sync(org_id, &SiteRef::Slug(slug.clone()))?;
     let site = if let Some(mut prev) = existing {
         if let Some(name) = &args.display_name {
             prev.display_name.clone_from(name);
             prev.updated_at_ms = now;
-            store.upsert_site(&prev)?
+            store.upsert_site_sync(&prev)?
         } else {
             prev
         }
@@ -124,11 +122,11 @@ fn run_seed_impl(global: &GlobalOpts, args: &SeedArgs) -> Result<(), CliError> {
             created_at_ms: now,
             updated_at_ms: now,
         };
-        store.upsert_site(&new_site)?
+        store.upsert_site_sync(&new_site)?
     };
 
     if args.reset {
-        store.purge_before(site.site_id, now.saturating_add(MS_PER_DAY))?;
+        store.purge_before_sync(site.site_id, now.saturating_add(MS_PER_DAY))?;
     }
 
     let stats = seed_gen::generate_and_write(&store, &site, now, args)?;

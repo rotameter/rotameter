@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-//! `SQLite` implementation of [`AnalyticsQueryStore`] and CSV formatting helpers.
+//! `SQLite` implementation of [`AnalyticsDataPlane`] and CSV formatting re-export.
 
 mod breakdown;
 mod breakdown_sql;
@@ -19,7 +19,10 @@ use std::time::Instant;
 use rotameter_core::error::CoreError;
 use rotameter_core::id::SiteId;
 use rotameter_core::query::{Metric, QuerySpec};
-use rotameter_core::storage::{AnalyticsQueryStore, QueryMeta, QueryResult, RealtimeSnapshot};
+use rotameter_core::storage::{
+    AnalyticsDataPlane, AnalyticsQueryStore, BoxFuture, QueryMeta, QueryResult, RealtimeSnapshot,
+    StorageCapabilities,
+};
 use rotameter_core::types::Site;
 
 pub use csv::format_query_result_csv;
@@ -33,8 +36,18 @@ use crate::realtime::query_realtime;
 use crate::retention::purge_site_before;
 use crate::store::SqliteStore;
 
-impl AnalyticsQueryStore for SqliteStore {
-    fn query(&self, site: &Site, spec: &QuerySpec, now_ms: i64) -> Result<QueryResult, CoreError> {
+impl SqliteStore {
+    /// Synchronously executes a validated [`QuerySpec`] against stored sessions, events, and rollups.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError::InvalidQuery`] or [`CoreError::Storage`] on failure.
+    pub fn query_sync(
+        &self,
+        site: &Site,
+        spec: &QuerySpec,
+        now_ms: i64,
+    ) -> Result<QueryResult, CoreError> {
         spec.validate()?;
         let started = Instant::now();
         let tz = parse_timezone(&site.timezone)?;
@@ -96,11 +109,60 @@ impl AnalyticsQueryStore for SqliteStore {
         })
     }
 
-    fn realtime(&self, site: &Site, now_ms: i64) -> Result<RealtimeSnapshot, CoreError> {
+    /// Synchronously reads the trailing 5-minute active snapshot and 30-minute pulse for `site`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError::Storage`] on query failure.
+    pub fn realtime_sync(&self, site: &Site, now_ms: i64) -> Result<RealtimeSnapshot, CoreError> {
         self.with_reader(|conn| query_realtime(conn, site, now_ms))
     }
 
-    fn purge_before(&self, site_id: SiteId, before_ms: i64) -> Result<u64, CoreError> {
+    /// Synchronously deletes raw and rollup analytics for `site_id` strictly older than `before_ms`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError::Storage`] on purge failure.
+    pub fn purge_before_sync(&self, site_id: SiteId, before_ms: i64) -> Result<u64, CoreError> {
         self.with_writer(|state| purge_site_before(&mut state.conn, site_id, before_ms))
+    }
+}
+
+impl AnalyticsQueryStore for SqliteStore {
+    fn query<'a>(
+        &'a self,
+        site: &'a Site,
+        spec: &'a QuerySpec,
+        now_ms: i64,
+    ) -> BoxFuture<'a, Result<QueryResult, CoreError>> {
+        Box::pin(std::future::ready(self.query_sync(site, spec, now_ms)))
+    }
+
+    fn realtime<'a>(
+        &'a self,
+        site: &'a Site,
+        now_ms: i64,
+    ) -> BoxFuture<'a, Result<RealtimeSnapshot, CoreError>> {
+        Box::pin(std::future::ready(self.realtime_sync(site, now_ms)))
+    }
+
+    fn purge_before(
+        &self,
+        site_id: SiteId,
+        before_ms: i64,
+    ) -> BoxFuture<'_, Result<u64, CoreError>> {
+        Box::pin(std::future::ready(
+            self.purge_before_sync(site_id, before_ms),
+        ))
+    }
+}
+
+impl AnalyticsDataPlane for SqliteStore {
+    fn data_plane_capabilities(&self) -> StorageCapabilities {
+        self.capabilities_sync()
+    }
+
+    fn flush_shutdown(&self) -> BoxFuture<'_, Result<(), CoreError>> {
+        Box::pin(std::future::ready(self.checkpoint_truncate()))
     }
 }

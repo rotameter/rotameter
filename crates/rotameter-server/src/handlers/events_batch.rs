@@ -37,7 +37,8 @@ pub(crate) async fn post_events_batch(
     headers: HeaderMap,
     Json(req): Json<BatchEventsRequest>,
 ) -> Result<(StatusCode, Json<serde_json::Value>), ApiError> {
-    let auth = extract_optional_auth(&state, &headers)?
+    let auth = extract_optional_auth(&state, &headers)
+        .await?
         .ok_or_else(|| ApiError::unauthorized("missing Bearer API key"))?;
     if !matches!(auth.scope, KeyScope::Ingest | KeyScope::Admin) {
         return Err(ApiError::forbidden(
@@ -70,7 +71,7 @@ pub(crate) async fn post_events_batch(
 
     let (mut accepted, mut rejected) = (0_u64, 0_u64);
     for item in req.events {
-        match build_batch_queued(&state, &ctx, &item)? {
+        match build_batch_queued(&state, &ctx, &item).await? {
             Some(queued) => {
                 state.ingest.try_enqueue(queued)?;
                 accepted += 1;
@@ -85,7 +86,7 @@ pub(crate) async fn post_events_batch(
     ))
 }
 
-fn build_batch_queued(
+async fn build_batch_queued(
     state: &AppState,
     ctx: &BatchContext<'_>,
     item: &BatchEventItem,
@@ -94,8 +95,9 @@ fn build_batch_queued(
         return Ok(None);
     };
     let Some(site) = state
-        .store
+        .control_plane
         .resolve_site(ctx.auth.org_id, &site_ref)
+        .await
         .map_err(ApiError::from)?
     else {
         return Ok(None);

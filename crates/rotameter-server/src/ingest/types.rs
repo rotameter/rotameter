@@ -5,9 +5,8 @@ use rotameter_core::error::CoreError;
 use rotameter_core::id::SiteId;
 use rotameter_core::privacy::VisitorCandidates;
 use rotameter_core::session::SessionSnapshot;
+use rotameter_core::storage::AnalyticsDataPlane;
 use rotameter_core::types::{Channel, DeviceType, EventKind, EventProps, UtmParams, ViewportClass};
-
-use crate::state::ServerStore;
 
 pub(crate) struct QueuedEvent {
     pub(crate) site_id: SiteId,
@@ -27,17 +26,22 @@ pub(crate) struct QueuedEvent {
     pub(crate) viewport_class: ViewportClass,
 }
 
-pub(crate) fn lookup_fallback(
-    store: &dyn ServerStore,
+pub(crate) async fn lookup_fallback(
+    analytics: &dyn AnalyticsDataPlane,
     site_id: SiteId,
     candidates: VisitorCandidates,
     min_last_ms: i64,
 ) -> Result<Option<SessionSnapshot>, CoreError> {
-    if let Some(found) = store.lookup_active_session(site_id, candidates.current, min_last_ms)? {
+    if let Some(found) = analytics
+        .lookup_active_session(site_id, candidates.current, min_last_ms)
+        .await?
+    {
         return Ok(Some(found));
     }
     if let Some(prev) = candidates.previous {
-        return store.lookup_active_session(site_id, prev, min_last_ms);
+        return analytics
+            .lookup_active_session(site_id, prev, min_last_ms)
+            .await;
     }
     Ok(None)
 }

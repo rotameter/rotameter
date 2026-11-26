@@ -2,14 +2,15 @@
 //! Idempotent local `self_site` first-boot initialization (`SPEC-API.md` §6.1).
 
 use rotameter_core::id::{OrgId, SiteId, SiteRef, validate_slug};
+use rotameter_core::storage::ControlPlaneStore;
 use rotameter_core::types::{SaltRotation, Site};
 use url::Url;
 
 use crate::config::{ServerConfig, ServerError};
-use crate::state::{ServerStore, new_site_id};
+use crate::state::new_site_id;
 
-pub(crate) fn ensure_self_site(
-    store: &dyn ServerStore,
+pub(crate) async fn ensure_self_site(
+    control: &dyn ControlPlaneStore,
     org_id: OrgId,
     config: &ServerConfig,
     now_ms: i64,
@@ -18,8 +19,9 @@ pub(crate) fn ensure_self_site(
         return Ok(None);
     }
 
-    let existing_sites = store
+    let existing_sites = control
         .list_sites(org_id)
+        .await
         .map_err(|err| ServerError::new(format!("cannot list sites for self_site check: {err}")))?;
     if let Some(existing) = existing_sites.iter().find(|s| s.is_self_site) {
         return Ok(Some(existing.site_id));
@@ -27,8 +29,9 @@ pub(crate) fn ensure_self_site(
 
     let (explicit_id, slug) = resolve_identity(config)?;
     if let Some(id) = explicit_id
-        && let Some(existing) = store
+        && let Some(existing) = control
             .resolve_site(org_id, &SiteRef::Id(id))
+            .await
             .map_err(|err| ServerError::new(format!("cannot check self_site id: {err}")))?
     {
         return Ok(Some(existing.site_id));
@@ -57,8 +60,9 @@ pub(crate) fn ensure_self_site(
         created_at_ms: now_ms,
         updated_at_ms: now_ms,
     };
-    let saved = store
+    let saved = control
         .upsert_site(&site)
+        .await
         .map_err(|err| ServerError::new(format!("cannot seed self_site: {err}")))?;
     tracing::info!(site_id = %saved.site_id, slug = %saved.slug, "seeded local self_site");
     Ok(Some(saved.site_id))

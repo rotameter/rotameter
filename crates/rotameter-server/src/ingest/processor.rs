@@ -8,11 +8,13 @@ use rotameter_core::error::CoreError;
 use rotameter_core::id::SiteId;
 use rotameter_core::privacy::{SessionId, utc_hour_floor_ms, utc_yyyymmdd};
 use rotameter_core::session::{DEFAULT_SESSION_TIMEOUT_MS, SessionTracker};
-use rotameter_core::storage::{IngestEvent, RollupDelta, SessionUpsert, WriteBatch};
+use rotameter_core::storage::{
+    AnalyticsDataPlane, IngestEvent, RollupDelta, SessionUpsert, WriteBatch,
+};
 use rotameter_core::types::{DimensionKind, EventKind, UtmParams};
 
 use crate::ingest::types::{QueuedEvent, lookup_fallback};
-use crate::state::{ServerStore, new_session_id};
+use crate::state::new_session_id;
 
 pub(crate) struct IngestProcessor {
     sessions: SessionTracker,
@@ -27,9 +29,9 @@ impl IngestProcessor {
         }
     }
 
-    pub(crate) fn process_batch(
+    pub(crate) async fn process_batch(
         &mut self,
-        store: &dyn ServerStore,
+        analytics: &dyn AnalyticsDataPlane,
         batch: Vec<QueuedEvent>,
     ) -> Result<(), CoreError> {
         if batch.is_empty() {
@@ -41,29 +43,30 @@ impl IngestProcessor {
 
         for ev in batch {
             self.fold_event(
-                store,
+                analytics,
                 ev,
                 &mut write.events,
                 &mut session_map,
                 &mut rollup_map,
-            )?;
+            )
+            .await?;
         }
 
         write.sessions = session_map.into_values().collect();
         write.rollups = rollup_map.into_values().collect();
-        store.write_batch(&write)
+        analytics.write_batch(&write).await
     }
 
-    fn fold_event(
+    async fn fold_event(
         &mut self,
-        store: &dyn ServerStore,
+        analytics: &dyn AnalyticsDataPlane,
         ev: QueuedEvent,
         events_out: &mut Vec<IngestEvent>,
         session_map: &mut HashMap<(SiteId, SessionId), SessionUpsert>,
         rollup_map: &mut HashMap<(SiteId, i64), RollupDelta>,
     ) -> Result<(), CoreError> {
         let min_last_ms = ev.ts_ms.saturating_sub(DEFAULT_SESSION_TIMEOUT_MS);
-        let fallback = lookup_fallback(store, ev.site_id, ev.candidates, min_last_ms)?;
+        let fallback = lookup_fallback(analytics, ev.site_id, ev.candidates, min_last_ms).await?;
         let is_pv = matches!(ev.event_kind, EventKind::Pageview);
         let delta = self.sessions.record_event(
             ev.site_id,

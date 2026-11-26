@@ -6,10 +6,7 @@ use rotameter_core::privacy::{MS_PER_HOUR, utc_yyyymmdd};
 use rotameter_core::query::{
     Dimension, FilterOp, FilterValue, Metric, QueryFilter, QueryFormat, QuerySpec, TimeRange,
 };
-use rotameter_core::storage::{
-    AnalyticsQueryStore, ControlPlaneStore, EventIngestStore, IngestEvent, RollupDelta,
-    SessionUpsert, WriteBatch,
-};
+use rotameter_core::storage::{IngestEvent, RollupDelta, SessionUpsert, WriteBatch};
 use rotameter_core::types::{
     Channel, DeviceType, EventKind, EventProps, SaltRotation, Site, UtmParams, ViewportClass,
 };
@@ -23,7 +20,7 @@ fn seed(ts_ms: i64) -> (tempfile::TempDir, SqliteStore, Site) {
     let Ok(store) = SqliteStore::open(&db_path, SqliteConfig::default(), ts_ms) else {
         std::process::abort()
     };
-    let Ok(org) = store.ensure_default_org(ts_ms) else {
+    let Ok(org) = store.ensure_default_org_sync(ts_ms) else {
         std::process::abort()
     };
     let site = Site {
@@ -41,7 +38,7 @@ fn seed(ts_ms: i64) -> (tempfile::TempDir, SqliteStore, Site) {
         created_at_ms: ts_ms,
         updated_at_ms: ts_ms,
     };
-    let _ = store.upsert_site(&site);
+    let _ = store.upsert_site_sync(&site);
 
     let items = [
         (
@@ -113,7 +110,7 @@ fn seed(ts_ms: i64) -> (tempfile::TempDir, SqliteStore, Site) {
             total_duration_ms: 0,
         });
     }
-    let _ = store.write_batch(&batch);
+    let _ = store.write_batch_sync(&batch);
     (dir, store, site)
 }
 
@@ -142,7 +139,9 @@ fn filters_escape_like_wildcards_and_support_all_operators() {
         offset: 0,
         format: QueryFormat::Json,
     };
-    let wildcard_res = store.query(&site, &wildcard_spec, t0 + 10_000).unwrap();
+    let wildcard_res = store
+        .query_sync(&site, &wildcard_spec, t0 + 10_000)
+        .unwrap();
     assert_eq!(wildcard_res.summary.visits, 1);
     assert_eq!(
         wildcard_res.rows[0].key.get("path").map(String::as_str),
@@ -176,7 +175,7 @@ fn filters_escape_like_wildcards_and_support_all_operators() {
         format: QueryFormat::Csv,
         ..wildcard_spec
     };
-    let res = store.query(&site, &multi_spec, t0 + 10_000).unwrap();
+    let res = store.query_sync(&site, &multi_spec, t0 + 10_000).unwrap();
     assert_eq!(res.summary.visits, 1);
     let csv = format_query_result_csv(&res, &multi_spec);
     assert!(csv.starts_with("path,device,visits\n"));

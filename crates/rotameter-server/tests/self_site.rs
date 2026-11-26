@@ -3,11 +3,10 @@
 
 mod common;
 
-use std::sync::Arc;
 use std::time::Duration;
 
 use axum::http::{Method, StatusCode};
-use rotameter_server::{AppState, ServerConfig, build_router};
+use rotameter_server::{AppState, ServerConfig, ServerStores, build_router};
 use rotameter_store_sqlite::{SqliteConfig, SqliteStore};
 use serde_json::json;
 
@@ -25,10 +24,11 @@ async fn self_site_bootstrap_is_idempotent_and_guards_v1_paths() {
         ..ServerConfig::default()
     };
 
-    let s1 = Arc::new(TestStore(
-        SqliteStore::open(&db, SqliteConfig::default(), 1_700_000_000_000).unwrap(),
-    ));
-    let st1 = AppState::new(s1, &cfg).unwrap();
+    let s1 =
+        TestStore::new(SqliteStore::open(&db, SqliteConfig::default(), 1_700_000_000_000).unwrap());
+    let st1 = AppState::new(ServerStores::unified(s1), &cfg)
+        .await
+        .unwrap();
     let app1 = build_router(st1.clone());
     let (_, list1) = request(
         &app1,
@@ -60,10 +60,11 @@ async fn self_site_bootstrap_is_idempotent_and_guards_v1_paths() {
     );
     st1.ingest.shutdown(Duration::from_secs(2)).await;
 
-    let s2 = Arc::new(TestStore(
-        SqliteStore::open(&db, SqliteConfig::default(), 1_700_000_000_000).unwrap(),
-    ));
-    let st2 = AppState::new(s2, &cfg).unwrap();
+    let s2 =
+        TestStore::new(SqliteStore::open(&db, SqliteConfig::default(), 1_700_000_000_000).unwrap());
+    let st2 = AppState::new(ServerStores::unified(s2), &cfg)
+        .await
+        .unwrap();
     let app2 = build_router(st2.clone());
     let (_, list2) = request(
         &app2,

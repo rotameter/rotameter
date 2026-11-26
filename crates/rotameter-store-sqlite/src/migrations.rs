@@ -17,6 +17,11 @@ const MIGRATIONS: &[(u32, &str, &str)] = &[
         "0002_query_rollups",
         include_str!("../migrations/0002_query_rollups.sql"),
     ),
+    (
+        3,
+        "0003_split_dim_strings",
+        include_str!("../migrations/0003_split_dim_strings.sql"),
+    ),
 ];
 
 /// Applies all pending forward migrations atomically and returns the latest schema version.

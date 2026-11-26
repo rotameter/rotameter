@@ -3,7 +3,7 @@
 
 use rotameter_core::id::{KeyId, OrgId, SiteId, SiteRef};
 use rotameter_core::privacy::compute_api_key_hash;
-use rotameter_core::storage::{ControlPlaneStore, EventIngestStore, IngestEvent, WriteBatch};
+use rotameter_core::storage::{IngestEvent, WriteBatch};
 use rotameter_core::types::{ApiKeyRecord, EventKind, EventProps, KeyScope, SaltRotation, Site};
 use rotameter_store_sqlite::{SqliteConfig, SqliteStore};
 
@@ -33,30 +33,33 @@ fn opens_wal_db_verifies_pragmas_and_runs_site_crud() {
     let store = SqliteStore::open(&db_path, SqliteConfig::default(), 1_700_000_000_000).unwrap();
     let health = store.health_snapshot().unwrap();
     assert_eq!(health.journal_mode, "wal");
-    assert_eq!(health.schema_version, 2);
+    assert_eq!(health.schema_version, 3);
     assert_eq!(health.cache_size, -16_000);
     assert_eq!(health.mmap_size, 67_108_864);
     assert!(health.integrity_ok);
 
-    let org = store.ensure_default_org(1_700_000_000_000).unwrap();
+    let org = store.ensure_default_org_sync(1_700_000_000_000).unwrap();
     assert_eq!(org.slug, "default");
     assert_eq!(
-        store.ensure_default_org(1_700_000_005_000).unwrap().org_id,
+        store
+            .ensure_default_org_sync(1_700_000_005_000)
+            .unwrap()
+            .org_id,
         org.org_id
     );
 
     let site_id = SiteId::from_uuidv7_parts(1_700_000_000_000, [1; 10]);
     let mut site = sample_site(org.org_id, site_id, "colinwolff.dev");
-    store.upsert_site(&site).unwrap();
+    store.upsert_site_sync(&site).unwrap();
 
     site.slug = "blog.colinwolff.dev".to_string();
     site.display_name = "Blog".to_string();
     site.updated_at_ms = 1_700_000_010_000;
-    assert_eq!(store.upsert_site(&site).unwrap().site_id, site_id);
+    assert_eq!(store.upsert_site_sync(&site).unwrap().site_id, site_id);
 
     assert_eq!(
         store
-            .resolve_site(org.org_id, &SiteRef::Id(site_id))
+            .resolve_site_sync(org.org_id, &SiteRef::Id(site_id))
             .unwrap()
             .unwrap()
             .display_name,
@@ -64,7 +67,7 @@ fn opens_wal_db_verifies_pragmas_and_runs_site_crud() {
     );
     assert_eq!(
         store
-            .resolve_site(
+            .resolve_site_sync(
                 org.org_id,
                 &SiteRef::Slug("blog.colinwolff.dev".to_string())
             )
@@ -73,20 +76,20 @@ fn opens_wal_db_verifies_pragmas_and_runs_site_crud() {
             .site_id,
         site_id
     );
-    assert_eq!(store.list_sites(org.org_id).unwrap().len(), 1);
+    assert_eq!(store.list_sites_sync(org.org_id).unwrap().len(), 1);
 
     drop(store);
     let reopened = SqliteStore::open(&db_path, SqliteConfig::default(), 1_700_000_030_000).unwrap();
-    assert_eq!(reopened.schema_version().unwrap(), 2);
+    assert_eq!(reopened.schema_version().unwrap(), 3);
 }
 
 #[test]
 fn api_keys_and_site_deletion_cascade_cleanly() {
     let store = SqliteStore::open_in_memory(SqliteConfig::default(), 1_700_000_000_000).unwrap();
-    let org = store.ensure_default_org(1_700_000_000_000).unwrap();
+    let org = store.ensure_default_org_sync(1_700_000_000_000).unwrap();
     let site_id = SiteId::from_uuidv7_parts(1_700_000_000_000, [1; 10]);
     store
-        .upsert_site(&sample_site(org.org_id, site_id, "colinwolff.dev"))
+        .upsert_site_sync(&sample_site(org.org_id, site_id, "colinwolff.dev"))
         .unwrap();
 
     let hash = compute_api_key_hash("rm_rd_secret_token");
@@ -102,21 +105,25 @@ fn api_keys_and_site_deletion_cascade_cleanly() {
         last_used_ms: None,
         revoked_at_ms: None,
     };
-    store.create_api_key(&key).unwrap();
+    store.create_api_key_sync(&key).unwrap();
     assert_eq!(
         store
-            .find_active_key_by_hash(&hash)
+            .find_active_key_by_hash_sync(&hash)
             .unwrap()
             .unwrap()
             .key_id,
         key.key_id
     );
-    assert!(store.revoke_api_key(key.key_id, 1_700_000_020_000).unwrap());
-    assert!(store.find_active_key_by_hash(&hash).unwrap().is_none());
-    assert_eq!(store.list_api_keys(org.org_id).unwrap().len(), 1);
+    assert!(
+        store
+            .revoke_api_key_sync(key.key_id, 1_700_000_020_000)
+            .unwrap()
+    );
+    assert!(store.find_active_key_by_hash_sync(&hash).unwrap().is_none());
+    assert_eq!(store.list_api_keys_sync(org.org_id).unwrap().len(), 1);
 
     store
-        .write_batch(&WriteBatch {
+        .write_batch_sync(&WriteBatch {
             events: vec![IngestEvent {
                 site_id,
                 ts_ms: 1_700_000_000_000,
@@ -131,7 +138,7 @@ fn api_keys_and_site_deletion_cascade_cleanly() {
             rollups: Vec::new(),
         })
         .unwrap();
-    assert!(store.delete_site(site_id).unwrap());
-    assert_eq!(store.list_sites(org.org_id).unwrap().len(), 0);
-    assert_eq!(store.list_api_keys(org.org_id).unwrap().len(), 0);
+    assert!(store.delete_site_sync(site_id).unwrap());
+    assert_eq!(store.list_sites_sync(org.org_id).unwrap().len(), 0);
+    assert_eq!(store.list_api_keys_sync(org.org_id).unwrap().len(), 0);
 }

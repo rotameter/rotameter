@@ -13,7 +13,7 @@ use common::{as_json, in_memory_app, request};
 #[tokio::test]
 async fn batch_ingest_auth_cap_mixed_items_and_visitor_hint() {
     let admin = "rm_adm_batch_srv_test_token_1234";
-    let (state, app) = in_memory_app(admin);
+    let (state, app) = in_memory_app(admin).await;
 
     let (_, sb) = request(
         &app,

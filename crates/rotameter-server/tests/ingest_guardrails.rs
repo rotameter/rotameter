@@ -13,7 +13,7 @@ use common::{as_json, in_memory_app, request};
 #[tokio::test]
 async fn guardrails_enforce_allowed_origins_bots_and_sec_gpc() {
     let admin = "rm_adm_guardrail_test_token_1234";
-    let (state, app) = in_memory_app(admin);
+    let (state, app) = in_memory_app(admin).await;
 
     let (_, sb) = request(
         &app,
@@ -74,7 +74,7 @@ async fn guardrails_enforce_allowed_origins_bots_and_sec_gpc() {
 #[tokio::test]
 async fn trusted_proxy_headers_override_cf_only_when_authenticated() {
     let admin = "rm_adm_proxy_hdr_test_token_1234";
-    let (state, app) = in_memory_app(admin);
+    let (state, app) = in_memory_app(admin).await;
     let (_, sb) = request(
         &app,
         Method::POST,

@@ -8,7 +8,6 @@ use rotameter_client::types::{
     CreateKeyRequest, CreatedKeyResponse, KeyId, KeyMetadataResponse, KeyScope, RevokeKeyResponse,
 };
 use rotameter_core::privacy::compute_api_key_hash;
-use rotameter_core::storage::ControlPlaneStore;
 use rotameter_core::types::ApiKeyRecord;
 
 use crate::cli::GlobalOpts;
@@ -28,7 +27,7 @@ pub(crate) fn key_create(
     let site_id = match (req.scope, req.site.as_ref()) {
         (KeyScope::Ingest | KeyScope::Read, Some(s_ref)) => Some(
             store
-                .resolve_site(org_id, s_ref)?
+                .resolve_site_sync(org_id, s_ref)?
                 .ok_or_else(|| CliError::runtime(format!("unknown site `{s_ref}`")))?
                 .site_id,
         ),
@@ -53,7 +52,7 @@ pub(crate) fn key_create(
         u64::try_from(now.max(0)).unwrap_or(0),
         random_bytes::<10>()?,
     );
-    store.create_api_key(&ApiKeyRecord {
+    store.create_api_key_sync(&ApiKeyRecord {
         key_id,
         org_id,
         key_prefix: key_prefix.clone(),
@@ -80,7 +79,7 @@ pub(crate) fn key_create(
 pub(crate) fn key_list(global: &GlobalOpts) -> Result<Vec<KeyMetadataResponse>, CliError> {
     let (store, _, org_id) = open_local_store(global)?;
     Ok(store
-        .list_api_keys(org_id)?
+        .list_api_keys_sync(org_id)?
         .into_iter()
         .map(|k| KeyMetadataResponse {
             key_id: k.key_id,
@@ -100,13 +99,13 @@ pub(crate) fn key_revoke(global: &GlobalOpts, raw_id: &str) -> Result<RevokeKeyR
     let key_id = KeyId::from_str(raw_id)?;
     let (store, now, org_id) = open_local_store(global)?;
     let owned = store
-        .list_api_keys(org_id)?
+        .list_api_keys_sync(org_id)?
         .into_iter()
         .any(|k| k.key_id == key_id);
     if !owned {
         return Err(CliError::runtime(format!("unknown key `{key_id}`")));
     }
-    let revoked = store.revoke_api_key(key_id, now)?;
+    let revoked = store.revoke_api_key_sync(key_id, now)?;
     Ok(RevokeKeyResponse { revoked, key_id })
 }
 

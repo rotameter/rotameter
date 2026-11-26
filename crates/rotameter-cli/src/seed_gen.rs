@@ -2,7 +2,7 @@
 //! Multi-day diurnal and trailing realtime schedule orchestrator for `rotameter seed`.
 
 use rotameter_core::privacy::{MS_PER_DAY, MS_PER_HOUR, utc_hour_floor_ms};
-use rotameter_core::storage::{EventIngestStore, WriteBatch};
+use rotameter_core::storage::WriteBatch;
 use rotameter_core::types::Site;
 use rotameter_store_sqlite::SqliteStore;
 
@@ -54,7 +54,7 @@ pub(crate) fn generate_and_write(
                 let ts_ms = rng.range_i64(h_start, h_start + MS_PER_HOUR - 240_000);
                 emit_session(site, visitor_id, ts_ms, &mut rng, &mut batch, &mut stats);
                 if batch.events.len() >= 2_000 {
-                    store.write_batch(&batch)?;
+                    store.write_batch_sync(&batch)?;
                     batch = WriteBatch::default();
                 }
             }
@@ -71,7 +71,7 @@ pub(crate) fn generate_and_write(
         &mut stats,
     )?;
     if !batch.events.is_empty() {
-        store.write_batch(&batch)?;
+        store.write_batch_sync(&batch)?;
     }
     Ok(stats)
 }
@@ -142,7 +142,7 @@ fn emit_realtime_window(
             stats,
         );
         if batch.events.len() >= 2_000 {
-            store.write_batch(batch)?;
+            store.write_batch_sync(batch)?;
             *batch = WriteBatch::default();
         }
     }

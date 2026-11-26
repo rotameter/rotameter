@@ -13,7 +13,7 @@ use common::{as_json, in_memory_app, request};
 #[tokio::test]
 async fn scoped_api_key_mint_and_authorization() {
     let admin = "rm_adm_key_scope_test_token_12345";
-    let (state, app) = in_memory_app(admin);
+    let (state, app) = in_memory_app(admin).await;
     let _ = request(
         &app,
         Method::POST,
@@ -90,7 +90,7 @@ async fn scoped_api_key_mint_and_authorization() {
 #[tokio::test]
 async fn api_key_listing_and_revocation() {
     let admin = "rm_adm_key_revoke_test_token_1234";
-    let (state, app) = in_memory_app(admin);
+    let (state, app) = in_memory_app(admin).await;
     let _ = request(
         &app,
         Method::POST,

@@ -13,7 +13,7 @@ use common::{as_json, in_memory_app, request};
 #[tokio::test]
 async fn end_to_end_ingest_flush_query_csv_and_realtime() {
     let admin = "rm_adm_e2e_bootstrap_token_987654";
-    let (state, app) = in_memory_app(admin);
+    let (state, app) = in_memory_app(admin).await;
 
     let (_, sb) = request(
         &app,

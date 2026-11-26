@@ -16,7 +16,6 @@ use rotameter_core::id::SiteRef as CoreSiteRef;
 use rotameter_core::query::{
     Metric as CoreMetric, QueryFormat, QuerySpec, RangePreset as CoreRange, TimeRange,
 };
-use rotameter_core::storage::{AnalyticsQueryStore, ControlPlaneStore};
 use rotameter_store_sqlite::{SqliteConfig, SqliteStore};
 
 struct ChildGuard(Child);
@@ -91,13 +90,13 @@ fn sigterm_drains_ten_thousand_queued_events_with_zero_loss() {
     )
     .unwrap();
     let store = SqliteStore::open(&db_path, SqliteConfig::default(), now_ms).unwrap();
-    let org = store.ensure_default_org(now_ms).unwrap();
+    let org = store.ensure_default_org_sync(now_ms).unwrap();
     let site = store
-        .resolve_site(org.org_id, &CoreSiteRef::Slug("drain.dev".to_string()))
+        .resolve_site_sync(org.org_id, &CoreSiteRef::Slug("drain.dev".to_string()))
         .unwrap()
         .unwrap();
     let res = store
-        .query(
+        .query_sync(
             &site,
             &QuerySpec {
                 site_id: CoreSiteRef::Id(site.site_id),

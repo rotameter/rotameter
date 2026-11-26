@@ -6,10 +6,7 @@ use rotameter_core::privacy::{MS_PER_HOUR, utc_yyyymmdd};
 use rotameter_core::query::{
     Dimension, Metric, QueryFormat, QuerySort, QuerySpec, SortDir, TimeRange,
 };
-use rotameter_core::storage::{
-    AnalyticsQueryStore, ControlPlaneStore, EventIngestStore, IngestEvent, RollupDelta,
-    SessionUpsert, WriteBatch,
-};
+use rotameter_core::storage::{IngestEvent, RollupDelta, SessionUpsert, WriteBatch};
 use rotameter_core::types::{
     Channel, DeviceType, EventKind, EventProps, SaltRotation, Site, UtmParams, ViewportClass,
 };
@@ -24,7 +21,7 @@ fn open_utc_site() -> (tempfile::TempDir, SqliteStore, Site) {
     )
     .unwrap_or_else(|_| std::process::abort());
     let org = store
-        .ensure_default_org(1_700_000_000_000)
+        .ensure_default_org_sync(1_700_000_000_000)
         .unwrap_or_else(|_| std::process::abort());
     let site = Site {
         site_id: SiteId::from_uuidv7_parts(1_700_000_000_000, [3; 10]),
@@ -41,7 +38,7 @@ fn open_utc_site() -> (tempfile::TempDir, SqliteStore, Site) {
         created_at_ms: 1_700_000_000_000,
         updated_at_ms: 1_700_000_000_000,
     };
-    let _ = store.upsert_site(&site);
+    let _ = store.upsert_site_sync(&site);
     (dir, store, site)
 }
 
@@ -98,7 +95,7 @@ fn breakdown_pagination_sorting_and_cardinality_flag() {
             total_duration_ms: dur_ms,
         });
     }
-    store.write_batch(&batch).unwrap();
+    store.write_batch_sync(&batch).unwrap();
 
     let spec = QuerySpec {
         site_id: SiteRef::Id(site.site_id),
@@ -120,7 +117,7 @@ fn breakdown_pagination_sorting_and_cardinality_flag() {
         format: QueryFormat::Json,
     };
 
-    let res = store.query(&site, &spec, t0 + 10_000).unwrap();
+    let res = store.query_sync(&site, &spec, t0 + 10_000).unwrap();
     assert_eq!(res.meta.total_rows, 3);
     assert_eq!(res.rows.len(), 2);
     assert!(res.meta.truncated_by_cardinality_cap);

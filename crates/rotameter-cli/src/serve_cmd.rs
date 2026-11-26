@@ -14,8 +14,10 @@ pub use crate::serve_resolve::{resolve_serve_settings, resolve_serve_settings_wi
 pub struct ServeSettings {
     /// Socket address to bind (`127.0.0.1:8000` default).
     pub bind_addr: SocketAddr,
-    /// `SQLite` database file path (`rotameter.db` default).
+    /// Control-plane `SQLite` database path or DSN (`rotameter.db` default).
     pub db_path: String,
+    /// Optional analytics data-plane DSN overriding `db_path` for OLAP storage.
+    pub analytics_db: Option<String>,
     /// Optional bootstrap admin token (`rm_adm_...`).
     pub bootstrap_admin_key: Option<String>,
     /// Optional public URL whose host seeds `self_site` slug.
@@ -34,9 +36,28 @@ pub struct ServeSettings {
 
 #[cfg(all(feature = "server", feature = "sqlite"))]
 pub(crate) fn run_serve(global: &GlobalOpts, args: &ServeArgs) -> Result<(), CliError> {
-    use rotameter_server::{GeoIpMode, ServerConfig};
+    use std::sync::Arc;
+
+    use rotameter_server::{GeoIpMode, ServerConfig, ServerStores};
+
+    use crate::serve_store::SqliteServerStore;
+    use crate::storage_dsn::StorageDsn;
 
     let settings = resolve_serve_settings(global, args)?;
+    let control_path = match StorageDsn::parse(&settings.db_path)? {
+        StorageDsn::Sqlite(path) => path,
+        StorageDsn::DuckDb(_) => {
+            return Err(CliError::usage(
+                "DuckDB cannot host the transactional control plane; use SQLite for `--db` / `--control-db`",
+            ));
+        }
+    };
+    let analytics_dsn = settings
+        .analytics_db
+        .as_deref()
+        .map(StorageDsn::parse)
+        .transpose()?;
+
     let config = ServerConfig {
         bind_addr: settings.bind_addr,
         bootstrap_admin_key: settings.bootstrap_admin_key,
@@ -55,15 +76,30 @@ pub(crate) fn run_serve(global: &GlobalOpts, args: &ServeArgs) -> Result<(), Cli
 
     rotameter_server::init_tracing();
     let now_ms = crate::format::now_ms();
-    let store = std::sync::Arc::new(
-        crate::serve_store::SqliteServerStore::open(&settings.db_path, now_ms)
+    let control = Arc::new(
+        SqliteServerStore::open(&control_path, now_ms)
             .map_err(|err| CliError::runtime(format!("failed to open SQLite store: {err}")))?,
     );
+    let stores = match analytics_dsn {
+        None => ServerStores::unified(control),
+        Some(StorageDsn::Sqlite(analytics_path)) => {
+            let analytics = Arc::new(SqliteServerStore::open(&analytics_path, now_ms).map_err(
+                |err| CliError::runtime(format!("failed to open analytics SQLite store: {err}")),
+            )?);
+            ServerStores::split(control, analytics)
+        }
+        Some(StorageDsn::DuckDb(_)) => {
+            return Err(CliError::usage(
+                "DuckDB analytics backend requires `--features duckdb` (coming in RM-34)",
+            ));
+        }
+    };
+
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .map_err(|err| CliError::runtime(format!("failed to build Tokio runtime: {err}")))?;
-    rt.block_on(rotameter_server::serve(config, store))
+    rt.block_on(rotameter_server::serve(config, stores))
         .map_err(|err| CliError::runtime(format!("server exited with error: {err}")))
 }
 

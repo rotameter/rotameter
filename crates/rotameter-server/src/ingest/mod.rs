@@ -4,17 +4,17 @@
 pub(crate) mod processor;
 pub(crate) mod types;
 
+use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use rotameter_core::storage::AnalyticsDataPlane;
 use tokio::sync::{mpsc, oneshot};
 use tokio::task::JoinHandle;
 use tokio::time::MissedTickBehavior;
 
 use crate::config::ServerConfig;
 use crate::error::ApiError;
-use crate::state::ServerStore;
 
 use processor::IngestProcessor;
 use types::QueuedEvent;
@@ -25,7 +25,7 @@ enum IngestCmd {
     Shutdown,
 }
 
-/// Bounded in-memory event queue driving batched [`ServerStore::write_batch`] commits.
+/// Bounded in-memory event queue driving batched [`AnalyticsDataPlane::write_batch`] commits.
 #[derive(Clone)]
 pub struct IngestPipeline {
     tx: mpsc::Sender<IngestCmd>,
@@ -35,13 +35,13 @@ pub struct IngestPipeline {
 }
 
 impl IngestPipeline {
-    pub(crate) fn spawn(store: Arc<dyn ServerStore>, config: &ServerConfig) -> Self {
+    pub(crate) fn spawn(analytics: Arc<dyn AnalyticsDataPlane>, config: &ServerConfig) -> Self {
         let capacity = config.queue_capacity.max(1);
         let (tx, rx) = mpsc::channel(capacity);
         let depth = Arc::new(AtomicUsize::new(0));
         let handle = tokio::spawn(run_flusher(
             rx,
-            store,
+            analytics,
             depth.clone(),
             Duration::from_millis(config.flush_interval_ms.max(10)),
             config.max_batch_size.max(1),
@@ -97,12 +97,12 @@ impl IngestPipeline {
 
 async fn run_flusher(
     mut rx: mpsc::Receiver<IngestCmd>,
-    store: Arc<dyn ServerStore>,
+    analytics: Arc<dyn AnalyticsDataPlane>,
     depth: Arc<AtomicUsize>,
     flush_every: Duration,
     max_batch: usize,
 ) {
-    let processor = Arc::new(Mutex::new(IngestProcessor::new()));
+    let mut processor = IngestProcessor::new();
     let mut buf = Vec::with_capacity(max_batch.min(512));
     let mut interval = tokio::time::interval(flush_every);
     interval.set_missed_tick_behavior(MissedTickBehavior::Delay);
@@ -114,13 +114,13 @@ async fn run_flusher(
                     Some(IngestCmd::Event(ev)) => {
                         buf.push(*ev);
                         if buf.len() >= max_batch {
-                            commit_buf(&store, &processor, &depth, &mut buf).await;
+                            commit_buf(&analytics, &mut processor, &depth, &mut buf).await;
                         }
                     }
                     Some(IngestCmd::Flush(ack)) => {
                         let mut acks = vec![ack];
                         drain_ready(&mut rx, &mut buf, &mut acks, usize::MAX);
-                        commit_buf(&store, &processor, &depth, &mut buf).await;
+                        commit_buf(&analytics, &mut processor, &depth, &mut buf).await;
                         for sender in acks {
                             let _ = sender.send(());
                         }
@@ -128,7 +128,7 @@ async fn run_flusher(
                     Some(IngestCmd::Shutdown) | None => {
                         let mut acks = Vec::new();
                         drain_ready(&mut rx, &mut buf, &mut acks, usize::MAX);
-                        commit_buf(&store, &processor, &depth, &mut buf).await;
+                        commit_buf(&analytics, &mut processor, &depth, &mut buf).await;
                         for sender in acks {
                             let _ = sender.send(());
                         }
@@ -138,7 +138,7 @@ async fn run_flusher(
             }
             _ = interval.tick() => {
                 if !buf.is_empty() {
-                    commit_buf(&store, &processor, &depth, &mut buf).await;
+                    commit_buf(&analytics, &mut processor, &depth, &mut buf).await;
                 }
             }
         }
@@ -161,8 +161,8 @@ fn drain_ready(
 }
 
 async fn commit_buf(
-    store: &Arc<dyn ServerStore>,
-    processor: &Arc<Mutex<IngestProcessor>>,
+    analytics: &Arc<dyn AnalyticsDataPlane>,
+    processor: &mut IngestProcessor,
     depth: &Arc<AtomicUsize>,
     buf: &mut Vec<QueuedEvent>,
 ) {
@@ -171,21 +171,9 @@ async fn commit_buf(
     }
     let batch = std::mem::take(buf);
     let count = batch.len();
-    let store_ref = Arc::clone(store);
-    let proc_ref = Arc::clone(processor);
-
-    let res = tokio::task::spawn_blocking(move || {
-        let mut guard = proc_ref
-            .lock()
-            .map_err(|err| rotameter_core::error::CoreError::Storage(err.to_string()))?;
-        guard.process_batch(store_ref.as_ref(), batch)
-    })
-    .await;
-
+    let res = processor.process_batch(analytics.as_ref(), batch).await;
     depth.fetch_sub(count, Ordering::Relaxed);
-    match res {
-        Ok(Ok(())) => {}
-        Ok(Err(err)) => tracing::warn!(batch_len = count, "ingest batch commit failed: {err}"),
-        Err(err) => tracing::warn!(batch_len = count, "ingest worker panicked: {err}"),
+    if let Err(err) = res {
+        tracing::warn!(batch_len = count, "ingest batch commit failed: {err}");
     }
 }

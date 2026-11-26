@@ -47,9 +47,12 @@ pub struct GlobalOpts {
     /// Explicit path to `config.toml` (`ROTAMETER_CONFIG`).
     #[arg(long, global = true)]
     pub config: Option<PathBuf>,
-    /// Local `SQLite` database path (`ROTAMETER_DB`).
-    #[arg(long, global = true)]
+    /// Local `SQLite` database path or control-plane DSN (`ROTAMETER_DB` / `ROTAMETER_CONTROL_DB`).
+    #[arg(long, alias = "control-db", global = true)]
     pub db: Option<String>,
+    /// Optional analytics data-plane DSN (`ROTAMETER_ANALYTICS_DB`, e.g. `sqlite://...`).
+    #[arg(long, global = true)]
+    pub analytics_db: Option<String>,
     /// Output format (`table`, `json`, or `csv`).
     #[arg(long, value_enum, global = true, default_value_t = OutputFormat::Table)]
     pub format: OutputFormat,

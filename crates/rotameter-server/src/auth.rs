@@ -20,7 +20,7 @@ pub(crate) struct AuthContext {
     pub(crate) site_id: Option<SiteId>,
 }
 
-pub(crate) fn extract_optional_auth(
+pub(crate) async fn extract_optional_auth(
     state: &AppState,
     headers: &HeaderMap,
 ) -> Result<Option<AuthContext>, ApiError> {
@@ -39,8 +39,9 @@ pub(crate) fn extract_optional_auth(
 
     let hash = compute_api_key_hash(token);
     let record = state
-        .store
+        .control_plane
         .find_active_key_by_hash(&hash)
+        .await
         .map_err(ApiError::from)?
         .ok_or_else(|| ApiError::unauthorized("invalid or revoked API key"))?;
 
@@ -51,11 +52,12 @@ pub(crate) fn extract_optional_auth(
     }))
 }
 
-pub(crate) fn require_admin(
+pub(crate) async fn require_admin(
     state: &AppState,
     headers: &HeaderMap,
 ) -> Result<AuthContext, ApiError> {
-    let auth = extract_optional_auth(state, headers)?
+    let auth = extract_optional_auth(state, headers)
+        .await?
         .ok_or_else(|| ApiError::unauthorized("missing Bearer API key"))?;
     if auth.scope != KeyScope::Admin {
         return Err(ApiError::forbidden(
@@ -66,12 +68,13 @@ pub(crate) fn require_admin(
     Ok(auth)
 }
 
-pub(crate) fn require_read_site(
+pub(crate) async fn require_read_site(
     state: &AppState,
     headers: &HeaderMap,
     site_ref: &SiteRef,
 ) -> Result<(AuthContext, Site), ApiError> {
-    let auth = extract_optional_auth(state, headers)?
+    let auth = extract_optional_auth(state, headers)
+        .await?
         .ok_or_else(|| ApiError::unauthorized("missing Bearer API key"))?;
     if !matches!(auth.scope, KeyScope::Read | KeyScope::Admin) {
         return Err(ApiError::forbidden(
@@ -80,8 +83,9 @@ pub(crate) fn require_read_site(
         ));
     }
     let site = state
-        .store
+        .control_plane
         .resolve_site(auth.org_id, site_ref)
+        .await
         .map_err(ApiError::from)?
         .ok_or_else(|| ApiError::not_found("site_not_found", "unknown site identifier"))?;
     if auth.scope == KeyScope::Read && auth.site_id != Some(site.site_id) {

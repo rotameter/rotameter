@@ -36,6 +36,7 @@ pub(crate) async fn get_collect_js(
     headers: HeaderMap,
 ) -> Result<impl IntoResponse, ApiError> {
     if extract_optional_auth(&state, &headers)
+        .await
         .ok()
         .flatten()
         .is_none()
@@ -61,7 +62,7 @@ pub(crate) async fn get_pixel_gif(
     headers: HeaderMap,
     Query(query): Query<PixelQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let auth = extract_optional_auth(&state, &headers).ok().flatten();
+    let auth = extract_optional_auth(&state, &headers).await.ok().flatten();
     if auth.is_none() {
         let ip = extract_client_ip(&headers, false);
         state.rate_limiter.check(&ip).map_err(|wait| {
@@ -70,9 +71,16 @@ pub(crate) async fn get_pixel_gif(
     }
     if let Some(site_raw) = query.site.as_deref() {
         let org_id = auth.map_or(state.default_org_id, |ctx| ctx.org_id);
-        let host = SiteRef::parse(site_raw)
-            .ok()
-            .and_then(|s_ref| state.store.resolve_site(org_id, &s_ref).ok().flatten())
+        let site_opt = match SiteRef::parse(site_raw) {
+            Ok(s_ref) => state
+                .control_plane
+                .resolve_site(org_id, &s_ref)
+                .await
+                .ok()
+                .flatten(),
+            Err(_) => None,
+        };
+        let host = site_opt
             .and_then(|site| site.allowed_origins.into_iter().next())
             .map_or_else(
                 || "pixel.rotameter.local".to_string(),
@@ -106,7 +114,8 @@ pub(crate) async fn get_pixel_gif(
                 props: None,
                 require_user_agent: false,
             },
-        );
+        )
+        .await;
     }
 
     Ok((

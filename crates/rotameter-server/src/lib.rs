@@ -17,7 +17,7 @@ use rotameter_core::ComponentInfo;
 pub use config::{GeoIpMode, RateLimitConfig, ServerConfig, ServerError};
 pub use handlers::build_router;
 pub use serve::{init_tracing, serve};
-pub use state::{AppState, ServerStore};
+pub use state::{AppState, ServerStores};
 
 /// Returns static metadata describing `rotameter-server`.
 pub const fn component_info() -> ComponentInfo {

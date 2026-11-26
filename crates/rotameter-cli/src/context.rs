@@ -84,13 +84,22 @@ pub(crate) fn prefer_local_db(global: &GlobalOpts) -> bool {
 pub(crate) fn open_local_store(
     global: &GlobalOpts,
 ) -> Result<(rotameter_store_sqlite::SqliteStore, i64, OrgId), CliError> {
-    use rotameter_core::storage::ControlPlaneStore;
     use rotameter_store_sqlite::{SqliteConfig, SqliteStore};
 
-    let db_path = resolve_db_path(global, &|k| std::env::var(k).ok(), None);
+    use crate::storage_dsn::StorageDsn;
+
+    let db_raw = resolve_db_path(global, &|k| std::env::var(k).ok(), None);
+    let db_path = match StorageDsn::parse(&db_raw)? {
+        StorageDsn::Sqlite(path) => path,
+        StorageDsn::DuckDb(_) => {
+            return Err(CliError::usage(
+                "local SQLite commands require a SQLite `--db` path or `sqlite://` DSN",
+            ));
+        }
+    };
     let now = now_ms();
     let store = SqliteStore::open(&db_path, SqliteConfig::default(), now)?;
-    let org = store.ensure_default_org(now)?;
+    let org = store.ensure_default_org_sync(now)?;
     Ok((store, now, org.org_id))
 }
 

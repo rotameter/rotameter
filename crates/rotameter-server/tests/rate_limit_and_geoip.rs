@@ -3,12 +3,13 @@
 
 mod common;
 
-use std::sync::Arc;
 use std::time::Duration;
 
 use axum::http::{Method, Request, StatusCode, header};
 use http_body_util::BodyExt;
-use rotameter_server::{AppState, GeoIpMode, RateLimitConfig, ServerConfig, build_router};
+use rotameter_server::{
+    AppState, GeoIpMode, RateLimitConfig, ServerConfig, ServerStores, build_router,
+};
 use rotameter_store_sqlite::{SqliteConfig, SqliteStore};
 use serde_json::json;
 use tower::ServiceExt;
@@ -20,7 +21,7 @@ async fn rate_limiter_enforces_429_and_bypasses_authenticated_ingest() {
     let admin = "rm_adm_ratelimit_test_token_1234";
     let sqlite = SqliteStore::open_in_memory(SqliteConfig::default(), 1_700_000_000_000).unwrap();
     let state = AppState::new(
-        Arc::new(TestStore(sqlite)),
+        ServerStores::unified(TestStore::new(sqlite)),
         &ServerConfig {
             bootstrap_admin_key: Some(admin.to_string()),
             self_site_enabled: false,
@@ -33,6 +34,7 @@ async fn rate_limiter_enforces_429_and_bypasses_authenticated_ingest() {
             ..ServerConfig::default()
         },
     )
+    .await
     .unwrap();
     let app = build_router(state.clone());
 
@@ -103,21 +105,22 @@ async fn rate_limiter_enforces_429_and_bypasses_authenticated_ingest() {
 #[tokio::test]
 async fn mmdb_geoip_requires_valid_path_and_untrusted_proxy_ignores_cf_headers() {
     let sqlite = SqliteStore::open_in_memory(SqliteConfig::default(), 1_700_000_000_000).unwrap();
-    let store = Arc::new(TestStore(sqlite));
+    let store = TestStore::new(sqlite);
     assert!(
         AppState::new(
-            store.clone(),
+            ServerStores::unified(store.clone()),
             &ServerConfig {
                 geoip_mode: GeoIpMode::Mmdb,
                 self_site_enabled: false,
                 ..ServerConfig::default()
             }
         )
+        .await
         .is_err()
     );
     assert!(
         AppState::new(
-            store.clone(),
+            ServerStores::unified(store.clone()),
             &ServerConfig {
                 geoip_mode: GeoIpMode::Mmdb,
                 mmdb_path: Some("/nonexistent/GeoLite2.mmdb".into()),
@@ -125,12 +128,13 @@ async fn mmdb_geoip_requires_valid_path_and_untrusted_proxy_ignores_cf_headers()
                 ..ServerConfig::default()
             }
         )
+        .await
         .is_err()
     );
 
     let admin = "rm_adm_untrusted_proxy_test_1234";
     let state = AppState::new(
-        store,
+        ServerStores::unified(store),
         &ServerConfig {
             bootstrap_admin_key: Some(admin.to_string()),
             self_site_enabled: false,
@@ -138,6 +142,7 @@ async fn mmdb_geoip_requires_valid_path_and_untrusted_proxy_ignores_cf_headers()
             ..ServerConfig::default()
         },
     )
+    .await
     .unwrap();
     let app = build_router(state.clone());
     request(

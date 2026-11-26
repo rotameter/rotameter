@@ -2,9 +2,7 @@
 //! Integration tests for batched writes, dimension interning, session fallback, and backups.
 
 use rotameter_core::id::{OrgId, SiteId};
-use rotameter_core::storage::{
-    ControlPlaneStore, EventIngestStore, IngestEvent, RollupDelta, SessionUpsert, WriteBatch,
-};
+use rotameter_core::storage::{IngestEvent, RollupDelta, SessionUpsert, WriteBatch};
 use rotameter_core::types::{
     Channel, DeviceType, EventKind, EventProps, SaltRotation, Site, UtmParams, ViewportClass,
 };
@@ -15,7 +13,7 @@ use rusqlite::Connection;
 fn seed_site(store: &SqliteStore, org_id: OrgId, site_id: SiteId, slug: &str) {
     assert!(
         store
-            .upsert_site(&Site {
+            .upsert_site_sync(&Site {
                 site_id,
                 org_id,
                 slug: slug.to_string(),
@@ -120,7 +118,7 @@ fn batched_writer_interns_dimensions_updates_rollups_and_vacuums_backup() {
     let backup_path = dir.path().join("backups").join("snapshot.db");
 
     let store = SqliteStore::open(&db_path, SqliteConfig::default(), 1_700_000_000_000).unwrap();
-    let org = store.ensure_default_org(1_700_000_000_000).unwrap();
+    let org = store.ensure_default_org_sync(1_700_000_000_000).unwrap();
     let site_a = SiteId::from_uuidv7_parts(1_700_000_000_000, [1; 10]);
     let site_b = SiteId::from_uuidv7_parts(1_700_000_000_000, [2; 10]);
     seed_site(&store, org.org_id, site_a, "site-a.dev");
@@ -128,11 +126,11 @@ fn batched_writer_interns_dimensions_updates_rollups_and_vacuums_backup() {
 
     let props = EventProps::from_pairs([("plan", "pro")]).unwrap();
     store
-        .write_batch(&sample_batch(site_a, site_b, props))
+        .write_batch_sync(&sample_batch(site_a, site_b, props))
         .unwrap();
 
     let active = store
-        .lookup_active_session(site_a, [0x11; 16], 1_699_999_000_000)
+        .lookup_active_session_sync(site_a, [0x11; 16], 1_699_999_000_000)
         .unwrap()
         .unwrap();
     assert_eq!(active.session_id, [0xaa; 16]);

@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 use rotameter_cli::exit::{EXIT_AUTH, EXIT_HEALTH, EXIT_OK};
 use rotameter_cli::run;
 use rotameter_cli::serve_store::SqliteServerStore;
-use rotameter_server::ServerConfig;
+use rotameter_server::{ServerConfig, ServerStores};
 
 #[test]
 fn remote_cli_query_realtime_import_and_doctor_exit_codes() {
@@ -37,7 +37,7 @@ fn remote_cli_query_realtime_import_and_doctor_exit_codes() {
             .enable_all()
             .build()
         {
-            let _ = rt.block_on(rotameter_server::serve(cfg, store));
+            let _ = rt.block_on(rotameter_server::serve(cfg, ServerStores::unified(store)));
         }
     });
     wait_for_port(addr);

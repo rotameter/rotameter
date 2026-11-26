@@ -8,6 +8,7 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use rotameter_core::id::SiteRef;
 use rotameter_core::query::QueryFormat;
+use rotameter_core::storage::format_query_result_csv;
 
 use crate::auth::require_read_site;
 use crate::error::ApiError;
@@ -21,14 +22,15 @@ pub(crate) async fn post_query(
 ) -> Result<Response, ApiError> {
     let spec = req.into_core()?;
     spec.validate().map_err(ApiError::from)?;
-    let (_, site) = require_read_site(&state, &headers, &spec.site_id)?;
+    let (_, site) = require_read_site(&state, &headers, &spec.site_id).await?;
     let result = state
-        .store
+        .analytics
         .query(&site, &spec, now_ms())
+        .await
         .map_err(ApiError::from)?;
 
     if spec.format == QueryFormat::Csv {
-        let csv = state.store.format_csv(&result, &spec);
+        let csv = format_query_result_csv(&result, &spec);
         return Ok((
             StatusCode::OK,
             [(CONTENT_TYPE, "text/csv; charset=utf-8")],
@@ -45,10 +47,11 @@ pub(crate) async fn get_realtime(
     Path(raw_site): Path<String>,
 ) -> Result<Json<WireRealtimeSnapshot>, ApiError> {
     let site_ref = SiteRef::parse(&raw_site).map_err(ApiError::from)?;
-    let (_, site) = require_read_site(&state, &headers, &site_ref)?;
+    let (_, site) = require_read_site(&state, &headers, &site_ref).await?;
     let snap = state
-        .store
+        .analytics
         .realtime(&site, now_ms())
+        .await
         .map_err(ApiError::from)?;
     Ok(Json(WireRealtimeSnapshot::from(snap)))
 }

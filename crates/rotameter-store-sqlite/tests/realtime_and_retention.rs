@@ -4,10 +4,7 @@
 use rotameter_core::id::{OrgId, SiteId, SiteRef};
 use rotameter_core::privacy::{MS_PER_DAY, MS_PER_HOUR, utc_yyyymmdd};
 use rotameter_core::query::{Metric, QueryFormat, QuerySpec, TimeRange};
-use rotameter_core::storage::{
-    AnalyticsQueryStore, ControlPlaneStore, EventIngestStore, IngestEvent, RollupDelta,
-    SessionUpsert, WriteBatch,
-};
+use rotameter_core::storage::{IngestEvent, RollupDelta, SessionUpsert, WriteBatch};
 use rotameter_core::types::{
     Channel, DeviceType, EventKind, EventProps, SaltRotation, Site, UtmParams, ViewportClass,
 };
@@ -21,7 +18,7 @@ fn open_site(retention_days: Option<u32>, now_ms: i64) -> (tempfile::TempDir, Sq
     let Ok(store) = SqliteStore::open(&db_path, SqliteConfig::default(), now_ms) else {
         std::process::abort()
     };
-    let Ok(org) = store.ensure_default_org(now_ms) else {
+    let Ok(org) = store.ensure_default_org_sync(now_ms) else {
         std::process::abort()
     };
     let site = Site {
@@ -39,7 +36,7 @@ fn open_site(retention_days: Option<u32>, now_ms: i64) -> (tempfile::TempDir, Sq
         created_at_ms: now_ms,
         updated_at_ms: now_ms,
     };
-    let _ = store.upsert_site(&site);
+    let _ = store.upsert_site_sync(&site);
     (dir, store, site)
 }
 
@@ -97,9 +94,9 @@ fn realtime_five_minute_cutoff_and_thirty_minute_pulse() {
     add_hit(&mut batch, site.site_id, 2, 2, now_ms - 2 * 60_000, "/home");
     add_hit(&mut batch, site.site_id, 3, 2, now_ms - 60_000, "/pricing");
     add_hit(&mut batch, site.site_id, 4, 3, now_ms, "/home");
-    store.write_batch(&batch).unwrap();
+    store.write_batch_sync(&batch).unwrap();
 
-    let rt = store.realtime(&site, now_ms).unwrap();
+    let rt = store.realtime_sync(&site, now_ms).unwrap();
     assert_eq!(rt.active_visitors, 2);
     assert_eq!(rt.active_pages.len(), 2);
     assert_eq!(rt.active_pages[0].path, "/home");
@@ -120,7 +117,7 @@ fn retention_pruner_preserves_rollups_and_purge_before_deletes_all() {
     let mut batch = WriteBatch::default();
     add_hit(&mut batch, site.site_id, 1, 1, old_ts, "/legacy");
     add_hit(&mut batch, site.site_id, 2, 2, recent_ts, "/fresh");
-    store.write_batch(&batch).unwrap();
+    store.write_batch_sync(&batch).unwrap();
 
     let pruned = store.prune_expired_sites(now_ms).unwrap();
     assert_eq!(pruned, 2); // 1 old event + 1 old session
@@ -141,13 +138,13 @@ fn retention_pruner_preserves_rollups_and_purge_before_deletes_all() {
         offset: 0,
         format: QueryFormat::Json,
     };
-    let post_prune = store.query(&site, &spec, now_ms).unwrap();
+    let post_prune = store.query_sync(&site, &spec, now_ms).unwrap();
     assert_eq!(post_prune.summary.pageviews, 2);
     assert_eq!(post_prune.summary.visits, 2);
 
-    let purged = store.purge_before(site.site_id, recent_ts).unwrap();
+    let purged = store.purge_before_sync(site.site_id, recent_ts).unwrap();
     assert!(purged >= 2); // hourly + daily rollup removed
-    let post_purge = store.query(&site, &spec, now_ms).unwrap();
+    let post_purge = store.query_sync(&site, &spec, now_ms).unwrap();
     assert_eq!(post_purge.summary.pageviews, 1);
     assert_eq!(post_purge.summary.visits, 1);
 }

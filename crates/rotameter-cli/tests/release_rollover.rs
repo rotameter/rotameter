@@ -10,10 +10,7 @@ use rotameter_core::privacy::{
 };
 use rotameter_core::query::{Metric, QueryFormat, QuerySpec, TimeRange};
 use rotameter_core::session::{SessionDelta, SessionTracker};
-use rotameter_core::storage::{
-    AnalyticsQueryStore, ControlPlaneStore, EventIngestStore, IngestEvent, RollupDelta,
-    SessionUpsert, WriteBatch,
-};
+use rotameter_core::storage::{IngestEvent, RollupDelta, SessionUpsert, WriteBatch};
 use rotameter_core::types::{
     Channel, DeviceType, EventKind, EventProps, SaltRotation, Site, UtmParams, ViewportClass,
 };
@@ -100,8 +97,10 @@ fn midnight_salt_rollover_preserves_continuous_session() {
     let dir = tempfile::tempdir().unwrap();
     let store =
         SqliteStore::open(dir.path().join("rollover.db"), SqliteConfig::default(), t1).unwrap();
-    let org = store.ensure_default_org(t1).unwrap();
-    let site = store.upsert_site(&rollover_site(org.org_id, t1)).unwrap();
+    let org = store.ensure_default_org_sync(t1).unwrap();
+    let site = store
+        .upsert_site_sync(&rollover_site(org.org_id, t1))
+        .unwrap();
 
     let salts = InMemorySaltProvider::new(|w| {
         [u8::try_from(w.window_id.rem_euclid(200)).unwrap_or(1) + 1; 32]
@@ -135,11 +134,11 @@ fn midnight_salt_rollover_preserves_continuous_session() {
         (d2.session_id, d2.visitor_id)
     );
     store
-        .write_batch(&build_rollover_batch(site.site_id, t1, t2, d1, d2))
+        .write_batch_sync(&build_rollover_batch(site.site_id, t1, t2, d1, d2))
         .unwrap();
 
     let res = store
-        .query(
+        .query_sync(
             &site,
             &QuerySpec {
                 site_id: SiteRef::Id(site.site_id),

@@ -36,20 +36,24 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Run Clippy
-        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: Run Clippy (default & arrow features)
+        run: cargo clippy --workspace --exclude rotameter-store-duckdb --all-targets -- -D warnings && cargo clippy -p rotameter-arrow -p rotameter-cli --features arrow --all-targets -- -D warnings
 
-      - name: Run workspace unit tests
-        run: cargo nextest run --workspace --all-features
+      - name: Run workspace unit tests (excluding opt-in duckdb)
+        run: cargo nextest run --workspace --exclude rotameter-store-duckdb --features rotameter-cli/arrow
 
       - name: Run workspace doc tests
-        run: cargo test --doc --workspace
+        run: cargo test --doc --workspace --exclude rotameter-store-duckdb
+
+      - name: Verify default rotameter-cli stays free of arrow/parquet/duckdb
+        run: '! cargo tree -p rotameter-cli | grep -E "arrow|parquet|duckdb"'
 
       - name: Check rotameter-cli feature matrix
         run: |
           cargo check -p rotameter-cli --no-default-features
           cargo check -p rotameter-cli --no-default-features --features server,sqlite
           cargo check -p rotameter-cli --no-default-features --features mcp,tui
+          cargo check -p rotameter-cli --no-default-features --features sqlite,arrow
 
       - name: Verify rotameter-core purity and unsafe forbids
         run: ./scripts/check-core-purity.sh
@@ -89,3 +93,28 @@ jobs:
           npm run build
           npm test
           npm pack --dry-run
+
+  duckdb:
+    name: Opt-in DuckDB OLAP Backend & Parity Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust 1.99 toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.99"
+          components: clippy
+
+      - name: Configure sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@nextest
+
+      - name: Clippy & test rotameter-store-duckdb + rotameter-cli --features duckdb
+        run: |
+          cargo clippy -p rotameter-store-duckdb -p rotameter-cli --features duckdb --all-targets -- -D warnings
+          cargo nextest run -p rotameter-store-duckdb
+          cargo nextest run -p rotameter-cli --features duckdb

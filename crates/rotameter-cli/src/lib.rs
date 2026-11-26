@@ -31,6 +31,8 @@ mod local_import_norm;
 mod local_keys;
 #[cfg(feature = "sqlite")]
 mod local_sites;
+#[cfg(all(feature = "sqlite", feature = "duckdb"))]
+mod portable_duckdb;
 #[cfg(all(feature = "sqlite", feature = "arrow"))]
 mod portable_export;
 #[cfg(all(feature = "sqlite", feature = "arrow"))]
@@ -46,6 +48,8 @@ mod seed_rng;
 #[cfg(feature = "sqlite")]
 mod seed_session;
 pub mod serve_cmd;
+#[cfg(all(feature = "server", feature = "duckdb"))]
+mod serve_duckdb;
 mod serve_parse;
 mod serve_resolve;
 #[cfg(all(feature = "server", feature = "sqlite"))]
@@ -155,6 +159,8 @@ pub fn enabled_components() -> Vec<ComponentInfo> {
         rotameter_client::component_info(),
         #[cfg(feature = "arrow")]
         rotameter_arrow::component_info(),
+        #[cfg(feature = "duckdb")]
+        rotameter_store_duckdb::component_info(),
         #[cfg(feature = "server")]
         rotameter_server::component_info(),
         #[cfg(feature = "sqlite")]

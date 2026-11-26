@@ -1,0 +1,24 @@
+[package]
+name = "rotameter-store-duckdb"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Opt-in DuckDB OLAP AnalyticsDataPlane storage backend for Rotameter"
+
+[dependencies]
+arrow-array.workspace = true
+chrono.workspace = true
+chrono-tz.workspace = true
+duckdb.workspace = true
+rotameter-arrow.workspace = true
+rotameter-core.workspace = true
+
+[dev-dependencies]
+rotameter-store-sqlite.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

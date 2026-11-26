@@ -3,6 +3,7 @@ resolver = "3"
 members = [
     "crates/rotameter-core",
     "crates/rotameter-arrow",
+    "crates/rotameter-store-duckdb",
     "crates/rotameter-store-sqlite",
     "crates/rotameter-server",
     "crates/rotameter-client",
@@ -31,7 +32,8 @@ chrono = { version = "0.4", default-features = false, features = ["std"] }
 chrono-tz = "0.10"
 clap = { version = "4.6", features = ["derive", "env"] }
 crossterm = "0.29"
-getrandom = "0.4"
+duckdb = { version = "1.20001", features = ["bundled", "appender-arrow"] }
+getrandom = { version = "0.4" }
 hmac-sha256 = "1.1"
 http-body-util = "0.1"
 maxminddb = "0.33"
@@ -53,6 +55,7 @@ url = "2.5"
 zstd = "0.14"
 rotameter-core = { path = "crates/rotameter-core", version = "0.1.1" }
 rotameter-arrow = { path = "crates/rotameter-arrow", version = "0.1.1" }
+rotameter-store-duckdb = { path = "crates/rotameter-store-duckdb", version = "0.1.1" }
 rotameter-store-sqlite = { path = "crates/rotameter-store-sqlite", version = "0.1.1" }
 rotameter-server = { path = "crates/rotameter-server", version = "0.1.1" }
 rotameter-client = { path = "crates/rotameter-client", version = "0.1.1" }
@@ -76,6 +79,20 @@ unimplemented = "warn"
 dbg_macro = "warn"
 module_name_repetitions = "allow"
 must_use_candidate = "allow"
+
+[profile.dev]
+opt-level = 0
+debug = 1 # Line tables only: keeps panic file:line backtraces, cuts binary/target size ~70%
+
+[profile.test]
+opt-level = 0
+debug = 1
+
+[profile.dev.package."*"]
+debug = 0 # Omit DWARF from third-party crates (duckdb/arrow/parquet)
+
+[profile.test.package."*"]
+debug = 0
 
 [profile.release]
 lto = "thin"

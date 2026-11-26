@@ -16,6 +16,7 @@ use rotameter_core::ComponentInfo;
 use thiserror::Error;
 
 pub use archive::{pack_tar_zst, unpack_tar_zst};
+pub use arrow_array::RecordBatch;
 pub use batch_codec::{WriteBatchArrow, arrow_to_write_batch, write_batch_to_arrow};
 pub use events_codec::{events_to_record_batch, record_batch_to_events};
 pub use manifest::{

@@ -39,6 +39,44 @@ pub(crate) fn run_portable_backup(global: &GlobalOpts, args: &BackupArgs) -> Res
 
 #[cfg(all(feature = "sqlite", feature = "arrow"))]
 pub(crate) fn run_restore(global: &GlobalOpts, args: &RestoreArgs) -> Result<(), CliError> {
+    if let Some(dsn) = args.to.as_deref()
+        && let crate::storage_dsn::StorageDsn::DuckDb(duck_path) =
+            crate::storage_dsn::StorageDsn::parse(dsn)?
+    {
+        #[cfg(feature = "duckdb")]
+        {
+            let manifest =
+                crate::portable_duckdb::restore_to_duckdb(&args.source, &duck_path, args.plane)?;
+            let payload = serde_json::json!({
+                "source": args.source.display().to_string(),
+                "plane": args.plane.as_str(),
+                "events": manifest.row_counts.events,
+                "sessions": manifest.row_counts.sessions,
+                "status": "ok",
+            });
+            return crate::context::print_formatted(
+                global.format,
+                &["SOURCE", "PLANE", "EVENTS", "SESSIONS", "STATUS"],
+                &[vec![
+                    args.source.display().to_string(),
+                    args.plane.as_str().to_string(),
+                    manifest.row_counts.events.to_string(),
+                    manifest.row_counts.sessions.to_string(),
+                    "ok".to_string(),
+                ]],
+                &payload,
+                global.quiet,
+            );
+        }
+        #[cfg(not(feature = "duckdb"))]
+        {
+            let _ = duck_path;
+            return Err(CliError::usage(
+                "DuckDB target requires `--features duckdb`",
+            ));
+        }
+    }
+
     let dst = open_dsn_store(args.to.as_deref(), global)?;
     let manifest = crate::portable_import::restore_portable(&args.source, &dst, args.plane)?;
     let payload = serde_json::json!({
@@ -67,14 +105,41 @@ pub(crate) fn run_restore(global: &GlobalOpts, args: &RestoreArgs) -> Result<(),
 pub(crate) fn run_migrate(args: &MigrateArgs) -> Result<(), CliError> {
     let now_ms = crate::format::now_ms();
     let src = open_dsn_sqlite(&args.from, now_ms)?;
-    let dst = open_dsn_sqlite(&args.to, now_ms)?;
-    let counts = crate::portable_migrate::migrate_stores(
-        &src,
-        &dst,
-        args.plane,
-        args.stage_dir.as_deref(),
-        now_ms,
-    )?;
+    let counts = match crate::storage_dsn::StorageDsn::parse(&args.to)? {
+        crate::storage_dsn::StorageDsn::Sqlite(dst_path) => {
+            let dst = rotameter_store_sqlite::SqliteStore::open(
+                &dst_path,
+                rotameter_store_sqlite::SqliteConfig::default(),
+                now_ms,
+            )?;
+            crate::portable_migrate::migrate_stores(
+                &src,
+                &dst,
+                args.plane,
+                args.stage_dir.as_deref(),
+                now_ms,
+            )?
+        }
+        crate::storage_dsn::StorageDsn::DuckDb(duck_path) => {
+            #[cfg(feature = "duckdb")]
+            {
+                crate::portable_duckdb::migrate_sqlite_to_duckdb(
+                    &src,
+                    &duck_path,
+                    args.plane,
+                    args.stage_dir.as_deref(),
+                    now_ms,
+                )?
+            }
+            #[cfg(not(feature = "duckdb"))]
+            {
+                let _ = duck_path;
+                return Err(CliError::usage(
+                    "DuckDB target requires `--features duckdb`",
+                ));
+            }
+        }
+    };
     println!(
         "migrated plane={} events={} sessions={} rollups_hourly={} rollups_daily={} rollups_path_daily={}",
         args.plane.as_str(),

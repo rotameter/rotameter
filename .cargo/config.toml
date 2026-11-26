@@ -7,5 +7,9 @@ rustc-wrapper = "sccache"
 # Disable Cargo incremental artifacts so sccache hits reliably and target/ stays small.
 incremental = false
 
+# macOS-specific linking optimization: bypass slow dsymutil on debug builds
+[target.'cfg(target_os = "macos")']
+rustflags = ["-C", "split-debuginfo=unpacked"]
+
 [env]
 SCCACHE_CACHE_SIZE = "15G"

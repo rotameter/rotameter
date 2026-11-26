@@ -15,6 +15,7 @@ path = "src/main.rs"
 [features]
 default = ["server", "sqlite", "mcp", "tui"]
 arrow = ["dep:rotameter-arrow", "dep:tempfile"]
+duckdb = ["arrow", "dep:rotameter-store-duckdb"]
 server = ["dep:rotameter-server", "dep:tokio"]
 sqlite = ["dep:rotameter-store-sqlite", "dep:getrandom"]
 mcp = ["dep:rotameter-mcp"]
@@ -28,6 +29,7 @@ rotameter-arrow = { workspace = true, optional = true }
 rotameter-core.workspace = true
 rotameter-client.workspace = true
 rotameter-server = { workspace = true, optional = true }
+rotameter-store-duckdb = { workspace = true, optional = true }
 rotameter-store-sqlite = { workspace = true, optional = true }
 rotameter-mcp = { workspace = true, optional = true }
 rotameter-tui = { workspace = true, optional = true }

@@ -123,10 +123,27 @@ pub(crate) fn run_serve(global: &GlobalOpts, args: &ServeArgs) -> Result<(), Cli
             )?);
             ServerStores::split(control, analytics)
         }
-        Some(StorageDsn::DuckDb(_)) => {
-            return Err(CliError::usage(
-                "DuckDB analytics backend requires `--features duckdb` (coming in RM-34)",
-            ));
+        Some(StorageDsn::DuckDb(analytics_path)) => {
+            #[cfg(feature = "duckdb")]
+            {
+                let analytics = Arc::new(
+                    crate::serve_duckdb::DuckDbServerStore::open(&analytics_path).map_err(
+                        |err| {
+                            CliError::runtime(format!(
+                                "failed to open analytics DuckDB store: {err}"
+                            ))
+                        },
+                    )?,
+                );
+                ServerStores::split(control, analytics)
+            }
+            #[cfg(not(feature = "duckdb"))]
+            {
+                let _ = analytics_path;
+                return Err(CliError::usage(
+                    "DuckDB analytics backend requires `--features duckdb`",
+                ));
+            }
         }
     };
 

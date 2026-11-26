@@ -2,7 +2,7 @@
 //! Integration tests for `SQLite` WAL initialization, migrations, and `ControlPlaneStore`.
 
 use rotameter_core::id::{KeyId, OrgId, SiteId, SiteRef};
-use rotameter_core::privacy::compute_api_key_hash;
+use rotameter_core::privacy::{SaltWindow, compute_api_key_hash};
 use rotameter_core::storage::{IngestEvent, WriteBatch};
 use rotameter_core::types::{ApiKeyRecord, EventKind, EventProps, KeyScope, SaltRotation, Site};
 use rotameter_store_sqlite::{SqliteConfig, SqliteStore};
@@ -33,7 +33,7 @@ fn opens_wal_db_verifies_pragmas_and_runs_site_crud() {
     let store = SqliteStore::open(&db_path, SqliteConfig::default(), 1_700_000_000_000).unwrap();
     let health = store.health_snapshot().unwrap();
     assert_eq!(health.journal_mode, "wal");
-    assert_eq!(health.schema_version, 3);
+    assert_eq!(health.schema_version, 4);
     assert_eq!(health.cache_size, -16_000);
     assert_eq!(health.mmap_size, 67_108_864);
     assert!(health.integrity_ok);
@@ -80,7 +80,7 @@ fn opens_wal_db_verifies_pragmas_and_runs_site_crud() {
 
     drop(store);
     let reopened = SqliteStore::open(&db_path, SqliteConfig::default(), 1_700_000_030_000).unwrap();
-    assert_eq!(reopened.schema_version().unwrap(), 3);
+    assert_eq!(reopened.schema_version().unwrap(), 4);
 }
 
 #[test]
@@ -141,4 +141,54 @@ fn api_keys_and_site_deletion_cascade_cleanly() {
     assert!(store.delete_site_sync(site_id).unwrap());
     assert_eq!(store.list_sites_sync(org.org_id).unwrap().len(), 0);
     assert_eq!(store.list_api_keys_sync(org.org_id).unwrap().len(), 0);
+}
+
+#[test]
+fn rotating_salts_are_atomic_persistent_and_pruned() {
+    let dir = tempfile::tempdir().unwrap();
+    let db_path = dir.path().join("salts.db");
+
+    let store = SqliteStore::open(&db_path, SqliteConfig::default(), 1_700_000_000_000).unwrap();
+    let w1 = SaltWindow {
+        rotation: SaltRotation::Daily,
+        window_id: 19_675,
+        start_ms: 19_675 * 86_400_000,
+    };
+    let w2 = SaltWindow {
+        rotation: SaltRotation::Daily,
+        window_id: 19_676,
+        start_ms: 19_676 * 86_400_000,
+    };
+
+    let first = store
+        .get_or_create_salt_sync(w1, [0xAA; 32], 1_700_000_000_000)
+        .unwrap();
+    assert_eq!(first, [0xAA; 32]);
+    // Second writer proposing a different candidate observes the winning salt.
+    let second = store
+        .get_or_create_salt_sync(w1, [0xBB; 32], 1_700_000_001_000)
+        .unwrap();
+    assert_eq!(second, [0xAA; 32]);
+
+    store
+        .get_or_create_salt_sync(w2, [0xCC; 32], 1_700_086_400_000)
+        .unwrap();
+    assert_eq!(
+        store
+            .prune_salts_before_sync(SaltRotation::Daily, 19_676)
+            .unwrap(),
+        1
+    );
+
+    drop(store);
+    let reopened = SqliteStore::open(&db_path, SqliteConfig::default(), 1_700_086_405_000).unwrap();
+    let survived = reopened
+        .get_or_create_salt_sync(w2, [0xDD; 32], 1_700_086_405_000)
+        .unwrap();
+    assert_eq!(survived, [0xCC; 32]);
+    // Pruned w1 can no longer reuse old salt [0xAA; 32] if queried again.
+    let recreated = reopened
+        .get_or_create_salt_sync(w1, [0xEE; 32], 1_700_086_405_000)
+        .unwrap();
+    assert_eq!(recreated, [0xEE; 32]);
 }

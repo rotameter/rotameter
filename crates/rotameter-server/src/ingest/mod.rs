@@ -54,6 +54,16 @@ impl IngestPipeline {
         }
     }
 
+    pub(crate) fn disabled() -> Self {
+        let (tx, _rx) = mpsc::channel(1);
+        Self {
+            tx,
+            capacity: 0,
+            depth: Arc::new(AtomicUsize::new(0)),
+            worker: Arc::new(tokio::sync::Mutex::new(None)),
+        }
+    }
+
     pub(crate) fn try_enqueue(&self, event: QueuedEvent) -> Result<(), ApiError> {
         self.depth.fetch_add(1, Ordering::Relaxed);
         if let Ok(()) = self.tx.try_send(IngestCmd::Event(Box::new(event))) {

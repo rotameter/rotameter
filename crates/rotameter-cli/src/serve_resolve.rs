@@ -2,43 +2,17 @@
 //! Precedence resolution (`CLI > env > config [storage] / [server]`) for `rotameter serve`.
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-use serde::Deserialize;
 use url::Url;
 
 use crate::cli::{GlobalOpts, ServeArgs};
 use crate::context::{resolve_config_path, resolve_db_path};
 use crate::exit::CliError;
 use crate::serve_cmd::ServeSettings;
-
-#[derive(Debug, Default, Deserialize)]
-struct RootTomlConfig {
-    #[serde(default)]
-    server: Option<ServerTomlSection>,
-    #[serde(default)]
-    storage: Option<StorageTomlSection>,
-}
-
-#[derive(Debug, Default, Deserialize)]
-struct ServerTomlSection {
-    bind: Option<String>,
-    db: Option<String>,
-    bootstrap_admin_key: Option<String>,
-    public_url: Option<String>,
-    self_site: Option<bool>,
-    self_site_id: Option<String>,
-    geoip: Option<String>,
-    mmdb_path: Option<PathBuf>,
-    trusted_proxy: Option<bool>,
-}
-
-#[derive(Debug, Default, Deserialize)]
-struct StorageTomlSection {
-    db: Option<String>,
-    control_db: Option<String>,
-    analytics_db: Option<String>,
-}
+use crate::serve_parse::{
+    clean_opt, env_bool, env_non_empty, parse_role, parse_salt_store, read_toml_config,
+};
 
 /// Resolves `rotameter serve` settings with strict precedence (`CLI > env > config`).
 ///
@@ -136,9 +110,23 @@ where
         .or(env_bool(&env_fn, "ROTAMETER_TRUSTED_PROXY")?)
         .or(srv.trusted_proxy)
         .unwrap_or(true);
+    let role = parse_role(
+        clean_opt(args.role.as_deref())
+            .or_else(|| env_non_empty(&env_fn, "ROTAMETER_ROLE"))
+            .or_else(|| clean_opt(srv.role.as_deref()))
+            .as_deref(),
+    )?;
+    let salt_store = parse_salt_store(
+        clean_opt(args.salt_store.as_deref())
+            .or_else(|| env_non_empty(&env_fn, "ROTAMETER_SALT_STORE"))
+            .or_else(|| clean_opt(srv.salt_store.as_deref()))
+            .as_deref(),
+    )?;
 
     Ok(ServeSettings {
         bind_addr,
+        role,
+        salt_store,
         db_path,
         analytics_db,
         bootstrap_admin_key,
@@ -162,53 +150,4 @@ where
         return env_ctrl;
     }
     resolve_db_path(global, env_fn, config_db)
-}
-
-fn read_toml_config(path: Option<&Path>) -> Result<RootTomlConfig, CliError> {
-    let Some(p) = path else {
-        return Ok(RootTomlConfig::default());
-    };
-    let raw = match std::fs::read_to_string(p) {
-        Ok(s) => s,
-        Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
-            return Ok(RootTomlConfig::default());
-        }
-        Err(err) => {
-            return Err(CliError::runtime(format!(
-                "failed to read config `{}`: {err}",
-                p.display()
-            )));
-        }
-    };
-    toml::from_str(&raw)
-        .map_err(|err| CliError::usage(format!("invalid TOML in `{}`: {err}", p.display())))
-}
-
-fn env_bool<F>(env_fn: &F, key: &str) -> Result<Option<bool>, CliError>
-where
-    F: Fn(&str) -> Option<String>,
-{
-    let Some(raw) = env_non_empty(env_fn, key) else {
-        return Ok(None);
-    };
-    match raw.to_ascii_lowercase().as_str() {
-        "true" | "1" | "yes" => Ok(Some(true)),
-        "false" | "0" | "no" => Ok(Some(false)),
-        _ => Err(CliError::usage(format!(
-            "invalid boolean value `{raw}` for {key}"
-        ))),
-    }
-}
-
-fn env_non_empty<F>(env_fn: &F, key: &str) -> Option<String>
-where
-    F: Fn(&str) -> Option<String>,
-{
-    env_fn(key).and_then(|v| clean_opt(Some(&v)))
-}
-
-fn clean_opt(raw: Option<&str>) -> Option<String> {
-    raw.map(str::trim)
-        .filter(|s| !s.is_empty())
-        .map(ToString::to_string)
 }

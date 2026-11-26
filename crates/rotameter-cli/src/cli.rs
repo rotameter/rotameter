@@ -118,6 +118,12 @@ pub struct ServeArgs {
     /// Trust `CF-*` headers on unauthenticated sockets (`true` or `false`).
     #[arg(long, num_args = 0..=1, default_missing_value = "true", value_parser = clap::value_parser!(bool))]
     pub trusted_proxy: Option<bool>,
+    /// Endpoint role served by this node (`all`, `ingest`, or `query`).
+    #[arg(long)]
+    pub role: Option<String>,
+    /// Rotating visitor salt store (`db` or `memory`).
+    #[arg(long)]
+    pub salt_store: Option<String>,
 }
 
 /// Options for `rotameter backup <dest>`.

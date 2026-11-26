@@ -10,10 +10,10 @@ use std::pin::Pin;
 
 use crate::error::CoreError;
 use crate::id::{KeyId, OrgId, SiteId, SiteRef};
-use crate::privacy::VisitorId;
+use crate::privacy::{SaltBytes, SaltWindow, VisitorId};
 use crate::query::QuerySpec;
 use crate::session::SessionSnapshot;
-use crate::types::{ApiKeyRecord, Org, Site};
+use crate::types::{ApiKeyRecord, Org, SaltRotation, Site};
 
 pub use csv::format_query_result_csv;
 pub use ingest::{IngestEvent, RollupDelta, SessionUpsert, WriteBatch};
@@ -78,6 +78,21 @@ pub trait ControlPlaneStore: Send + Sync {
         key_id: KeyId,
         revoked_at_ms: i64,
     ) -> BoxFuture<'_, Result<bool, CoreError>>;
+
+    /// Atomically fetches the persisted CSPRNG salt for `window` or inserts `candidate`.
+    fn get_or_create_salt(
+        &self,
+        window: SaltWindow,
+        candidate: SaltBytes,
+        now_ms: i64,
+    ) -> BoxFuture<'_, Result<SaltBytes, CoreError>>;
+
+    /// Deletes persisted salt windows for `rotation` strictly older than `min_window_id`.
+    fn prune_salts_before(
+        &self,
+        rotation: SaltRotation,
+        min_window_id: i64,
+    ) -> BoxFuture<'_, Result<u64, CoreError>>;
 }
 
 /// Batched event ingestion persistence contract used by the dedicated writer task.

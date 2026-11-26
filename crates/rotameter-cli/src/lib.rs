@@ -38,6 +38,7 @@ mod seed_rng;
 #[cfg(feature = "sqlite")]
 mod seed_session;
 pub mod serve_cmd;
+mod serve_parse;
 mod serve_resolve;
 #[cfg(all(feature = "server", feature = "sqlite"))]
 pub mod serve_store;

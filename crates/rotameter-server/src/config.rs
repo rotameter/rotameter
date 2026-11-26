@@ -5,6 +5,49 @@ use std::fmt;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
 
+/// Operational HTTP endpoint role served by a `rotameter serve` node.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum ServerRole {
+    /// Combined single-node server exposing ingest, query, admin, and health endpoints.
+    #[default]
+    All,
+    /// Dedicated ingestion node exposing `/v1/health`, `/v1/collect.js`, `/v1/pixel.gif`, `/v1/events*`.
+    Ingest,
+    /// Dedicated read/admin node exposing `/v1/health`, `/v1/query`, `/v1/sites/*/realtime`, `/v1/admin/*`.
+    Query,
+}
+
+impl ServerRole {
+    /// Returns the canonical lowercase CLI/wire role name.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::All => "all",
+            Self::Ingest => "ingest",
+            Self::Query => "query",
+        }
+    }
+
+    /// Returns `true` when this role serves event collection and runs `IngestPipeline`.
+    pub const fn allows_ingest(self) -> bool {
+        matches!(self, Self::All | Self::Ingest)
+    }
+
+    /// Returns `true` when this role serves query and admin routes.
+    pub const fn allows_query(self) -> bool {
+        matches!(self, Self::All | Self::Query)
+    }
+}
+
+/// Storage strategy for daily/weekly/monthly rotating CSPRNG visitor salts.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum SaltStoreMode {
+    /// Persisted in `ControlPlaneStore` (`rotating_salts`) with in-memory caching & expiry pruning.
+    #[default]
+    Db,
+    /// Ephemeral process-local in-memory rotating salts only.
+    Memory,
+}
+
 /// `GeoIP` lookup mode configured for incoming request enrichment.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum GeoIpMode {
@@ -44,6 +87,10 @@ impl Default for RateLimitConfig {
 pub struct ServerConfig {
     /// Socket address to bind the HTTP listener (`127.0.0.1:8000` by default).
     pub bind_addr: SocketAddr,
+    /// Server endpoint role (`all`, `ingest`, or `query`; `all` by default).
+    pub role: ServerRole,
+    /// Rotating salt storage backend (`db` by default, or `memory`).
+    pub salt_store: SaltStoreMode,
     /// Optional plaintext admin token (`rm_adm_...`) idempotently seeded on startup.
     pub bootstrap_admin_key: Option<String>,
     /// Optional public server URL whose host becomes the default `self_site` slug.
@@ -74,6 +121,8 @@ impl Default for ServerConfig {
     fn default() -> Self {
         Self {
             bind_addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 8000),
+            role: ServerRole::All,
+            salt_store: SaltStoreMode::Db,
             bootstrap_admin_key: None,
             public_url: None,
             self_site_enabled: true,

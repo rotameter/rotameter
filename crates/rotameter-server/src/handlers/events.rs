@@ -10,7 +10,6 @@ use axum::http::{HeaderMap, StatusCode};
 use rotameter_core::bot::{BotFilterDecision, classify_traffic};
 use rotameter_core::id::SiteRef;
 use rotameter_core::normalize::{normalize_referrer, normalize_url};
-use rotameter_core::privacy::resolve_visitor_candidates;
 use rotameter_core::types::{EventKind, KeyScope, ViewportClass};
 use rotameter_core::ua::classify_user_agent;
 use serde::Deserialize;
@@ -118,15 +117,11 @@ pub(crate) async fn enqueue_normalized_hit(
     let ts_ms = now_ms();
     let (country, region) = state.geoip.resolve(headers, &ip, trusted_proxy);
     let ua_str = ua.as_deref().unwrap_or_default();
-    let candidates = resolve_visitor_candidates(
-        state.salt_provider.as_ref(),
-        site.site_id,
-        site.salt_rotation,
-        ts_ms,
-        &ip,
-        ua_str,
-    )
-    .map_err(ApiError::from)?;
+    let candidates = state
+        .salt_store
+        .resolve_candidates(site.site_id, site.salt_rotation, ts_ms, &ip, ua_str)
+        .await
+        .map_err(ApiError::from)?;
     let classified_ua = classify_user_agent(ua_str);
 
     state.ingest.try_enqueue(QueuedEvent {

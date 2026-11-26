@@ -9,11 +9,37 @@ use crate::exit::CliError;
 
 pub use crate::serve_resolve::{resolve_serve_settings, resolve_serve_settings_with};
 
+/// Feature-independent `rotameter serve` endpoint role.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum ServeRoleSetting {
+    /// Serve both ingest and query/admin endpoints.
+    #[default]
+    All,
+    /// Serve ingest + collector + health endpoints only.
+    Ingest,
+    /// Serve query + realtime + admin + health endpoints only.
+    Query,
+}
+
+/// Feature-independent rotating salt store strategy.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum SaltStoreSetting {
+    /// Persist active salts in `ControlPlaneStore` with in-memory caching & pruning.
+    #[default]
+    Db,
+    /// Ephemeral process-local in-memory rotating salts only.
+    Memory,
+}
+
 /// Resolved server startup configuration independent of optional cargo features.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ServeSettings {
     /// Socket address to bind (`127.0.0.1:8000` default).
     pub bind_addr: SocketAddr,
+    /// Server endpoint role (`all`, `ingest`, or `query`).
+    pub role: ServeRoleSetting,
+    /// Rotating salt store mode (`db` or `memory`).
+    pub salt_store: SaltStoreSetting,
     /// Control-plane `SQLite` database path or DSN (`rotameter.db` default).
     pub db_path: String,
     /// Optional analytics data-plane DSN overriding `db_path` for OLAP storage.
@@ -38,7 +64,7 @@ pub struct ServeSettings {
 pub(crate) fn run_serve(global: &GlobalOpts, args: &ServeArgs) -> Result<(), CliError> {
     use std::sync::Arc;
 
-    use rotameter_server::{GeoIpMode, ServerConfig, ServerStores};
+    use rotameter_server::{GeoIpMode, SaltStoreMode, ServerConfig, ServerRole, ServerStores};
 
     use crate::serve_store::SqliteServerStore;
     use crate::storage_dsn::StorageDsn;
@@ -60,6 +86,15 @@ pub(crate) fn run_serve(global: &GlobalOpts, args: &ServeArgs) -> Result<(), Cli
 
     let config = ServerConfig {
         bind_addr: settings.bind_addr,
+        role: match settings.role {
+            ServeRoleSetting::All => ServerRole::All,
+            ServeRoleSetting::Ingest => ServerRole::Ingest,
+            ServeRoleSetting::Query => ServerRole::Query,
+        },
+        salt_store: match settings.salt_store {
+            SaltStoreSetting::Db => SaltStoreMode::Db,
+            SaltStoreSetting::Memory => SaltStoreMode::Memory,
+        },
         bootstrap_admin_key: settings.bootstrap_admin_key,
         public_url: settings.public_url,
         self_site_enabled: settings.self_site_enabled,

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added cached DB-backed rotating `HMAC-SHA256` visitor salts (`0004_salts` migration with `rotating_salts` table and atomic `ControlPlaneStore::{get_or_create_salt, prune_salts_before}` methods, enabled by default with automatic expiry pruning past the 30-minute grace window and `--salt-store=db|memory` / `ROTAMETER_SALT_STORE` opt-out) and `--role=all|ingest|query` (`ROTAMETER_ROLE`) endpoint/pipeline gating for multi-node `rotameter serve` deployments (`RM-32`).
 - Added streaming log receiver support to `rotameter import` (`BufRead` line streaming, `--stdin` / `-` for Apache piped logs, `--unix-socket` datagram/stream listener for Nginx `syslog` and Caddy `net unix//`, `--follow` with inode/truncation log-rotation handling, bounded non-blocking flush queue with `--batch-size`/`--flush-interval` and `SIGTERM` drain, proxy noise filtering mapping `200` -> `pageview` and `404` -> `not_found`, and `caddy-json` format preset), extended `BatchEventItem` / `POST /v1/events/batch` with optional `user_agent`, `country`, and ephemeral `ip`, and documented copy-pasteable Apache/Nginx/Caddy snippets in `docs/SPEC-API.md` (`RM-30`).
 
 ### Changed

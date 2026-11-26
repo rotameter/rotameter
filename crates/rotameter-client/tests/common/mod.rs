@@ -5,14 +5,14 @@ use std::sync::Arc;
 
 use rotameter_core::error::CoreError;
 use rotameter_core::id::{KeyId, OrgId, SiteId, SiteRef};
-use rotameter_core::privacy::VisitorId;
+use rotameter_core::privacy::{SaltBytes, SaltWindow, VisitorId};
 use rotameter_core::query::QuerySpec;
 use rotameter_core::session::SessionSnapshot;
 use rotameter_core::storage::{
     AnalyticsDataPlane, AnalyticsQueryStore, BoxFuture, ControlPlaneStore, EventIngestStore,
     QueryResult, RealtimeSnapshot, StorageCapabilities, WriteBatch,
 };
-use rotameter_core::types::{ApiKeyRecord, Org, Site};
+use rotameter_core::types::{ApiKeyRecord, Org, SaltRotation, Site};
 use rotameter_server::{AppState, ServerConfig, ServerStores, build_router};
 use rotameter_store_sqlite::{SqliteConfig, SqliteStore};
 use tokio::net::TcpListener;
@@ -88,6 +88,27 @@ impl ControlPlaneStore for TestStore {
     fn revoke_api_key(&self, id: KeyId, ts: i64) -> BoxFuture<'_, Result<bool, CoreError>> {
         let s = Arc::clone(&self.0);
         Box::pin(run_blocking(move || s.revoke_api_key_sync(id, ts)))
+    }
+    fn get_or_create_salt(
+        &self,
+        window: SaltWindow,
+        candidate: SaltBytes,
+        now_ms: i64,
+    ) -> BoxFuture<'_, Result<SaltBytes, CoreError>> {
+        let s = Arc::clone(&self.0);
+        Box::pin(run_blocking(move || {
+            s.get_or_create_salt_sync(window, candidate, now_ms)
+        }))
+    }
+    fn prune_salts_before(
+        &self,
+        rotation: SaltRotation,
+        min_window_id: i64,
+    ) -> BoxFuture<'_, Result<u64, CoreError>> {
+        let s = Arc::clone(&self.0);
+        Box::pin(run_blocking(move || {
+            s.prune_salts_before_sync(rotation, min_window_id)
+        }))
     }
 }
 

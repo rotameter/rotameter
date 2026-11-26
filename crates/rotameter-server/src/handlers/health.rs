@@ -11,6 +11,7 @@ use crate::state::AppState;
 #[derive(Serialize)]
 pub(crate) struct HealthResponse {
     status: &'static str,
+    role: &'static str,
     version: &'static str,
     schema_version: u32,
     queue_depth: usize,
@@ -29,11 +30,16 @@ pub(crate) async fn get_health(
         .await
         .map_err(ApiError::from)?;
     let queue_depth = state.ingest.queue_depth();
-    let queue_capacity = state.ingest.capacity().max(1);
-    let queue_fill_pct = (queue_depth as f64 / queue_capacity as f64) * 100.0;
+    let queue_capacity = state.ingest.capacity();
+    let queue_fill_pct = if queue_capacity == 0 {
+        0.0
+    } else {
+        (queue_depth as f64 / queue_capacity as f64) * 100.0
+    };
 
     Ok(Json(HealthResponse {
         status: "ok",
+        role: state.role.as_str(),
         version: rotameter_core::WORKSPACE_VERSION,
         schema_version,
         queue_depth,

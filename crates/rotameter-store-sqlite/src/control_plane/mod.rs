@@ -2,12 +2,14 @@
 //! `ControlPlaneStore` implementation for [`SqliteStore`].
 
 mod keys;
+mod salts;
 mod sites;
 
 use rotameter_core::error::CoreError;
 use rotameter_core::id::{KeyId, OrgId, SiteId, SiteRef};
+use rotameter_core::privacy::{SaltBytes, SaltWindow};
 use rotameter_core::storage::{BoxFuture, ControlPlaneStore, StorageCapabilities};
-use rotameter_core::types::{ApiKeyRecord, Org, Site};
+use rotameter_core::types::{ApiKeyRecord, Org, SaltRotation, Site};
 
 use crate::store::SqliteStore;
 
@@ -118,6 +120,37 @@ impl SqliteStore {
     ) -> Result<bool, CoreError> {
         self.with_writer(|state| keys::mark_key_revoked(&state.conn, key_id, revoked_at_ms))
     }
+
+    /// Synchronously retrieves or creates the rotating salt for `window`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError::Storage`] on persistence failure.
+    pub fn get_or_create_salt_sync(
+        &self,
+        window: SaltWindow,
+        candidate: SaltBytes,
+        now_ms: i64,
+    ) -> Result<SaltBytes, CoreError> {
+        self.with_writer(|state| {
+            salts::get_or_create_salt_row(&state.conn, window, candidate, now_ms)
+        })
+    }
+
+    /// Synchronously deletes persisted salt windows older than `min_window_id`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError::Storage`] on persistence failure.
+    pub fn prune_salts_before_sync(
+        &self,
+        rotation: SaltRotation,
+        min_window_id: i64,
+    ) -> Result<u64, CoreError> {
+        self.with_writer(|state| {
+            salts::prune_salts_before_rows(&state.conn, rotation, min_window_id)
+        })
+    }
 }
 
 impl ControlPlaneStore for SqliteStore {
@@ -184,6 +217,27 @@ impl ControlPlaneStore for SqliteStore {
     ) -> BoxFuture<'_, Result<bool, CoreError>> {
         Box::pin(std::future::ready(
             self.revoke_api_key_sync(key_id, revoked_at_ms),
+        ))
+    }
+
+    fn get_or_create_salt(
+        &self,
+        window: SaltWindow,
+        candidate: SaltBytes,
+        now_ms: i64,
+    ) -> BoxFuture<'_, Result<SaltBytes, CoreError>> {
+        Box::pin(std::future::ready(
+            self.get_or_create_salt_sync(window, candidate, now_ms),
+        ))
+    }
+
+    fn prune_salts_before(
+        &self,
+        rotation: SaltRotation,
+        min_window_id: i64,
+    ) -> BoxFuture<'_, Result<u64, CoreError>> {
+        Box::pin(std::future::ready(
+            self.prune_salts_before_sync(rotation, min_window_id),
         ))
     }
 }

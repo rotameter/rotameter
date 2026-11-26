@@ -12,7 +12,6 @@ use rotameter_core::id::SiteRef;
 use rotameter_core::normalize::{
     NormalizedReferrer, NormalizedUrl, normalize_referrer, normalize_url,
 };
-use rotameter_core::privacy::resolve_visitor_candidates;
 use rotameter_core::types::{EventKind, EventProps, KeyScope, Site, ViewportClass};
 use rotameter_core::ua::{ClassifiedUa, classify_user_agent};
 
@@ -133,15 +132,11 @@ async fn build_batch_queued(
     } else {
         (ctx.req_ip, effective_ua)
     };
-    let candidates = resolve_visitor_candidates(
-        state.salt_provider.as_ref(),
-        site.site_id,
-        site.salt_rotation,
-        ts_ms,
-        identity,
-        ua_hash,
-    )
-    .map_err(ApiError::from)?;
+    let candidates = state
+        .salt_store
+        .resolve_candidates(site.site_id, site.salt_rotation, ts_ms, identity, ua_hash)
+        .await
+        .map_err(ApiError::from)?;
     let classified_ua = match item_ua {
         Some(ua) => Cow::Owned(classify_user_agent(ua)),
         None => Cow::Borrowed(ctx.classified_ua),

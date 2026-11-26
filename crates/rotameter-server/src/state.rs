@@ -7,16 +7,15 @@ use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use chrono::DateTime;
 use rotameter_core::error::CoreError;
 use rotameter_core::id::{KeyId, OrgId, SiteId};
-use rotameter_core::privacy::{
-    InMemorySaltProvider, SaltBytes, SaltProvider, SessionId, compute_api_key_hash,
-};
+use rotameter_core::privacy::{SessionId, compute_api_key_hash};
 use rotameter_core::storage::{AnalyticsDataPlane, ControlPlaneStore};
 use rotameter_core::types::{ApiKeyRecord, KeyScope};
 
-use crate::config::{ServerConfig, ServerError};
+use crate::config::{ServerConfig, ServerError, ServerRole};
 use crate::geoip::GeoIpResolver;
 use crate::ingest::IngestPipeline;
 use crate::rate_limit::IpRateLimiter;
+use crate::salt_store::ServerSaltStore;
 use crate::self_site::ensure_self_site;
 
 /// Split OLTP control-plane and OLAP analytics data-plane stores wired into `rotameter-server`.
@@ -52,9 +51,10 @@ impl ServerStores {
 /// Shared application state injected into every Axum route handler.
 #[derive(Clone)]
 pub struct AppState {
+    pub(crate) role: ServerRole,
     pub(crate) control_plane: Arc<dyn ControlPlaneStore>,
     pub(crate) analytics: Arc<dyn AnalyticsDataPlane>,
-    pub(crate) salt_provider: Arc<dyn SaltProvider>,
+    pub(crate) salt_store: ServerSaltStore,
     pub(crate) rate_limiter: Arc<IpRateLimiter>,
     pub(crate) geoip: Arc<GeoIpResolver>,
     /// Bounded asynchronous ingestion channel + batched writer task handle.
@@ -88,18 +88,29 @@ impl AppState {
             seed_bootstrap_admin_key(stores.control.as_ref(), org.org_id, raw_token, now).await?;
         }
 
-        let self_site_id =
-            ensure_self_site(stores.control.as_ref(), org.org_id, config, now).await?;
+        let self_site_id = if config.role.allows_ingest() {
+            ensure_self_site(stores.control.as_ref(), org.org_id, config, now).await?
+        } else {
+            None
+        };
         let geoip = Arc::new(GeoIpResolver::from_config(config)?);
         let rate_limiter = Arc::new(IpRateLimiter::new(config.rate_limit));
-        let salt_provider: Arc<dyn SaltProvider> =
-            Arc::new(InMemorySaltProvider::new(|_| random_salt_or_fallback()));
-        let ingest = IngestPipeline::spawn(stores.analytics.clone(), config);
+        let salt_store = ServerSaltStore::new(config.salt_store, stores.control.clone());
+        salt_store
+            .prune_expired_all(now)
+            .await
+            .map_err(|err| ServerError::new(format!("cannot prune expired salts: {err}")))?;
+        let ingest = if config.role.allows_ingest() {
+            IngestPipeline::spawn(stores.analytics.clone(), config)
+        } else {
+            IngestPipeline::disabled()
+        };
 
         Ok(Self {
+            role: config.role,
             control_plane: stores.control,
             analytics: stores.analytics,
-            salt_provider,
+            salt_store,
             rate_limiter,
             geoip,
             ingest,
@@ -153,15 +164,6 @@ pub(crate) fn format_rfc3339(ts_ms: i64) -> String {
         || "1970-01-01T00:00:00Z".to_string(),
         |dt| dt.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
     )
-}
-
-fn random_salt_or_fallback() -> SaltBytes {
-    fill_random::<32>().unwrap_or_else(|_| {
-        let now = now_ms().to_be_bytes();
-        let mut out = [0_u8; 32];
-        out[..8].copy_from_slice(&now);
-        out
-    })
 }
 
 async fn seed_bootstrap_admin_key(

@@ -69,9 +69,52 @@ jobs:
           name: rotameter-${{ matrix.target }}
           path: dist/*.tar.gz
 
+  build-duckdb-linux:
+    name: Build (x86_64-unknown-linux-gnu-duckdb)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust 1.99 toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.99"
+
+      - name: Install native C++ build tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cmake g++ pkg-config
+
+      - name: Build DuckDB release binary
+        run: |
+          cargo build --release --locked \
+            -p rotameter-cli \
+            --bin rotameter \
+            --no-default-features \
+            --features server,sqlite,duckdb
+
+      - name: Package DuckDB release archive
+        shell: bash
+        run: |
+          mkdir -p dist staging
+          bin="target/release/rotameter"
+          if command -v strip >/dev/null 2>&1; then
+            strip "$bin" || true
+          fi
+          cp "$bin" THIRD_PARTY_NOTICES staging/
+          archive="dist/rotameter-${{ github.ref_name }}-x86_64-unknown-linux-gnu-duckdb.tar.gz"
+          tar -C staging -czf "$archive" rotameter THIRD_PARTY_NOTICES
+
+      - name: Upload DuckDB target artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rotameter-x86_64-unknown-linux-gnu-duckdb
+          path: dist/*.tar.gz
+
   publish-release:
     name: Publish GitHub Release
-    needs: build-binaries
+    needs: [build-binaries, build-duckdb-linux]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
     steps:

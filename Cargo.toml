@@ -16,7 +16,7 @@ exclude = [
 ]
 
 [workspace.package]
-version = "0.1.1"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.100"
 authors = ["Colin Wolff"]
@@ -53,14 +53,14 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["env-filter", "fmt", "std"] }
 url = "2.5"
 zstd = "0.14"
-rotameter-core = { path = "crates/rotameter-core", version = "0.1.1" }
-rotameter-arrow = { path = "crates/rotameter-arrow", version = "0.1.1" }
-rotameter-store-duckdb = { path = "crates/rotameter-store-duckdb", version = "0.1.1" }
-rotameter-store-sqlite = { path = "crates/rotameter-store-sqlite", version = "0.1.1" }
-rotameter-server = { path = "crates/rotameter-server", version = "0.1.1" }
-rotameter-client = { path = "crates/rotameter-client", version = "0.1.1" }
-rotameter-mcp = { path = "crates/rotameter-mcp", version = "0.1.1" }
-rotameter-tui = { path = "crates/rotameter-tui", version = "0.1.1" }
+rotameter-core = { path = "crates/rotameter-core", version = "0.2.0" }
+rotameter-arrow = { path = "crates/rotameter-arrow", version = "0.2.0" }
+rotameter-store-duckdb = { path = "crates/rotameter-store-duckdb", version = "0.2.0" }
+rotameter-store-sqlite = { path = "crates/rotameter-store-sqlite", version = "0.2.0" }
+rotameter-server = { path = "crates/rotameter-server", version = "0.2.0" }
+rotameter-client = { path = "crates/rotameter-client", version = "0.2.0" }
+rotameter-mcp = { path = "crates/rotameter-mcp", version = "0.2.0" }
+rotameter-tui = { path = "crates/rotameter-tui", version = "0.2.0" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

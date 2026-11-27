@@ -1,6 +1,6 @@
 {
   "name": "@rotameter/astro-cloudflare",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Zero-dependency Astro and Cloudflare Workers first-party proxy and SSR analytics helper for Rotameter",
   "license": "MIT OR Apache-2.0",
   "type": "module",

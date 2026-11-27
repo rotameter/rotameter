@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-26
+
 ### Added
 
 - Added the canonical Web UI architecture and design system specification (`docs/SPEC-UI.md` and `ADR-0009`) covering the `Bun` workspace monorepo, CAD/flight-instrument `tokens.css`, WCAG 2.2 AA rules, hybrid charting + deferred WebGL policy, dynamic `--density-table-row-h` virtualization, `/v1/capabilities` + `/v1/auth/*` contracts, and lazy-loaded `@rotameter/plugin-*` seams across `0.3.0`–`0.5.0` (`RM-18`, `RM-37`..`RM-40`).

@@ -2080,7 +2080,7 @@ dependencies = [
 
 [[package]]
 name = "rotameter-arrow"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "arrow-array",
  "arrow-schema",
@@ -2097,7 +2097,7 @@ dependencies = [
 
 [[package]]
 name = "rotameter-cli"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "clap",
@@ -2120,7 +2120,7 @@ dependencies = [
 
 [[package]]
 name = "rotameter-client"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "axum",
  "reqwest",
@@ -2138,7 +2138,7 @@ dependencies = [
 
 [[package]]
 name = "rotameter-core"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "aho-corasick",
  "hmac-sha256",
@@ -2150,7 +2150,7 @@ dependencies = [
 
 [[package]]
 name = "rotameter-mcp"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "rotameter-client",
  "serde",
@@ -2160,7 +2160,7 @@ dependencies = [
 
 [[package]]
 name = "rotameter-server"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "axum",
  "chrono",
@@ -2182,7 +2182,7 @@ dependencies = [
 
 [[package]]
 name = "rotameter-store-duckdb"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "arrow-array",
  "chrono",
@@ -2197,7 +2197,7 @@ dependencies = [
 
 [[package]]
 name = "rotameter-store-sqlite"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "chrono-tz",
@@ -2209,7 +2209,7 @@ dependencies = [
 
 [[package]]
 name = "rotameter-tui"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "crossterm",
  "ratatui",

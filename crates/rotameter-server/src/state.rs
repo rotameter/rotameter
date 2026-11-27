@@ -77,6 +77,8 @@ pub struct AppState {
     pub ingest: IngestPipeline,
     pub(crate) default_org_id: OrgId,
     pub(crate) self_site_id: Option<SiteId>,
+    pub(crate) mcp_http_enabled: bool,
+    pub(crate) mcp_allow_admin: bool,
     pub(crate) started_at: Instant,
 }
 
@@ -133,6 +135,8 @@ impl AppState {
             ingest,
             default_org_id: org.org_id,
             self_site_id,
+            mcp_http_enabled: config.mcp_http.enabled,
+            mcp_allow_admin: config.mcp_http.allow_admin,
             started_at: Instant::now(),
         })
     }

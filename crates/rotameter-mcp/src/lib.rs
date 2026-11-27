@@ -1,6 +1,8 @@
 #![forbid(unsafe_code)]
-//! Read-only `stdio` Model Context Protocol (MCP) server for Rotameter.
+//! Model Context Protocol (MCP) server for Rotameter (`stdio`, read-only by default).
 
+mod admin_tools;
+mod backend;
 mod parse;
 mod protocol;
 mod schema;
@@ -8,11 +10,17 @@ mod tools;
 
 use std::io::{self, BufRead, BufReader, BufWriter, Write};
 
-use rotameter_client::types::{
-    QueryRequest, QueryResponse, RealtimeResponse, SiteRef, SiteResponse,
-};
-use rotameter_client::{BlockingRotameterClient, ClientError, ComponentInfo};
+use rotameter_client::{BlockingRotameterClient, ComponentInfo};
 use thiserror::Error;
+
+pub use backend::AnalyticsBackend;
+
+/// Runtime options controlling MCP tool exposure.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct McpOptions {
+    /// When `true`, exposes guarded site/key admin tools in addition to read-only analytics tools.
+    pub allow_admin: bool,
+}
 
 /// Error returned by the MCP `stdio` transport loop.
 #[derive(Debug, Error)]
@@ -22,64 +30,33 @@ pub enum McpError {
     Io(#[from] io::Error),
 }
 
-/// Strictly read-only analytics operations exposed to MCP tools.
-pub trait AnalyticsBackend {
-    /// Lists accessible sites (`GET /v1/admin/sites`).
-    ///
-    /// # Errors
-    ///
-    /// Returns [`ClientError`] on network or authorization errors.
-    fn list_sites(&self) -> Result<Vec<SiteResponse>, ClientError>;
-
-    /// Executes an analytics query (`POST /v1/query`).
-    ///
-    /// # Errors
-    ///
-    /// Returns [`ClientError`] on network, auth, or query validation errors.
-    fn query(&self, req: &QueryRequest) -> Result<QueryResponse, ClientError>;
-
-    /// Fetches trailing realtime visitor activity (`GET /v1/sites/{site}/realtime`).
-    ///
-    /// # Errors
-    ///
-    /// Returns [`ClientError`] on network, auth, or missing-site errors.
-    fn realtime(&self, site: &SiteRef) -> Result<RealtimeResponse, ClientError>;
-
-    /// Returns the optional default site configured on the client profile.
-    fn default_site(&self) -> Option<&str>;
-}
-
-impl AnalyticsBackend for BlockingRotameterClient {
-    fn list_sites(&self) -> Result<Vec<SiteResponse>, ClientError> {
-        Self::list_sites(self)
-    }
-
-    fn query(&self, req: &QueryRequest) -> Result<QueryResponse, ClientError> {
-        Self::query(self, req)
-    }
-
-    fn realtime(&self, site: &SiteRef) -> Result<RealtimeResponse, ClientError> {
-        Self::realtime(self, site)
-    }
-
-    fn default_site(&self) -> Option<&str> {
-        self.config().default_site.as_deref()
-    }
-}
-
-/// Serves newline-delimited JSON-RPC 2.0 MCP requests from `reader` onto `writer`.
+/// Serves newline-delimited JSON-RPC 2.0 MCP requests with default read-only options.
 ///
 /// # Errors
 ///
 /// Returns [`McpError::Io`] if reading input lines or flushing responses fails.
 pub fn serve_stdio<R: BufRead, W: Write>(
     reader: R,
+    writer: W,
+    backend: &dyn AnalyticsBackend,
+) -> Result<(), McpError> {
+    serve_stdio_with_options(reader, writer, backend, McpOptions::default())
+}
+
+/// Serves newline-delimited JSON-RPC 2.0 MCP requests with explicit [`McpOptions`].
+///
+/// # Errors
+///
+/// Returns [`McpError::Io`] if reading input lines or flushing responses fails.
+pub fn serve_stdio_with_options<R: BufRead, W: Write>(
+    reader: R,
     mut writer: W,
     backend: &dyn AnalyticsBackend,
+    options: McpOptions,
 ) -> Result<(), McpError> {
     for line_res in reader.lines() {
         let line = line_res?;
-        if let Some(reply) = protocol::handle_line(&line, backend) {
+        if let Some(reply) = protocol::handle_line(&line, backend, options) {
             writeln!(writer, "{reply}")?;
             writer.flush()?;
         }
@@ -87,18 +64,31 @@ pub fn serve_stdio<R: BufRead, W: Write>(
     Ok(())
 }
 
-/// Runs the production MCP `stdio` server over process `stdin`/`stdout`.
+/// Runs the production MCP `stdio` server over process `stdin`/`stdout` (read-only).
 ///
 /// # Errors
 ///
 /// Returns [`McpError::Io`] on stream read/write failure.
 pub fn run_stdio(client: &BlockingRotameterClient) -> Result<(), McpError> {
+    run_stdio_with_options(client, McpOptions::default())
+}
+
+/// Runs the production MCP `stdio` server over `stdin`/`stdout` with explicit [`McpOptions`].
+///
+/// # Errors
+///
+/// Returns [`McpError::Io`] on stream read/write failure.
+pub fn run_stdio_with_options(
+    client: &BlockingRotameterClient,
+    options: McpOptions,
+) -> Result<(), McpError> {
     let stdin = io::stdin();
     let stdout = io::stdout();
-    serve_stdio(
+    serve_stdio_with_options(
         BufReader::new(stdin.lock()),
         BufWriter::new(stdout.lock()),
         client,
+        options,
     )
 }
 

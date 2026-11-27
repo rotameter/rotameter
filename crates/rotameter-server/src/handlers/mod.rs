@@ -11,6 +11,11 @@ pub(crate) mod events;
 pub(crate) mod events_batch;
 pub(crate) mod headers;
 pub(crate) mod health;
+pub(crate) mod mcp;
+pub(crate) mod mcp_admin;
+pub(crate) mod mcp_parse;
+pub(crate) mod mcp_schema;
+pub(crate) mod mcp_tools;
 pub(crate) mod query;
 pub(crate) mod query_wire;
 
@@ -30,6 +35,14 @@ pub fn build_router(state: AppState) -> Router {
             .route("/v1/events/batch", post(events_batch::post_events_batch));
     }
     if state.role.allows_query() {
+        if state.mcp_http_enabled {
+            router = router.route(
+                "/mcp",
+                post(mcp::post_mcp)
+                    .get(mcp::get_mcp)
+                    .delete(mcp::delete_mcp),
+            );
+        }
         router = router
             .route("/v1/query", post(query::post_query))
             .route("/v1/sites/{site}/realtime", get(query::get_realtime))

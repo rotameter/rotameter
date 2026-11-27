@@ -90,9 +90,17 @@ pub enum Command {
     /// Verify local `SQLite` WAL health or remote `/v1/health` readiness.
     Doctor(DoctorArgs),
     /// Start the `stdio` Model Context Protocol server.
-    Mcp,
+    Mcp(McpArgs),
     /// Launch the interactive `ratatui` flight-instrument dashboard.
     Tui,
+}
+
+/// Options for `rotameter mcp`.
+#[derive(Debug, Default, Clone, Copy, Args)]
+pub struct McpArgs {
+    /// Expose guarded site/key admin tools (`rm_adm_` required on the server).
+    #[arg(long)]
+    pub allow_admin: bool,
 }
 
 /// Options for `rotameter serve`.
@@ -137,6 +145,12 @@ pub struct ServeArgs {
     /// `DuckDB` worker thread cap when `--analytics-db duckdb://...` is active (`ROTAMETER_DUCKDB_THREADS`, default `1`).
     #[arg(long)]
     pub duckdb_threads: Option<u32>,
+    /// Enable the Streamable HTTP `/mcp` endpoint (`ROTAMETER_ENABLE_MCP_HTTP`, default `false`).
+    #[arg(long, num_args = 0..=1, default_missing_value = "true", value_parser = clap::value_parser!(bool))]
+    pub enable_mcp_http: Option<bool>,
+    /// Expose guarded admin tools on HTTP `/mcp` for `rm_adm_` tokens (`ROTAMETER_MCP_ALLOW_ADMIN`, default `false`).
+    #[arg(long, num_args = 0..=1, default_missing_value = "true", value_parser = clap::value_parser!(bool))]
+    pub mcp_allow_admin: Option<bool>,
 }
 
 /// Options for `rotameter doctor`.

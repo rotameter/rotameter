@@ -1,6 +1,8 @@
 #![forbid(unsafe_code)]
 //! Uniform JSON `/v1` error envelope implementing [`axum::response::IntoResponse`].
 
+use std::fmt;
+
 use axum::Json;
 use axum::http::header::RETRY_AFTER;
 use axum::http::{HeaderValue, StatusCode};
@@ -83,6 +85,12 @@ impl ApiError {
 
     pub(crate) fn internal(message: impl Into<String>) -> Self {
         Self::new(StatusCode::INTERNAL_SERVER_ERROR, "internal_error", message)
+    }
+}
+
+impl fmt::Display for ApiError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.code, self.message)
     }
 }
 

@@ -82,6 +82,15 @@ impl Default for RateLimitConfig {
     }
 }
 
+/// Streamable HTTP `/mcp` server settings.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct McpHttpConfig {
+    /// Whether the Streamable HTTP `/mcp` route is mounted (`false` by default).
+    pub enabled: bool,
+    /// Whether `/mcp` exposes guarded admin tools to `rm_adm_` tokens (`false` by default).
+    pub allow_admin: bool,
+}
+
 /// HTTP server and bounded ingestion pipeline configuration.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ServerConfig {
@@ -115,6 +124,8 @@ pub struct ServerConfig {
     pub max_batch_size: usize,
     /// Graceful `SIGTERM` / `SIGINT` drain timeout in seconds (`10 s`).
     pub shutdown_timeout_secs: u64,
+    /// Streamable HTTP `/mcp` endpoint settings.
+    pub mcp_http: McpHttpConfig,
 }
 
 impl Default for ServerConfig {
@@ -135,6 +146,7 @@ impl Default for ServerConfig {
             flush_interval_ms: 1_000,
             max_batch_size: 512,
             shutdown_timeout_secs: 10,
+            mcp_http: McpHttpConfig::default(),
         }
     }
 }

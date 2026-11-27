@@ -4,16 +4,18 @@
 use rotameter_client::types::{Granularity, Metric, QueryRequest, RangePreset, WireTimeRange};
 use serde_json::{Value, json};
 
-use crate::AnalyticsBackend;
+use crate::admin_tools::call_admin_tool;
 use crate::parse::{
     all_metrics, default_granularity, kpi_deltas, parse_dimension, parse_filters, parse_limit,
     parse_opt, parse_range, parse_site_ref,
 };
+use crate::{AnalyticsBackend, McpOptions};
 
 pub(crate) fn call_tool(
     backend: &dyn AnalyticsBackend,
     name: &str,
     args: &Value,
+    options: McpOptions,
 ) -> Result<Value, String> {
     match name {
         "rotameter_sites" => run_sites(backend),
@@ -23,7 +25,14 @@ pub(crate) fn call_tool(
         "rotameter_realtime" => run_realtime(backend, args),
         "rotameter_compare_periods" => run_compare_periods(backend, args),
         "rotameter_query" => run_query(backend, args),
-        other => Err(format!("unknown MCP tool `{other}`")),
+        other => {
+            if options.allow_admin
+                && let Some(result) = call_admin_tool(backend, other, args)
+            {
+                return result;
+            }
+            Err(format!("unknown MCP tool `{other}`"))
+        }
     }
 }
 

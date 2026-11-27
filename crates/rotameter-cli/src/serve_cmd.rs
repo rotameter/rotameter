@@ -31,6 +31,15 @@ pub enum SaltStoreSetting {
     Memory,
 }
 
+/// Feature-independent Streamable HTTP `/mcp` settings.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct McpHttpSettings {
+    /// Whether the Streamable HTTP `/mcp` endpoint is enabled (`false` default).
+    pub enabled: bool,
+    /// Whether `/mcp` exposes guarded admin tools to `rm_adm_` tokens (`false` default).
+    pub allow_admin: bool,
+}
+
 /// Resolved server startup configuration independent of optional cargo features.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ServeSettings {
@@ -62,11 +71,13 @@ pub struct ServeSettings {
     pub duckdb_memory_limit: String,
     /// `DuckDB` worker thread cap when analytics uses `duckdb://`.
     pub duckdb_threads: u32,
+    /// Streamable HTTP `/mcp` settings.
+    pub mcp_http: McpHttpSettings,
 }
 
 #[cfg(all(feature = "server", feature = "sqlite"))]
 pub(crate) fn run_serve(global: &GlobalOpts, args: &ServeArgs) -> Result<(), CliError> {
-    use rotameter_server::{GeoIpMode, SaltStoreMode, ServerConfig, ServerRole};
+    use rotameter_server::{GeoIpMode, McpHttpConfig, SaltStoreMode, ServerConfig, ServerRole};
 
     use crate::storage_dsn::StorageDsn;
 
@@ -107,6 +118,10 @@ pub(crate) fn run_serve(global: &GlobalOpts, args: &ServeArgs) -> Result<(), Cli
             GeoIpMode::Header
         },
         mmdb_path: settings.mmdb_path,
+        mcp_http: McpHttpConfig {
+            enabled: settings.mcp_http.enabled,
+            allow_admin: settings.mcp_http.allow_admin,
+        },
         ..ServerConfig::default()
     };
 

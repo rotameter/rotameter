@@ -9,7 +9,7 @@ use url::Url;
 use crate::cli::{GlobalOpts, ServeArgs};
 use crate::context::{resolve_config_path, resolve_db_path};
 use crate::exit::CliError;
-use crate::serve_cmd::ServeSettings;
+use crate::serve_cmd::{McpHttpSettings, ServeSettings};
 use crate::serve_parse::{
     clean_opt, env_bool, env_non_empty, env_u32, parse_role, parse_salt_store, read_toml_config,
 };
@@ -123,6 +123,7 @@ where
             .as_deref(),
     )?;
     let (duckdb_memory_limit, duckdb_threads) = resolve_duckdb_limits(args, &env_fn, &sto)?;
+    let mcp_http = resolve_mcp_http(args, &env_fn, srv.enable_mcp_http, srv.mcp_allow_admin)?;
 
     Ok(ServeSettings {
         bind_addr,
@@ -139,6 +140,30 @@ where
         trusted_proxy_headers,
         duckdb_memory_limit,
         duckdb_threads,
+        mcp_http,
+    })
+}
+
+fn resolve_mcp_http<F>(
+    args: &ServeArgs,
+    env_fn: &F,
+    cfg_enabled: Option<bool>,
+    cfg_allow_admin: Option<bool>,
+) -> Result<McpHttpSettings, CliError>
+where
+    F: Fn(&str) -> Option<String>,
+{
+    Ok(McpHttpSettings {
+        enabled: args
+            .enable_mcp_http
+            .or(env_bool(env_fn, "ROTAMETER_ENABLE_MCP_HTTP")?)
+            .or(cfg_enabled)
+            .unwrap_or(false),
+        allow_admin: args
+            .mcp_allow_admin
+            .or(env_bool(env_fn, "ROTAMETER_MCP_ALLOW_ADMIN")?)
+            .or(cfg_allow_admin)
+            .unwrap_or(false),
     })
 }
 

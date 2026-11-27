@@ -29,6 +29,8 @@ pub(crate) struct ServerTomlSection {
     pub(crate) trusted_proxy: Option<bool>,
     pub(crate) role: Option<String>,
     pub(crate) salt_store: Option<String>,
+    pub(crate) enable_mcp_http: Option<bool>,
+    pub(crate) mcp_allow_admin: Option<bool>,
 }
 
 #[derive(Debug, Default, Deserialize)]

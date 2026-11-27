@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added Streamable HTTP `/mcp` transport on `rotameter serve` (`--enable-mcp-http`, `ROTAMETER_ENABLE_MCP_HTTP`, `[server] enable_mcp_http`) authenticated via `rm_rd_`/`rm_adm_` Bearer tokens, plus opt-in guarded admin MCP tools (`rotameter_site_upsert`, `rotameter_site_delete`, `rotameter_key_create`, `rotameter_key_list`, `rotameter_key_revoke`) behind `rotameter mcp --allow-admin` and `--mcp-allow-admin` (`RM-20`).
+
 ## [0.2.0] - 2026-11-26
 
 ### Added

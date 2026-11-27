@@ -167,3 +167,63 @@ duckdb_threads = 2
         resolve_serve_settings_with(&GlobalOpts::default(), &zero_args, env_from(&[])).is_err()
     );
 }
+
+#[test]
+fn mcp_http_flags_follow_cli_env_config_precedence() {
+    let dir = tempfile::tempdir().unwrap();
+    let cfg_path = dir.path().join("rotameter.toml");
+    std::fs::write(
+        &cfg_path,
+        "[server]\nenable_mcp_http = true\nmcp_allow_admin = false\n",
+    )
+    .unwrap();
+    let base_global = GlobalOpts {
+        config: Some(cfg_path),
+        ..GlobalOpts::default()
+    };
+
+    let defaults =
+        resolve_serve_settings_with(&GlobalOpts::default(), &ServeArgs::default(), env_from(&[]))
+            .unwrap();
+    assert!(!defaults.mcp_http.enabled);
+    assert!(!defaults.mcp_http.allow_admin);
+
+    let from_cfg =
+        resolve_serve_settings_with(&base_global, &ServeArgs::default(), env_from(&[])).unwrap();
+    assert!(from_cfg.mcp_http.enabled);
+    assert!(!from_cfg.mcp_http.allow_admin);
+
+    let from_env = resolve_serve_settings_with(
+        &base_global,
+        &ServeArgs::default(),
+        env_from(&[
+            ("ROTAMETER_ENABLE_MCP_HTTP", "false"),
+            ("ROTAMETER_MCP_ALLOW_ADMIN", "true"),
+        ]),
+    )
+    .unwrap();
+    assert!(!from_env.mcp_http.enabled);
+    assert!(from_env.mcp_http.allow_admin);
+
+    let parsed = Cli::try_parse_from([
+        "rotameter",
+        "serve",
+        "--enable-mcp-http",
+        "--mcp-allow-admin=false",
+    ])
+    .unwrap();
+    let Command::Serve(serve_args) = parsed.command else {
+        panic!("expected serve command");
+    };
+    let from_cli = resolve_serve_settings_with(
+        &base_global,
+        &serve_args,
+        env_from(&[
+            ("ROTAMETER_ENABLE_MCP_HTTP", "false"),
+            ("ROTAMETER_MCP_ALLOW_ADMIN", "true"),
+        ]),
+    )
+    .unwrap();
+    assert!(from_cli.mcp_http.enabled);
+    assert!(!from_cli.mcp_http.allow_admin);
+}

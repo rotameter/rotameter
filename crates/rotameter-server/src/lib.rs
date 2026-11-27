@@ -16,7 +16,7 @@ pub mod state;
 use rotameter_core::ComponentInfo;
 
 pub use config::{
-    GeoIpMode, RateLimitConfig, SaltStoreMode, ServerConfig, ServerError, ServerRole,
+    GeoIpMode, McpHttpConfig, RateLimitConfig, SaltStoreMode, ServerConfig, ServerError, ServerRole,
 };
 pub use handlers::admin_backup::LiveBackupExporter;
 pub use handlers::build_router;

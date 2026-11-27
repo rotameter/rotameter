@@ -110,7 +110,7 @@ fn dispatch(mut parsed: Cli) -> Result<(), CliError> {
         Command::Restore(args) => cmd_portable::run_restore(g, &args),
         Command::Migrate(args) => cmd_portable::run_migrate(&args),
         Command::Doctor(args) => cmd_ops::run_doctor(g, &args),
-        Command::Mcp => run_mcp(g),
+        Command::Mcp(args) => run_mcp(g, args),
         Command::Tui => run_tui(g),
     }
 }
@@ -126,18 +126,22 @@ const fn subcommand_output_format(cmd: &Command) -> Option<format::OutputFormat>
         Command::Restore(a) => a.output.format,
         Command::Migrate(a) => a.output.format,
         Command::Doctor(a) => a.output.format,
-        Command::Serve(_) | Command::Backup(_) | Command::Mcp | Command::Tui => None,
+        Command::Serve(_) | Command::Backup(_) | Command::Mcp(_) | Command::Tui => None,
     }
 }
 
 #[cfg(feature = "mcp")]
-fn run_mcp(global: &cli::GlobalOpts) -> Result<(), CliError> {
+fn run_mcp(global: &cli::GlobalOpts, args: cli::McpArgs) -> Result<(), CliError> {
     let client = context::remote_client(global)?;
-    rotameter_mcp::run_stdio(&client).map_err(|err| CliError::runtime(err.to_string()))
+    let opts = rotameter_mcp::McpOptions {
+        allow_admin: args.allow_admin,
+    };
+    rotameter_mcp::run_stdio_with_options(&client, opts)
+        .map_err(|err| CliError::runtime(err.to_string()))
 }
 
 #[cfg(not(feature = "mcp"))]
-fn run_mcp(_global: &cli::GlobalOpts) -> Result<(), CliError> {
+fn run_mcp(_global: &cli::GlobalOpts, _args: cli::McpArgs) -> Result<(), CliError> {
     Err(CliError::usage(
         "`rotameter mcp` requires the `mcp` cargo feature",
     ))

@@ -50,15 +50,19 @@ const fn default_limit() -> u32 {
 }
 
 impl WireQueryRequest {
-    pub(crate) fn into_core(self) -> Result<QuerySpec, ApiError> {
-        let range = match self.range {
-            WireTimeRange::Preset { preset } => TimeRange::Preset { preset },
-            WireTimeRange::Iso { from, to } => TimeRange::Explicit {
+    pub(crate) fn range_to_core(range: WireTimeRange) -> Result<TimeRange, ApiError> {
+        match range {
+            WireTimeRange::Preset { preset } => Ok(TimeRange::Preset { preset }),
+            WireTimeRange::Iso { from, to } => Ok(TimeRange::Explicit {
                 from_ms: parse_iso_ms(&from, "from")?,
                 to_ms: parse_iso_ms(&to, "to")?,
-            },
-            WireTimeRange::Millis { from_ms, to_ms } => TimeRange::Explicit { from_ms, to_ms },
-        };
+            }),
+            WireTimeRange::Millis { from_ms, to_ms } => Ok(TimeRange::Explicit { from_ms, to_ms }),
+        }
+    }
+
+    pub(crate) fn into_core(self) -> Result<QuerySpec, ApiError> {
+        let range = Self::range_to_core(self.range)?;
         Ok(QuerySpec {
             site_id: self.site_id,
             range,

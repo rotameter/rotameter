@@ -101,7 +101,7 @@ pub(crate) async fn extract_operator_auth(
             auth: AuthContext {
                 org_id: claims.org_id,
                 scope: claims.scope,
-                site_id: None,
+                site_id: claims.site_id,
             },
             method: if claims.method == "oidc" {
                 "oidc"

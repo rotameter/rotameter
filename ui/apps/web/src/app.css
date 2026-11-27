@@ -1,0 +1,4 @@
+@import "@rotameter/ui/styles.css";
+@source "../../packages/ui/src";
+@source "../../packages/plugin-sdk/src";
+@source "./src";

@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@rotameter/ui": ["../../packages/ui/src/index.ts"],
+      "@rotameter/plugin-sdk": ["../../packages/plugin-sdk/src/index.ts"]
+    }
+  },
+  "include": ["src", "vite.config.ts"]
+}

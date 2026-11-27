@@ -7,7 +7,7 @@ use std::sync::Mutex;
 use axum::http::HeaderMap;
 use axum::http::header::{HOST, ORIGIN};
 use hmac_sha256::{HMAC, Hash};
-use rotameter_core::id::OrgId;
+use rotameter_core::id::{OrgId, SiteId};
 use rotameter_core::types::KeyScope;
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -30,6 +30,8 @@ pub(crate) struct SessionClaims {
     pub(crate) sub: String,
     pub(crate) org_id: OrgId,
     pub(crate) scope: KeyScope,
+    #[serde(default)]
+    pub(crate) site_id: Option<SiteId>,
     pub(crate) method: String,
     pub(crate) exp_ms: i64,
     pub(crate) csrf: String,
@@ -108,6 +110,7 @@ impl OperatorAuthState {
         sub: String,
         org_id: OrgId,
         scope: KeyScope,
+        site_id: Option<SiteId>,
         method: &str,
         now_ms: i64,
     ) -> Result<(String, Vec<String>), ApiError> {
@@ -121,6 +124,7 @@ impl OperatorAuthState {
             sub,
             org_id,
             scope,
+            site_id,
             method: method.to_string(),
             exp_ms: now_ms.saturating_add(ttl_ms),
             csrf: csrf.clone(),

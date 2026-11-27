@@ -62,6 +62,7 @@ pub(crate) async fn get_oidc_callback(
         subject,
         state.default_org_id,
         KeyScope::Admin,
+        None,
         "oidc",
         now,
     )?;

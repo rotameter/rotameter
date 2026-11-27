@@ -41,7 +41,7 @@ pub(crate) async fn post_login(
     State(state): State<AppState>,
     Json(req): Json<LoginRequest>,
 ) -> Result<Response, ApiError> {
-    let (sub, org_id, scope) = if let Some(raw_tok) = req
+    let (sub, org_id, scope, site_id) = if let Some(raw_tok) = req
         .token
         .as_deref()
         .map(str::trim)
@@ -60,7 +60,7 @@ pub(crate) async fn post_login(
                 "Web UI login requires a `read` or `admin` API key",
             ));
         }
-        (rec.key_prefix, rec.org_id, rec.scope)
+        (rec.key_prefix, rec.org_id, rec.scope, rec.site_id)
     } else if let Some(password) = req.password.as_deref() {
         let username = req.username.as_deref().unwrap_or("admin").trim();
         if !state
@@ -69,7 +69,12 @@ pub(crate) async fn post_login(
         {
             return Err(ApiError::unauthorized("invalid operator credentials"));
         }
-        (username.to_string(), state.default_org_id, KeyScope::Admin)
+        (
+            username.to_string(),
+            state.default_org_id,
+            KeyScope::Admin,
+            None,
+        )
     } else {
         return Err(ApiError::bad_request(
             "missing_credentials",
@@ -77,11 +82,15 @@ pub(crate) async fn post_login(
         ));
     };
 
-    let (csrf_token, cookies) =
-        state
-            .operator_auth
-            .issue_session(sub.clone(), org_id, scope, "session", now_ms())?;
-    let body = serde_json::json!({
+    let (csrf_token, cookies) = state.operator_auth.issue_session(
+        sub.clone(),
+        org_id,
+        scope,
+        site_id,
+        "session",
+        now_ms(),
+    )?;
+    let mut body = serde_json::json!({
         "authenticated": true,
         "method": "session",
         "subject": sub,
@@ -89,6 +98,11 @@ pub(crate) async fn post_login(
         "org_id": org_id,
         "csrf_token": csrf_token,
     });
+    if let Some(sid) = site_id
+        && let Some(map) = body.as_object_mut()
+    {
+        map.insert("site_id".to_string(), serde_json::json!(sid));
+    }
     let mut resp = (StatusCode::OK, Json(body)).into_response();
     append_cookies(&mut resp, &cookies);
     Ok(resp)

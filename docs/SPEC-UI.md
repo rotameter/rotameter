@@ -8,8 +8,8 @@ Rotameter ships an optional, zero-runtime-Node static Web UI (`ui/dist/`) built 
 
 ## 1. Core Stack, Workspace Layout & Hosting Model
 
-- **Monorepo (`Bun` workspaces under `ui/`):**
-  - `ui/apps/web` — Vite + React + TypeScript (`strict: true`) host shell, router, capability boot, and auth gate.
+- **Monorepo (`Bun` workspaces + `Vite+` under `ui/`):**
+  - `ui/apps/web` — Vite+ (`vite-plus`) + React + TypeScript (`strict: true`) host shell, router, capability boot, and auth gate.
   - `ui/packages/ui` (`@rotameter/ui`) — owned component library wrapping `@base-ui/react` primitives + `tokens.css`.
   - `ui/packages/plugin-sdk` (`@rotameter/plugin-sdk`) — typed `PluginManifest`, `useDashboardQuery()`, `updateQuery()`, `ChartHost`, capability/auth context, and scoped API client.
   - `ui/packages/plugin-*` — lazy-loaded feature modules (`overview`, `breakdowns`, `realtime`, `admin`, `cluster` in `0.3.0`; `funnels`, `heatmaps`, `streams`, `builder` in `0.4.0`).

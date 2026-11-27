@@ -8,6 +8,11 @@ export const BRAND_ICON_NAMES = [
   "rm-throughput",
   "rm-segments",
   "rm-equilibrium",
+  "rm-control",
+  "rm-sites",
+  "rm-key",
+  "rm-export",
+  "rm-filter",
 ] as const;
 
 export type BrandIconName = (typeof BRAND_ICON_NAMES)[number];

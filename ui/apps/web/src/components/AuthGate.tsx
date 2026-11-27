@@ -118,8 +118,9 @@ export function AuthGate({ api, capabilities, onAuthenticated }: AuthGateProps) 
               onSubmit={handleTokenLogin}
               className="flex flex-col gap-2.5 border-t border-[var(--border-hairline)] pt-3"
             >
-              <div className="text-[var(--text-xs)] uppercase tracking-[0.06em] text-[var(--fg-muted)]">
-                API Key Session (`rm_adm_` or `rm_rd_`)
+              <div className="inline-flex items-center gap-1.5 text-[var(--text-xs)] uppercase tracking-[0.06em] text-[var(--fg-muted)]">
+                <BrandIcon name="rm-key" className="text-[var(--fg-muted)]" />
+                <span>API Key Session (`rm_adm_` or `rm_rd_`)</span>
               </div>
               <Input
                 type="password"

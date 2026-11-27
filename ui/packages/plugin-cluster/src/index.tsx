@@ -5,7 +5,7 @@ import {
   useTelemetryMeta,
   type PluginManifest,
 } from "@rotameter/plugin-sdk";
-import { InstrumentFrame } from "@rotameter/ui";
+import { BrandIcon, InstrumentFrame } from "@rotameter/ui";
 import { featureRows, formatUptime, queueTone, type TelemetryTone } from "./health";
 
 const TONE_TEXT: Record<TelemetryTone, string> = {
@@ -92,7 +92,10 @@ function ClusterPluginView() {
 
             <div className="border border-[var(--border-hairline)] bg-[var(--bg-surface)] px-3 py-2 flex flex-col gap-1.5">
               <div className="flex items-center justify-between text-[var(--text-xs)] text-[var(--fg-muted)]">
-                <span>INGEST RING BUFFER SATURATION</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <BrandIcon name="rm-threshold" className="text-[var(--fg-muted)]" />
+                  <span>INGEST RING BUFFER SATURATION</span>
+                </span>
                 <span className={`rm-tabular font-semibold ${TONE_TEXT[tone]}`}>
                   {fillPct.toFixed(1)}%
                 </span>

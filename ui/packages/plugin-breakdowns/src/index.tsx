@@ -9,7 +9,7 @@ import {
   useUpdateQuery,
   type PluginManifest,
 } from "@rotameter/plugin-sdk";
-import { Button, InstrumentFrame, Select, Tabs } from "@rotameter/ui";
+import { BrandIcon, Button, InstrumentFrame, Select, Tabs } from "@rotameter/ui";
 import { BreakdownTable, type BreakdownRowItem } from "./BreakdownTable";
 import {
   BREAKDOWN_GROUPS,
@@ -169,7 +169,8 @@ function BreakdownsPluginView() {
             disabled={exporting !== null}
             onClick={() => void handleExportCsv()}
           >
-            {exporting === "csv" ? "Exporting…" : "Export CSV"}
+            <BrandIcon name="rm-export" />
+            <span>{exporting === "csv" ? "Exporting…" : "Export CSV"}</span>
           </Button>
           <Button
             variant="secondary"
@@ -183,7 +184,8 @@ function BreakdownsPluginView() {
             }
             onClick={() => void handleExportParquet()}
           >
-            {exporting === "parquet" ? "Packing…" : "Export Parquet"}
+            <BrandIcon name="rm-export" />
+            <span>{exporting === "parquet" ? "Packing…" : "Export Parquet"}</span>
           </Button>
         </div>
       }

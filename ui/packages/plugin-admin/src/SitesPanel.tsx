@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useApiClient, type SiteResponse } from "@rotameter/plugin-sdk";
-import { Button, Dialog, Input } from "@rotameter/ui";
+import { BrandIcon, Button, Dialog, Input } from "@rotameter/ui";
 import { SiteFormDialog } from "./SiteFormDialog";
 import { buildCollectSnippet, resolveOrigin } from "./forms";
 
@@ -44,8 +44,9 @@ export function SitesPanel() {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[var(--text-xs)] text-[var(--fg-muted)]">
-          {sites ? `${sites.length} registered site(s)` : "Loading registry…"}
+        <span className="inline-flex items-center gap-1.5 text-[var(--text-xs)] text-[var(--fg-muted)]">
+          <BrandIcon name="rm-sites" className="text-[var(--fg-muted)]" />
+          <span>{sites ? `${sites.length} registered site(s)` : "Loading registry…"}</span>
         </span>
         <Button
           variant="primary"

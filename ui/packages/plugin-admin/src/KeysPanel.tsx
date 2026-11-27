@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useApiClient, type ApiKeyMetadata } from "@rotameter/plugin-sdk";
-import { Button, Dialog } from "@rotameter/ui";
+import { BrandIcon, Button, Dialog } from "@rotameter/ui";
 import { KeyCreateDialog } from "./KeyCreateDialog";
 
 export function KeysPanel() {
@@ -61,8 +61,9 @@ export function KeysPanel() {
           >
             {showRevoked ? "Showing Revoked" : "Show Revoked"}
           </Button>
-          <span className="text-[var(--text-xs)] text-[var(--fg-muted)]">
-            {visibleKeys.length} key(s)
+          <span className="inline-flex items-center gap-1.5 text-[var(--text-xs)] text-[var(--fg-muted)]">
+            <BrandIcon name="rm-key" className="text-[var(--fg-muted)]" />
+            <span>{visibleKeys.length} key(s)</span>
           </span>
         </div>
         <Button variant="primary" onClick={() => setCreateOpen(true)}>

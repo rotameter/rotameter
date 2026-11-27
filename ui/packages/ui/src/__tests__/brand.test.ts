@@ -20,10 +20,11 @@ const EXPECTED_PUBLIC_ASSETS = [
 ];
 
 describe("brand assets & sprite integrity", () => {
-  test("every BrandIconName exists in icons-sprite.svg", () => {
+  test("every BrandIconName exists in icons-sprite.svg and icons/<name>.svg", () => {
     const sprite = readFileSync(join(BRAND_DIR, "icons-sprite.svg"), "utf8");
     for (const name of BRAND_ICON_NAMES) {
       expect(sprite).toContain(`id="${name}"`);
+      expect(existsSync(join(BRAND_DIR, "icons", `${name}.svg`))).toBe(true);
     }
   });
 

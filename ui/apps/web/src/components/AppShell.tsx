@@ -24,7 +24,7 @@ const NAV_ICON_BY_ID: Record<string, BrandIconName> = {
   overview: "rm-throughput",
   breakdowns: "rm-segments",
   realtime: "rm-stream",
-  admin: "rm-threshold",
+  admin: "rm-control",
   cluster: "rm-equilibrium",
 };
 
@@ -107,12 +107,15 @@ export function AppShell({
               {q.siteId}
             </span>
           )}
-          <Select
-            ariaLabel="Time range"
-            value={q.range}
-            onValueChange={(range) => updateQuery({ range }, { mode: "push" })}
-            options={RANGE_OPTIONS}
-          />
+          <div className="flex items-center gap-1.5">
+            <BrandIcon name="rm-range" className="text-[var(--fg-muted)]" />
+            <Select
+              ariaLabel="Time range"
+              value={q.range}
+              onValueChange={(range) => updateQuery({ range }, { mode: "push" })}
+              options={RANGE_OPTIONS}
+            />
+          </div>
           <Select
             ariaLabel="Bucket interval"
             value={q.interval}
@@ -126,7 +129,8 @@ export function AppShell({
           >
             Compare
           </Button>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
+            <BrandIcon name="rm-filter" className="text-[var(--fg-muted)]" />
             <Input
               aria-label="Filter expression"
               placeholder="country:US,path:/blog/*"

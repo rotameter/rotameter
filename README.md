@@ -7,7 +7,7 @@
 
   <h1>Rotameter</h1>
   <p><strong>A single-binary, privacy-first, headless web analytics engine in Rust.</strong></p>
-  <p><code>MIT OR Apache-2.0</code> · Rust edition <code>2024</code> (MSRV <code>1.99</code>) · Current target: <code>0.1.0</code></p>
+  <p><code>MIT OR Apache-2.0</code> · Rust edition <code>2024</code> (MSRV <code>1.100</code>) · Current target: <code>0.1.0</code></p>
 </div>
 
 Rotameter is engineered for unattended durability on a **`1 vCPU / 1 GB RAM`** VM with zero cookies, zero persisted raw IPs, zero ClickHouse/PostgreSQL dependencies, and a clean-sheet `/v1/*` contract backed by bundled SQLite WAL + daily rollups.

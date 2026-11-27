@@ -37,10 +37,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Rust 1.99 toolchain
+      - name: Install Rust 1.100 toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: "1.99"
+          toolchain: "1.100"
           targets: ${{ matrix.target }}
 
       - name: Install musl build tooling
@@ -76,10 +76,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Rust 1.99 toolchain
+      - name: Install Rust 1.100 toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: "1.99"
+          toolchain: "1.100"
 
       - name: Install native C++ build tooling
         run: |

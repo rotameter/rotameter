@@ -9,7 +9,7 @@ this contract.
 > `batten`, `joiner`, `benchwork`, `outfeed`, `rabbet`, `sawhorse`. `rotameter` is an independent
 > project: it is not part of, owned by, governed by, or released under that suite or its organization.
 > Those tools are used here strictly as a consumer.
-> **Language:** Rust, **edition 2024**, MSRV **1.99** (`edition`/`rust-version` pinned in root `Cargo.toml`)
+> **Language:** Rust, **edition 2024**, MSRV **1.100** (`edition`/`rust-version` pinned in root `Cargo.toml`)
 > **Versioning:** Lockstep SemVer across the workspace; git tags `v<version>`
 
 ---

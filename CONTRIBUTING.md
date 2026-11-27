@@ -6,7 +6,7 @@ Thank you for contributing to **Rotameter** (`MIT OR Apache-2.0`). Read [`AGENTS
 
 ## Toolchain & Prerequisites
 
-- **Language:** Rust **edition 2024**, MSRV **1.99** (`rustc 1.99+`)
+- **Language:** Rust **edition 2024**, MSRV **1.100** (`rustc 1.100+`)
 - **Compiler cache:** `sccache` (configured with a shared `target/` directory in `.cargo/config.toml`; override with `CARGO_BUILD_RUSTC_WRAPPER=""` if `sccache` is not installed)
 - **Test runner:** `cargo-nextest` (`cargo nextest run`)
 - **Cross-compilation (`musl`):** `cross` targeting `x86_64-unknown-linux-musl` and `aarch64-unknown-linux-musl`

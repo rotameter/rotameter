@@ -164,10 +164,15 @@ fn extract_cf_access_subject(
                 return Err(ApiError::unauthorized("CF Access JWT issuer mismatch"));
             }
         }
-        let jwt_sub = claims
-            .get("email")
-            .and_then(Value::as_str)
-            .or_else(|| claims.get("sub").and_then(Value::as_str))
+        let claim_str = |k: &str| {
+            claims
+                .get(k)
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+        };
+        let jwt_sub = claim_str("email")
+            .or_else(|| claim_str("sub"))
             .map(ToString::to_string);
         return Ok(email.or(jwt_sub));
     }

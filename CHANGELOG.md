@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Rejected empty/whitespace `email` and `sub` claims in Cloudflare Access JWT verification (`extract_cf_access_subject`) so `non_identity` service-token JWTs cannot elevate to an admin session without an explicit `Authorization: Bearer` key.
+
 ### Added
 
 - Integrated `assets/brand/` icons and metadata into the Web UI (`ui/scripts/sync-brand-assets.mjs` syncing favicons, `apple-touch-icon.png`, PWA icons, `site.webmanifest`, light/dark logos, and `icons-sprite.svg` into `apps/web/public/`, `<BrandIcon>` primitive in `@rotameter/ui`, and `rm-*` SVG navigation/header icons across `AppShell`, `AuthGate`, and `IngestRoleView`) (`RM-41`).

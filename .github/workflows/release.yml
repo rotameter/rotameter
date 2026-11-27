@@ -49,8 +49,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends musl-tools
 
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Build Web UI bundle
+        working-directory: ui
+        run: |
+          bun install --frozen-lockfile
+          bun run build
+
       - name: Build release binary
-        run: cargo build --release --locked --target ${{ matrix.target }} -p rotameter-cli --bin rotameter
+        run: cargo build --release --locked --target ${{ matrix.target }} -p rotameter-cli --bin rotameter --features ui
 
       - name: Package release archive
         shell: bash
@@ -86,13 +95,22 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends cmake g++ pkg-config
 
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Build Web UI bundle
+        working-directory: ui
+        run: |
+          bun install --frozen-lockfile
+          bun run build
+
       - name: Build DuckDB release binary
         run: |
           cargo build --release --locked \
             -p rotameter-cli \
             --bin rotameter \
             --no-default-features \
-            --features server,sqlite,duckdb
+            --features server,sqlite,duckdb,ui
 
       - name: Package DuckDB release archive
         shell: bash

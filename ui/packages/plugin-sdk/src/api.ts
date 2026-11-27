@@ -68,11 +68,11 @@ export class RotameterApiClient {
     this.getCsrfToken = config.getCsrfToken ?? (() => readCookie("rotameter_csrf"));
   }
 
-  private async requestJson<T>(
+  private async fetchChecked(
     path: string,
     init: RequestInit = {},
     baseUrl = this.query_base_url,
-  ): Promise<T> {
+  ): Promise<Response> {
     const method = (init.method ?? "GET").toUpperCase();
     const headers = new Headers(init.headers);
     if (init.body && !headers.has("Content-Type")) {
@@ -102,6 +102,15 @@ export class RotameterApiClient {
       }
       throw new ApiClientError(resp.status, code, msg);
     }
+    return resp;
+  }
+
+  private async requestJson<T>(
+    path: string,
+    init: RequestInit = {},
+    baseUrl = this.query_base_url,
+  ): Promise<T> {
+    const resp = await this.fetchChecked(path, init, baseUrl);
     return (await resp.json()) as T;
   }
 
@@ -139,6 +148,23 @@ export class RotameterApiClient {
       body: JSON.stringify(req),
       signal,
     });
+  }
+
+  async queryCsv(req: QueryRequest, signal?: AbortSignal): Promise<string> {
+    const resp = await this.fetchChecked("/v1/query", {
+      method: "POST",
+      body: JSON.stringify({ ...req, format: "csv" }),
+      signal,
+    });
+    return resp.text();
+  }
+
+  async exportPortableArchive(signal?: AbortSignal): Promise<Blob> {
+    const resp = await this.fetchChecked("/v1/admin/backup", {
+      method: "POST",
+      signal,
+    });
+    return resp.blob();
   }
 
   realtime(site: string, signal?: AbortSignal): Promise<RealtimeResponse> {

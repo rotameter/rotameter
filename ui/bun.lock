@@ -16,6 +16,9 @@
       "name": "@rotameter/web",
       "version": "0.3.0",
       "dependencies": {
+        "@rotameter/plugin-breakdowns": "workspace:*",
+        "@rotameter/plugin-overview": "workspace:*",
+        "@rotameter/plugin-realtime": "workspace:*",
         "@rotameter/plugin-sdk": "workspace:*",
         "@rotameter/ui": "workspace:*",
         "@tanstack/react-query": "^5.70.0",
@@ -26,6 +29,39 @@
       "devDependencies": {
         "@tailwindcss/vite": "^4.1.0",
         "@vitejs/plugin-react": "^4.4.0",
+      },
+    },
+    "packages/plugin-breakdowns": {
+      "name": "@rotameter/plugin-breakdowns",
+      "version": "0.3.0",
+      "dependencies": {
+        "@rotameter/plugin-sdk": "workspace:*",
+        "@rotameter/ui": "workspace:*",
+        "@tanstack/react-query": "^5.70.0",
+        "@tanstack/react-table": "^8.21.2",
+        "@tanstack/react-virtual": "^3.13.6",
+        "react": "^19.1.0",
+      },
+    },
+    "packages/plugin-overview": {
+      "name": "@rotameter/plugin-overview",
+      "version": "0.3.0",
+      "dependencies": {
+        "@rotameter/plugin-sdk": "workspace:*",
+        "@rotameter/ui": "workspace:*",
+        "@tanstack/react-query": "^5.70.0",
+        "react": "^19.1.0",
+        "uplot": "^1.6.32",
+      },
+    },
+    "packages/plugin-realtime": {
+      "name": "@rotameter/plugin-realtime",
+      "version": "0.3.0",
+      "dependencies": {
+        "@rotameter/plugin-sdk": "workspace:*",
+        "@rotameter/ui": "workspace:*",
+        "@tanstack/react-query": "^5.70.0",
+        "react": "^19.1.0",
       },
     },
     "packages/plugin-sdk": {
@@ -316,6 +352,12 @@
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.68.8", "", { "os": "win32", "cpu": "x64" }, "sha512-/W1LBsMeQAdiCuH3Z2gkRspl3mlxL+butknhq4vXjmxO45vuT08BqhehxDoE4YS+m6s9lhpq6M9/PjTEAg8PYw=="],
 
+    "@rotameter/plugin-breakdowns": ["@rotameter/plugin-breakdowns@workspace:packages/plugin-breakdowns"],
+
+    "@rotameter/plugin-overview": ["@rotameter/plugin-overview@workspace:packages/plugin-overview"],
+
+    "@rotameter/plugin-realtime": ["@rotameter/plugin-realtime@workspace:packages/plugin-realtime"],
+
     "@rotameter/plugin-sdk": ["@rotameter/plugin-sdk@workspace:packages/plugin-sdk"],
 
     "@rotameter/ui": ["@rotameter/ui@workspace:packages/ui"],
@@ -362,9 +404,17 @@
 
     "@tanstack/react-store": ["@tanstack/react-store@0.11.4", "", { "dependencies": { "@tanstack/store": "0.11.3", "use-sync-external-store": "^1.6.0" }, "peerDependencies": { "@types/react": "*", "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" }, "optionalPeers": ["@types/react"] }, "sha512-JAQz7LcABVRbxZ6qCd4u/KqDaqBc1qmcOWz7XBTdav1Ib363HQdihCQF1A755nDhoi9VEd6UqZ5thWVKTwIIXw=="],
 
+    "@tanstack/react-table": ["@tanstack/react-table@8.21.3", "", { "dependencies": { "@tanstack/table-core": "8.21.3" }, "peerDependencies": { "react": ">=16.8", "react-dom": ">=16.8" } }, "sha512-5nNMTSETP4ykGegmVkhjcS8tTLW6Vl4axfEGQN3v0zdHYbK4UfoqfPChclTrJ4EoK9QynqAu9oUf8VEmrpZ5Ww=="],
+
+    "@tanstack/react-virtual": ["@tanstack/react-virtual@3.14.28", "", { "dependencies": { "@tanstack/virtual-core": "3.19.13" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-zoM4eddIVUsOsunOe26ur+h6YJQbvdzU10a2tKzIovThu5P4SvEyQ+cRx0mbeKfgnR0Mz7KR/NwrZ3GzVnUF/g=="],
+
     "@tanstack/router-core": ["@tanstack/router-core@1.171.39", "", { "dependencies": { "@tanstack/history": "1.162.5", "cookie-es": "^3.0.0", "seroval": "^1.6.7", "seroval-plugins": "^1.6.7" } }, "sha512-qUhoJ0meuSUqGYQbHbcJYdASr06YtK+bulbj6vtrhKYFkLgkSsZ6tXmMyym7sFxiSJSPYgasgozrL01LyyR/6A=="],
 
     "@tanstack/store": ["@tanstack/store@0.11.3", "", {}, "sha512-/Mt3h2Qe67HmRMc5SJ+8jM2Fp7O4fBbwOlS0ujUvx34KgAvkvdLSHrJatv0PJG5fbvlDsACTawMMY4ptCpVI8w=="],
+
+    "@tanstack/table-core": ["@tanstack/table-core@8.21.3", "", {}, "sha512-ldZXEhOBb8Is7xLs01fR3YEc3DERiz5silj8tnGkFZytt1abEvl/GhUmCE0PMLaMPTa3Jk4HbKmRlHmu+gCftg=="],
+
+    "@tanstack/virtual-core": ["@tanstack/virtual-core@3.19.13", "", {}, "sha512-CyCvMm7m5JuvPW6eMPZkZBZk6diySrlUQNNRpQPiEnh2vakyghx82Hw3wW2THFUsl6xJ6uM4lSUaiA2T0oYW8w=="],
 
     "@testing-library/dom": ["@testing-library/dom@10.4.2", "", { "dependencies": { "@babel/code-frame": "^7.10.4", "@babel/runtime": "^7.12.5", "@types/aria-query": "^5.0.1", "aria-query": "5.3.0", "dom-accessibility-api": "^0.5.9", "lz-string": "^1.5.0", "picocolors": "1.1.1", "pretty-format": "^27.0.2" } }, "sha512-yzr2S9HyAIdhz2/6qHgbs665Q7PKVcDF05vsOlHPxG1mo36gKVesdYVeDLnXgfjJ03CrKRk08knc6+E/9m8v2Q=="],
 
@@ -643,6 +693,8 @@
     "undici-types": ["undici-types@8.9.0", "", {}, "sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg=="],
 
     "update-browserslist-db": ["update-browserslist-db@1.4.0", "", { "dependencies": { "escalade": "^3.2.0", "picocolors": "^1.1.1" }, "peerDependencies": { "browserslist": ">= 4.21.0" }, "bin": { "update-browserslist-db": "cli.js" } }, "sha512-WPJuOnjI9FWDct4fB+ej4Mz8opLaw5CDcZ2t44tFZ0vIQVYWzBhWR3mkixuUj/A7+vY4V9+ApOZ2YYLwdgq46w=="],
+
+    "uplot": ["uplot@1.6.32", "", {}, "sha512-KIMVnG68zvu5XXUbC4LQEPnhwOxBuLyW1AHtpm6IKTXImkbLgkMy+jabjLgSLMasNuGGzQm/ep3tOkyTxpiQIw=="],
 
     "use-sync-external-store": ["use-sync-external-store@1.7.0", "", { "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-6L+EeigHMQhdaIPNIFUKwfWJSwWFQ8gJbJ2DLOs5sDIegTwR9fRxvnM3uciHKjIZhFz+KAv2emhWMRvDmMcY8A=="],
 

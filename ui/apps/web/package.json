@@ -9,6 +9,9 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@rotameter/plugin-breakdowns": "workspace:*",
+    "@rotameter/plugin-overview": "workspace:*",
+    "@rotameter/plugin-realtime": "workspace:*",
     "@rotameter/plugin-sdk": "workspace:*",
     "@rotameter/ui": "workspace:*",
     "@tanstack/react-query": "^5.70.0",

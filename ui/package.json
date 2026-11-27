@@ -9,8 +9,8 @@
     "dev": "bun run --filter @rotameter/web dev",
     "build": "bun run --filter @rotameter/web build && bun scripts/compress-dist.mjs",
     "typecheck": "bun run --filter '*' typecheck",
-    "lint": "vp lint apps/web/src packages/ui/src packages/plugin-sdk/src",
-    "fmt": "vp fmt --check apps/web/src packages/ui/src packages/plugin-sdk/src",
+    "lint": "vp lint apps/web/src packages/ui/src packages/plugin-sdk/src packages/plugin-overview/src packages/plugin-breakdowns/src packages/plugin-realtime/src",
+    "fmt": "vp fmt --check apps/web/src packages/ui/src packages/plugin-sdk/src packages/plugin-overview/src packages/plugin-breakdowns/src packages/plugin-realtime/src",
     "test": "bun test"
   },
   "devDependencies": {

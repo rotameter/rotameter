@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Rust 1.100 toolchain
         uses: dtolnay/rust-toolchain@master
@@ -28,7 +28,7 @@ jobs:
           components: rustfmt, clippy
 
       - name: Configure sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@v0.0.11
 
       - name: Install cargo-nextest
         uses: taiki-e/install-action@nextest
@@ -79,12 +79,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "24"
+          node-version: "26"
 
       - name: Typecheck, build, test & pack dry-run
         working-directory: integrations/astro-cloudflare
@@ -99,7 +99,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Rust 1.100 toolchain
         uses: dtolnay/rust-toolchain@master
@@ -108,7 +108,7 @@ jobs:
           components: clippy
 
       - name: Configure sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@v0.0.11
 
       - name: Install cargo-nextest
         uses: taiki-e/install-action@nextest

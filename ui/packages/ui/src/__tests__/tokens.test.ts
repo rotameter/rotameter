@@ -49,6 +49,8 @@ describe("WCAG 2.2 AA & AAA design tokens", () => {
   const light = parseBlockVars(css, /:root,\s*:root\[data-theme="light"\]\s*\{([\s\S]*?)\}/);
   const dark = parseBlockVars(css, /:root\[data-theme="dark"\]\s*\{([\s\S]*?)\}/);
   const compact = parseBlockVars(css, /\[data-density="compact"\]\s*\{([\s\S]*?)\}/);
+  const standard = parseBlockVars(css, /:root,\s*\[data-density="standard"\]\s*\{([\s\S]*?)\}/);
+  const comfortable = parseBlockVars(css, /\[data-density="comfortable"\]\s*\{([\s\S]*?)\}/);
 
   for (const [themeName, tokens] of [
     ["light", light],
@@ -85,5 +87,17 @@ describe("WCAG 2.2 AA & AAA design tokens", () => {
     expect(rowH).toBeGreaterThanOrEqual(24);
     expect(css).toContain("outline: 2px solid var(--focus-ring)");
     expect(css).toContain("outline-offset: 2px");
+  });
+
+  test("--density-kpi exceeds body size and scales monotonically across densities", () => {
+    const kpiSizes: number[] = [];
+    for (const density of [compact, standard, comfortable]) {
+      const body = Number.parseFloat(density["--density-font-body"] ?? "0");
+      const kpi = Number.parseFloat(density["--density-kpi"] ?? "0");
+      expect(kpi).toBeGreaterThan(body);
+      kpiSizes.push(kpi);
+    }
+    expect(kpiSizes[0]).toBeLessThan(kpiSizes[1]!);
+    expect(kpiSizes[1]).toBeLessThan(kpiSizes[2]!);
   });
 });

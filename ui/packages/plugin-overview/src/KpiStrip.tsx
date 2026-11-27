@@ -46,7 +46,7 @@ export function KpiStrip({ summary, previous, compare }: KpiStripProps) {
               {card.label}
             </span>
             <div className="flex items-baseline justify-between gap-2">
-              <span className="rm-tabular text-[var(--text-lg)] font-semibold text-[var(--fg-primary)]">
+              <span className="rm-tabular text-[length:var(--density-kpi)] leading-tight font-semibold text-[var(--fg-primary)]">
                 {card.format(value)}
               </span>
               {delta ? (

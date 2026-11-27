@@ -76,6 +76,7 @@
   --density-control-h: 32px;
   --density-table-row-h: 34px;
   --density-font-body: 0.8125rem;
+  --density-kpi: 1.5rem;
   --density-icon-size: 16px;
 }
 
@@ -86,6 +87,7 @@
   --density-control-h: 26px;
   --density-table-row-h: 26px;
   --density-font-body: 0.75rem;
+  --density-kpi: 1.25rem;
   --density-icon-size: 14px;
 }
 
@@ -96,6 +98,7 @@
   --density-control-h: 38px;
   --density-table-row-h: 42px;
   --density-font-body: 0.875rem;
+  --density-kpi: 1.75rem;
   --density-icon-size: 18px;
 }
 

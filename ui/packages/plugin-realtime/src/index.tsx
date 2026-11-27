@@ -58,7 +58,7 @@ function RealtimePluginView() {
                   <div className="text-[var(--text-xs)] uppercase tracking-[0.06em] text-[var(--fg-muted)]">
                     Active Visitors (5m)
                   </div>
-                  <div className="rm-tabular text-[var(--text-xl)] font-semibold text-[var(--fg-primary)]">
+                  <div className="rm-tabular text-[length:var(--density-kpi)] leading-tight font-semibold text-[var(--fg-primary)]">
                     {data.active_visitors.toLocaleString("en-US")}
                   </div>
                 </div>

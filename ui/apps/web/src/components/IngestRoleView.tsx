@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { CapabilitiesResponse, RotameterApiClient } from "@rotameter/plugin-sdk";
-import { InstrumentFrame } from "@rotameter/ui";
+import { BrandIcon, InstrumentFrame } from "@rotameter/ui";
 
 export interface IngestRoleViewProps {
   api: RotameterApiClient;
@@ -17,6 +17,12 @@ export function IngestRoleView({ api, capabilities }: IngestRoleViewProps) {
   return (
     <main className="min-h-screen p-6 bg-[var(--bg-canvas)]">
       <div className="max-w-3xl mx-auto flex flex-col gap-4">
+        <div className="flex items-center gap-2">
+          <BrandIcon name="rm-logo" className="w-5 h-5 text-[var(--accent-primary)]" />
+          <span className="font-semibold tracking-[0.1em] text-[var(--text-sm)] text-[var(--fg-primary)]">
+            ROTAMETER
+          </span>
+        </div>
         <InstrumentFrame
           title="NODE ROLE TELEMETRY // INGEST-ONLY"
           subtitle={`${capabilities.topology.toUpperCase()} · ${capabilities.node_role}`}

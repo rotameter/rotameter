@@ -6,8 +6,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "bun run --filter @rotameter/web dev",
-    "build": "bun run --filter @rotameter/web build && bun scripts/compress-dist.mjs",
+    "dev": "bun scripts/sync-brand-assets.mjs && bun run --filter @rotameter/web dev",
+    "build": "bun scripts/sync-brand-assets.mjs && bun run --filter @rotameter/web build && bun scripts/compress-dist.mjs",
     "typecheck": "bun run --filter '*' typecheck",
     "lint": "vp lint apps/web/src packages/ui/src packages/plugin-sdk/src packages/plugin-overview/src packages/plugin-breakdowns/src packages/plugin-realtime/src packages/plugin-admin/src packages/plugin-cluster/src && bun scripts/check-guardrails.mjs",
     "fmt": "vp fmt --check apps/web/src packages/ui/src packages/plugin-sdk/src packages/plugin-overview/src packages/plugin-breakdowns/src packages/plugin-realtime/src packages/plugin-admin/src packages/plugin-cluster/src",

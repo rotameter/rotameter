@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { ApiClientError, type AuthMeResponse, type CapabilitiesResponse, type RotameterApiClient } from "@rotameter/plugin-sdk";
-import { Button, Input, InstrumentFrame } from "@rotameter/ui";
+import { BrandIcon, Button, Input, InstrumentFrame } from "@rotameter/ui";
 
 export interface AuthGateProps {
   api: RotameterApiClient;
@@ -63,6 +63,12 @@ export function AuthGate({ api, capabilities, onAuthenticated }: AuthGateProps) 
   return (
     <main className="min-h-screen flex items-center justify-center p-4 bg-[var(--bg-canvas)]">
       <div className="w-full max-w-md flex flex-col gap-4">
+        <div className="flex items-center justify-center gap-2">
+          <BrandIcon name="rm-logo" className="w-6 h-6 text-[var(--accent-primary)]" />
+          <span className="font-semibold tracking-[0.12em] text-[var(--text-md)] text-[var(--fg-primary)]">
+            ROTAMETER
+          </span>
+        </div>
         <InstrumentFrame
           title="ROTAMETER // OPERATOR AUTH"
           subtitle={`${capabilities.topology.toUpperCase()} · ${capabilities.node_role}`}

@@ -10,9 +10,23 @@ import {
   type RangePreset,
   type SiteResponse,
 } from "@rotameter/plugin-sdk";
-import { Button, Input, Select } from "@rotameter/ui";
+import {
+  BrandIcon,
+  Button,
+  Input,
+  Select,
+  type BrandIconName,
+} from "@rotameter/ui";
 import { serializeFiltersParam, parseFiltersParam } from "../searchParams";
 import type { DensityPreference, ThemePreference, UiPreferences } from "../preferences";
+
+const NAV_ICON_BY_ID: Record<string, BrandIconName> = {
+  overview: "rm-throughput",
+  breakdowns: "rm-segments",
+  realtime: "rm-stream",
+  admin: "rm-threshold",
+  cluster: "rm-equilibrium",
+};
 
 export interface AppShellProps {
   plugins: PluginManifest[];
@@ -77,7 +91,10 @@ export function AppShell({
           >
             ☰
           </Button>
-          <span className="font-semibold tracking-[0.08em] text-[var(--text-sm)]">ROTAMETER</span>
+          <span className="inline-flex items-center gap-1.5 font-semibold tracking-[0.08em] text-[var(--text-sm)]">
+            <BrandIcon name="rm-logo" className="w-5 h-5 text-[var(--accent-primary)]" />
+            <span>ROTAMETER</span>
+          </span>
           {auth.scope === "admin" && sites.length > 0 ? (
             <Select
               ariaLabel="Active site"
@@ -170,6 +187,7 @@ export function AppShell({
           >
             {navItems.map((item) => {
               const active = activeRouteId === item.id;
+              const icon = NAV_ICON_BY_ID[item.id] ?? "rm-range";
               return (
                 <Button
                   key={item.id}
@@ -177,7 +195,8 @@ export function AppShell({
                   className="justify-start w-full"
                   onClick={() => onNavigatePlugin(item.path)}
                 >
-                  {item.label}
+                  <BrandIcon name={icon} />
+                  <span>{item.label}</span>
                 </Button>
               );
             })}

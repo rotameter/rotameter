@@ -4,6 +4,7 @@ target/
 # JS/TS build artifacts
 integrations/astro-cloudflare/dist/
 node_modules/
+ui/apps/web/public/
 ui/dist/
 
 # outfeed crates.io namespace reservation staging

@@ -1,4 +1,4 @@
-# Privacy, Session & Cardinality Specification (`v1.0`)
+# Privacy, Session & Cardinality Specification (`0.1.0+`)
 
 Rotameter is privacy-preserving by construction: no personal data touches disk, no tracking state lives on visitor browsers, and hostile URL/property cardinality cannot exhaust memory or storage on a `1 GB` VM.
 

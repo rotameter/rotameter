@@ -10,10 +10,10 @@ Rotameter follows Rust/Cargo SemVer conventions (`0.x` minor milestones keep sin
 
 | Version | Milestone | Summary |
 | --- | --- | --- |
-| **`0.1.0`** *(target)* | **Headless Analytics Engine** | All `RM-1` child tickets (`RM-2`..`RM-17`, `RM-23`, `RM-25`, `RM-26`, `RM-27`) plus pre-release polish before live soak |
+| **`0.1.0`** *(shipped)* | **Headless Analytics Engine** | All `RM-1` child tickets (`RM-2`..`RM-17`, `RM-23`, `RM-25`, `RM-26`, `RM-27`) plus pre-release polish before live soak |
 | **`0.1.x`** | **Live VM Soak Fixes** | Non-breaking bugfixes and tuning on `1 vCPU / 1 GB RAM` |
-| **`0.2.0`** | **Storage Architecture & Arrow Portability** | OLTP/OLAP async trait split, multi-node seams (`SaltProvider` DB persistence, `--role`), `rotameter-arrow` portable Parquet/JSON `backup`/`restore`/`migrate`, opt-in **DuckDB** (`RM-28`) |
-| **`0.3.0`** | **Initial Web UI & Self-Hoster Essentials** | Optional static Web UI (`--ui=on\|off`) covering `0.1.0`–`0.2.0`, simple admin/OIDC auth (`RM-18`), Streamable HTTP `/mcp` (`RM-20`) |
+| **`0.2.0`** *(shipped)* | **Storage Architecture & Arrow Portability** | OLTP/OLAP async trait split, multi-node seams (`SaltProvider` DB persistence, `--role`), `rotameter-arrow` portable Parquet/JSON `backup`/`restore`/`migrate`, opt-in **DuckDB** (`RM-28`) |
+| **`0.3.0`** *(in progress)* | **Initial Web UI & Self-Hoster Essentials** | Optional static Web UI (`--ui=on\|off`), simple admin/OIDC auth (`RM-18`: `RM-37` merged, `RM-38`..`RM-40` remaining), Streamable HTTP `/mcp` (`RM-20` merged) |
 | **`0.4.0`** | **Product Analytics & Web UI v2** | Funnels, user flows/streams, cohorts, compound AST, opt-in privacy-safe click/scroll heatmaps & engaged-time module, Web UI builders (`RM-21`) |
 | **`0.5.0`** | **Multi-Node Scale, Tier 2 DBs & Sinks** | Shared SQL AST (`PostgreSQL`, `MySQL`/`MariaDB` InnoDB), `ClickHouse`, generic ADBC/Flight SQL (`Pinot`, BI/warehouses) (`RM-22`); webhooks, Arrow/Parquet sinks & WASM/plugin seams (`RM-24`) |
 | **`0.6.0`** | **Enterprise Multi-Tenancy, Tags & Tier 3** | Full multi-org RBAC, active-active `SessionStateStore`, Tier 3 adapters on demand (`MongoDB`, CF `D1`/AE, `DataFusion` lakehouse) (`RM-29`), packaged GTM/Zaraz templates (`RM-19`) |

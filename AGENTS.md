@@ -41,12 +41,14 @@ lateral edges between leaf apps or upward leaks into `rotameter-core`:
 | Crate | Path | Owns |
 | --- | --- | --- |
 | `rotameter-core` | `crates/rotameter-core` | Domain types, `HMAC-SHA256` hashing, salt rotation, 30m session LRU, URL/UTM/referrer normalizers, bot/UA classifiers, cardinality guard, `Storage` traits. **Zero `tokio`, `rusqlite`, `axum`, `ratatui`, or OS I/O.** |
+| `rotameter-arrow` | `crates/rotameter-arrow` | Feature-gated canonical Arrow schemas (`events`, `sessions`, `rollups`, `QueryResult`), Parquet/JSON `.tar.zst` archive exchange. |
 | `rotameter-store-sqlite` | `crates/rotameter-store-sqlite` | Bundled SQLite WAL `Storage` implementation, migrations, `dim_strings` interner, batched `BEGIN IMMEDIATE` writer, `VACUUM INTO` backups. |
-| `rotameter-server` | `crates/rotameter-server` | `axum` `/v1/*` server, scoped Bearer auth, rate limiting, `16,384`-event MPSC ring buffer, GeoIP, `collect.js`/`pixel.gif`, `SIGTERM` drain, first-boot `self_site` bootstrap. |
+| `rotameter-store-duckdb` | `crates/rotameter-store-duckdb` | Opt-in DuckDB `AnalyticsDataPlane` (zero-copy Arrow ingestion, VM-safe `256MB` / `1`-thread defaults). |
+| `rotameter-server` | `crates/rotameter-server` | `axum` `/v1/*` server, scoped Bearer auth, `/v1/auth/*` + `/v1/capabilities`, rate limiting, `16,384`-event MPSC ring buffer, GeoIP, `collect.js`/`pixel.gif`, `/mcp`, feature-gated `ui` serving, `SIGTERM` drain, `self_site` bootstrap. |
 | `rotameter-client` | `crates/rotameter-client` | Typed HTTP client, `config.toml` profiles, `CF-Access-Client-Id`/`Secret` headers. |
-| `rotameter-mcp` | `crates/rotameter-mcp` | `stdio` JSON-RPC 2.0 read-only MCP server (7 analytics tools in `v1.0`). |
+| `rotameter-mcp` | `crates/rotameter-mcp` | `stdio` JSON-RPC 2.0 MCP server (7 read-only tools by default; opt-in `--allow-admin` in `0.3.0`). |
 | `rotameter-tui` | `crates/rotameter-tui` | Interactive `ratatui` flight-instrument terminal UI with ASCII block chart and drill-down. |
-| `rotameter-cli` | `crates/rotameter-cli` | Unified feature-gated `rotameter` binary (`server`, `sqlite`, `mcp`, `tui`). |
+| `rotameter-cli` | `crates/rotameter-cli` | Unified feature-gated `rotameter` binary (`server`, `sqlite`, `mcp`, `tui`, opt-in `arrow`, `duckdb`, `ui`). |
 
 `miter deps --path . --unused` proves declared crate dependencies remain strictly used.
 

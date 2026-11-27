@@ -1,6 +1,6 @@
-# Interfaces Specification: CLI, MCP Server & TUI (`v1.0`)
+# Interfaces Specification: CLI, MCP Server & TUI (`0.1.0+`)
 
-Because Rotameter ships headless in `v1.0`, the **CLI**, **MCP server**, and **TUI** are first-class operator interfaces sharing `rotameter-client` and a single configuration model.
+Because Rotameter ships headless-first (`0.1.0`–`0.2.0`), the **CLI**, **MCP server**, and **TUI** are first-class operator interfaces sharing `rotameter-client` and a single configuration model.
 
 *Related specs: [`SPEC-API.md`](./SPEC-API.md) · [`SPEC-ARCHITECTURE.md`](./SPEC-ARCHITECTURE.md) · [`SPEC-OPERATIONS.md`](./SPEC-OPERATIONS.md)*
 
@@ -34,33 +34,35 @@ Uniform flags across operational subcommands: `--format table|json|csv`, `--prof
 All `<site>` arguments across CLI, MCP, and TUI resolve either an immutable `site_id` (`site_...`) or the site's unique `slug` within the active org/profile (`ADR-0007`).
 Standard exit codes: `0` OK, `1` runtime/HTTP error, `2` invalid CLI args, `3` auth/Access error, `4` health/doctor gate failure.
 
-### Subcommand Tree (`v1.0`)
+### Subcommand Tree (`0.1.0`–`0.3.0`)
 
 | Command | Mode | Purpose |
 | --- | --- | --- |
-| `rotameter serve` | Local DB | Start HTTP server (`--bind 127.0.0.1:8000`, `--db`, `--public-url`, `--no-self-site`, `--self-site-id`, `--geoip header\|mmdb`, `--mmdb-path`, `--trusted-proxy`) |
+| `rotameter serve` | Local DB | Start HTTP server (`--bind 127.0.0.1:8000`, `--control-db`, `--analytics-db`, `--role`, `--salt-store`, `--enable-mcp-http`, `--mcp-allow-admin`, `--ui`, `--ui-dir`, `--public-url`, `--no-self-site`, `--geoip`, `--trusted-proxy`) |
 | `rotameter site upsert <site>` | Local DB or Remote Admin API | Idempotently create/update site (`--slug`, `--name`, `--timezone`, `--salt-rotation`, `--respect-gpc`, `--origin`, `--allow-query`, `--retention-days`) |
 | `rotameter site list / show / purge / delete` | Local or Remote | Inspect sites, prune old raw events, or delete site |
 | `rotameter key create / list / revoke` | Local or Remote | Mint scoped keys (`--scope ingest\|read\|admin`, `--site <id>`, `--label`) and revoke |
 | `rotameter query <site>` | Remote API | Query summary, timeseries, and breakdowns (`--range 24h\|7d\|30d\|12m\|all`, `--group-by path`, `--filter country=US`, `--compare`, `--format csv`) |
 | `rotameter realtime <site>` | Remote API | Stream/print 5-minute active visitors and active pages (`--watch`) |
-| `rotameter import <site> <file>` | Local DB or Remote Batch API | Backfill historical hits from JSONL or Nginx/Caddy CLF logs (`--dry-run`) |
+| `rotameter import <site> <file>` | Local DB or Remote Batch API | Backfill or stream Apache/Nginx/Caddy logs (`--stdin`, `--unix-socket`, `--follow`, `--input-format clf\|jsonl\|caddy-json`, `--dry-run`) |
 | `rotameter seed` | Local DB | Synthesize repeatable multi-day diurnal curves, breakdowns, and live pulse for local previews |
-| `rotameter backup <dest>` | Local DB | Execute safe online `SQLite VACUUM INTO <dest>` snapshot |
+| `rotameter backup <dest>` | Local DB | Execute safe online `SQLite VACUUM INTO <dest>` snapshot or `--format portable` Arrow/Parquet `.tar.zst` bundle (`--features arrow`) |
+| `rotameter restore <src>` | Local DB | Restore a verified portable Arrow/Parquet directory or `.tar.zst` archive (`--plane all\|control\|analytics`) |
+| `rotameter migrate` | Local DB | Stream data between storage DSNs (`sqlite://`, `duckdb://`) via Arrow or `--stage-dir` |
 | `rotameter doctor` | Local or Remote | Check DB WAL integrity, pragma ceilings, salt/clock health, queue usage, or remote `/v1/health` + Access token auth |
-| `rotameter mcp` | Remote API (`stdio`) | Start Model Context Protocol server over `stdin`/`stdout` |
+| `rotameter mcp` | Remote API (`stdio`) | Start Model Context Protocol server over `stdin`/`stdout` (read-only by default; opt-in `--allow-admin` in `0.3.0`) |
 | `rotameter tui` | Remote API | Launch interactive `ratatui` flight-instrument dashboard |
 
 **Server self-site flags (`rotameter serve`):** First boot idempotently provisions a local preconfigured self-site (`--public-url` host or `_self`, override via `--self-site-id` / `ROTAMETER_SELF_SITE_ID` / `[server] self_site_id`), controllable with precedence `CLI > env > config` and disabled cleanly via `--no-self-site` (`--self-site=false`), `ROTAMETER_SELF_SITE=false`, or `[server] self_site = false`.
 
 ---
 
-## 3. MCP Server (`rotameter mcp`)
+## 3. MCP Server (`rotameter mcp` & HTTP `/mcp`)
 
-### `v1.0` Scope: `stdio` Transport, Strictly Read-Only
-In `v1.0`, `rotameter mcp` speaks MCP JSON-RPC 2.0 over `stdio` and accepts only read-scoped (`rm_rd_`) or read-capable credentials—mutations stay on the idempotent CLI and Admin HTTP API so AI analysis sessions cannot accidentally drop sites or revoke keys.
+### `0.1.0` Baseline: `stdio` Transport, Read-Only by Default
+By default, `rotameter mcp` speaks MCP JSON-RPC 2.0 over `stdio` and exposes the 7 read-only analytics tools (`rm_rd_` or `rm_adm_`)—mutations stay disabled unless explicitly opted in.
 
-### Tool Catalog (`v1.0`)
+### Tool Catalog (`0.1.0` Read-Only)
 
 | Tool Name | Input Schema Highlights | Output |
 | --- | --- | --- |
@@ -72,9 +74,9 @@ In `v1.0`, `rotameter mcp` speaks MCP JSON-RPC 2.0 over `stdio` and accepts only
 | `rotameter_compare_periods` | `{ site_id, current: {from, to}, previous: {from, to}, dimension? }` | Side-by-side absolute and relative deltas across two explicit windows |
 | `rotameter_query` | Full `POST /v1/query` typed object | Composable escape-hatch query with explicit `query_ms` and truncation flags |
 
-### Post-`v1.0` MCP Roadmap (`v1.5`)
-- Optional Streamable HTTP `/mcp` route on `rotameter serve` (`--enable-mcp-http`) authenticated via `rm_rd_` Bearer token.
-- Opt-in `--allow-admin` flag exposing guarded site/key provisioning tools when explicitly requested by an operator.
+### `0.3.0` Streamable HTTP `/mcp` & Opt-In Admin Tools (`RM-20`)
+- Optional Streamable HTTP `/mcp` route on `rotameter serve` (`--enable-mcp-http` / `ROTAMETER_ENABLE_MCP_HTTP`) authenticated via `rm_rd_` or `rm_adm_` Bearer token (`405` on `GET`/`DELETE`, `202` on notifications).
+- Opt-in `--allow-admin` (`rotameter mcp`) / `--mcp-allow-admin` (`rotameter serve`) exposing 5 guarded admin tools (`rotameter_site_upsert`, `rotameter_site_delete` with `confirm: true`, `rotameter_key_create`, `rotameter_key_list`, `rotameter_key_revoke`) when paired with an `rm_adm_` token.
 
 ---
 
@@ -104,7 +106,7 @@ A crisp, high-density `ratatui` flight-instrument dashboard consuming the remote
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Keybindings & ASCII Block-Chart Spec (`v1.0`)
+### Keybindings & ASCII Block-Chart Spec (`0.1.0+`)
 - **`1`–`5`**: Switch window (`24H`, `7D`, `30D`, `12M`, `ALL`).
 - **`←` / `→` (or `h` / `l`)**: Scrub across the **ASCII block chart** columns (`░▒▓█` / dense cap glyph `▀`/`█`, today's bar highlighted in accent tone); dynamically rolls the headline readout to the scrubbed bucket's date, visitors, and pageviews.
 - **`↑` / `↓` (or `j` / `k`) + `Enter`**: Select a row in the active breakdown (`PAGES`, `SOURCES`, `GEO`, `TECH`, `EVENTS`) and push it onto the active filter bar (`[country=US]`), immediately re-querying all panels.

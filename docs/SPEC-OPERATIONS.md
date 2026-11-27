@@ -1,6 +1,6 @@
-# Operations, Builds & Verification Specification (`v1.0`)
+# Operations, Builds & Verification Specification (`0.1.0+`)
 
-Rotameter is built for unattended durability on resource-constrained single VMs (`1 vCPU / 1 GB RAM`), verifiable end-to-end before shipping `v1.0`.
+Rotameter is built for unattended durability on resource-constrained single VMs (`1 vCPU / 1 GB RAM`), verified end-to-end starting in `0.1.0`.
 
 *Related specs: [`SPEC-ARCHITECTURE.md`](./SPEC-ARCHITECTURE.md) · [`SPEC-API.md`](./SPEC-API.md) · [`../AGENTS.md`](../AGENTS.md)*
 
@@ -49,7 +49,7 @@ Oracle Always-Free VM (VM.Standard.E2.1.Micro · 1 vCPU / 1 GB RAM / 2 GB swap)
 
 - **Continuous WAL streaming (recommended):** **Litestream** runs alongside `rotameter`, streaming WAL segments every few seconds to a private Cloudflare R2 bucket (e.g., `s3://example-backups/rotameter/`). RPO: ~seconds.
 - **Point-in-time CLI snapshot:** `rotameter backup /tmp/rotameter-$(date +%F).db` executes SQLite `VACUUM INTO` safely while live writes continue without locking readers.
-- **Verified Restore Drill (mandatory before `v1.0` tag):**
+- **Verified Restore Drill (mandatory per release):**
   1. Stop service or spin up a fresh temp directory.
   2. Restore from R2 (`litestream restore`) or `rotameter backup` artifact.
   3. Run `PRAGMA integrity_check;` and `rotameter doctor --db <restored>`.
@@ -57,9 +57,9 @@ Oracle Always-Free VM (VM.Standard.E2.1.Micro · 1 vCPU / 1 GB RAM / 2 GB swap)
 
 ---
 
-## 4. `v1.0` Release Verification & Load Gates
+## 4. Release Verification & Load Gates
 
-`v1.0` is not marked ready until every automated test and load gate passes on a `1 vCPU / 1 GB` constrained environment (or `docker run --cpus=1 --memory=1g` Linux `musl` container):
+Every release (`0.1.0+`) is gated on passing all automated tests and load checks on a `1 vCPU / 1 GB` constrained environment (or `docker run --cpus=1 --memory=1g` Linux `musl` container):
 
 | Gate | Assertion |
 | --- | --- |

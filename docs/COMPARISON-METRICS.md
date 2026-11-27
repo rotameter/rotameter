@@ -1,8 +1,8 @@
 # Metric-by-Metric Comparison & Definitions
 
-Every metric tracked or planned across **Rotameter (`v1.0` / `v1.5` / `v2.0`)** compared against **GoatCounter**, **Plausible CE**, **Umami**, **Matomo**, and **GA4**, followed by exact mathematical definitions for `v1.0`.
+Every metric tracked or planned across **Rotameter (`0.1.0` / `0.4.0`)** compared against **GoatCounter**, **Plausible CE**, **Umami**, **Matomo**, and **GA4**, followed by exact mathematical definitions implemented in `0.1.0+`.
 
-*See [`COMPARISON-FEATURES.md`](./COMPARISON-FEATURES.md) for runtime, privacy, and interface comparisons.*
+*See [`COMPARISON-FEATURES.md`](./COMPARISON-FEATURES.md) for runtime, privacy, and interface comparisons, and [`ROADMAP.md`](./ROADMAP.md) for milestone timelines.*
 
 ---
 
@@ -12,71 +12,71 @@ Every metric tracked or planned across **Rotameter (`v1.0` / `v1.5` / `v2.0`)** 
 
 | Metric | Rotameter | GoatCounter | Plausible CE | Umami | Matomo | GA4 |
 | --- | --- | --- | --- | --- | --- | --- |
-| **Pageviews** | `v1.0` | Yes | Yes | Yes | Yes | Yes ("Views") |
-| **Unique Visitors** | `v1.0` (daily salt default; `weekly`/`monthly` option) | Yes (8h session hash) | Yes (daily salt) | Yes (monthly/salt) | Yes (cookie / fingerprint) | Yes ("Active/Total Users" via cookie) |
-| **Visits / Sessions** | `v1.0` (30m sliding inactivity) | No (only 8h unique count) | Yes (30m sliding) | Yes | Yes (30m timeout) | Yes (30m timeout) |
-| **Views per Visit** | `v1.0` | No | Yes | Yes | Yes ("Actions/Visit") | Yes ("Views/Session") |
-| **Bounce Rate** | `v1.0` (1-event visit ratio) | No | Yes (single-page visit) | Yes | Yes | Inverted ("Engaged Sessions") |
-| **Avg. Visit Duration** | `v1.0` | No | Yes | Yes | Yes | Avg. Engagement Time |
-| **Engaged Time / Active Time** | `v2.0` (heartbeat) | No | No | No | Heartbeat timer | Yes (native `user_engagement`) |
-| **Live / Realtime Visitors** | `v1.0` (active in last 5 min) | No (recent view log) | Yes (5 min window) | Yes (5 min window) | Yes (real-time widget) | Yes (30 min window) |
-| **Bot / Crawler Hits Excluded** | `v1.0` (counted separately in health/diag option) | Excluded | Excluded | Excluded | Excluded | Excluded |
+| **Pageviews** | `0.1.0` | Yes | Yes | Yes | Yes | Yes ("Views") |
+| **Unique Visitors** | `0.1.0` (daily salt default; `weekly`/`monthly` option) | Yes (8h session hash) | Yes (daily salt) | Yes (monthly/salt) | Yes (cookie / fingerprint) | Yes ("Active/Total Users" via cookie) |
+| **Visits / Sessions** | `0.1.0` (30m sliding inactivity) | No (only 8h unique count) | Yes (30m sliding) | Yes | Yes (30m timeout) | Yes (30m timeout) |
+| **Views per Visit** | `0.1.0` | No | Yes | Yes | Yes ("Actions/Visit") | Yes ("Views/Session") |
+| **Bounce Rate** | `0.1.0` (1-event visit ratio) | No | Yes (single-page visit) | Yes | Yes | Inverted ("Engaged Sessions") |
+| **Avg. Visit Duration** | `0.1.0` | No | Yes | Yes | Yes | Avg. Engagement Time |
+| **Engaged Time / Active Time** | `0.4.0` (opt-in heartbeat module, `RM-21`) | No | No | No | Heartbeat timer | Yes (native `user_engagement`) |
+| **Live / Realtime Visitors** | `0.1.0` (active in last 5 min) | No (recent view log) | Yes (5 min window) | Yes (5 min window) | Yes (real-time widget) | Yes (30 min window) |
+| **Bot / Crawler Hits Excluded** | `0.1.0` (counted separately in health/diag option) | Excluded | Excluded | Excluded | Excluded | Excluded |
 
 ### Content & Navigation
 
 | Metric | Rotameter | GoatCounter | Plausible CE | Umami | Matomo | GA4 |
 | --- | --- | --- | --- | --- | --- | --- |
-| **Top Pages (normalized path)** | `v1.0` | Yes | Yes | Yes | Yes | Yes |
-| **Entry Pages** | `v1.0` | No | Yes | Entry URL | Yes | Landing Page |
-| **Exit Pages** | `v1.0` | No | Yes | Exit URL | Yes | Exit Reports |
-| **404 Error Paths** | `v1.0` | Custom convention | `404` event goal | Custom event | Page title / custom | Custom event |
-| **Page Scroll Depth** | `v2.0` | No | Optional script / custom | Custom event | Plugin / custom | Enhanced (`90%` default) |
-| **User Flows / Path Transitions** | `v2.0` | No | No | Journeys | Transitions | Path Exploration |
-| **Time on Specific Page** | `v1.0` (approx via next event) / `v2.0` (heartbeat) | No | Entry/step delta | No | Yes | Avg. engagement/page |
+| **Top Pages (normalized path)** | `0.1.0` | Yes | Yes | Yes | Yes | Yes |
+| **Entry Pages** | `0.1.0` | No | Yes | Entry URL | Yes | Landing Page |
+| **Exit Pages** | `0.1.0` | No | Yes | Exit URL | Yes | Exit Reports |
+| **404 Error Paths** | `0.1.0` | Custom convention | `404` event goal | Custom event | Page title / custom | Custom event |
+| **Page Scroll Depth & Click Heatmaps** | `0.4.0` (opt-in privacy-safe module, `RM-21`) | No | Optional script / custom | Custom event | Plugin / custom | Enhanced (`90%` default) |
+| **User Flows / Path Transitions** | `0.4.0` (`RM-21`) | No | No | Journeys | Transitions | Path Exploration |
+| **Time on Specific Page** | `0.1.0` (approx via next event) / `0.4.0` (heartbeat) | No | Entry/step delta | No | Yes | Avg. engagement/page |
 
 ### Acquisition & Attribution
 
 | Metric | Rotameter | GoatCounter | Plausible CE | Umami | Matomo | GA4 |
 | --- | --- | --- | --- | --- | --- | --- |
-| **Referrer Host & Normalized Source** | `v1.0` | Yes | Yes | Yes | Yes | Yes |
-| **Referrer Full URL / Path** | `v1.0` (capped cardinality) | Yes | Yes | Referrer domain | Yes | Page Referrer |
-| **Channel Grouping (Direct/Search/Social)** | `v1.0` (rule table) | Basic | Yes | Basic | Yes | Default Channel Groups |
-| **UTM (`source/medium/campaign/content/term`)** | `v1.0` | Campaign query param | Yes | Yes | Yes | Yes |
-| **First-Touch vs. Last-Touch Multi-Day Attribution** | `v2.0` (within salt window) | No | Session-level only | Session-level only | Multi-day cookie | Data-driven / Cross-session |
-| **Google Search Console Keywords/Clicks** | `v2.0` | No | Integration | No | Paid plugin | Native integration |
+| **Referrer Host & Normalized Source** | `0.1.0` | Yes | Yes | Yes | Yes | Yes |
+| **Referrer Full URL / Path** | `0.1.0` (capped cardinality) | Yes | Yes | Referrer domain | Yes | Page Referrer |
+| **Channel Grouping (Direct/Search/Social)** | `0.1.0` (rule table) | Basic | Yes | Basic | Yes | Default Channel Groups |
+| **UTM (`source/medium/campaign/content/term`)** | `0.1.0` | Campaign query param | Yes | Yes | Yes | Yes |
+| **First-Touch vs. Last-Touch Multi-Day Attribution** | `0.4.0` (within salt window, `RM-21`) | No | Session-level only | Session-level only | Multi-day cookie | Data-driven / Cross-session |
+| **Google Search Console Keywords/Clicks** | `0.4.0` (`RM-21`) | No | Integration | No | Paid plugin | Native integration |
 
 ### Audience & Technology
 
 | Metric | Rotameter | GoatCounter | Plausible CE | Umami | Matomo | GA4 |
 | --- | --- | --- | --- | --- | --- | --- |
-| **Country** | `v1.0` (`CF-IPCountry` or `.mmdb`) | Yes | Yes | Yes | Yes | Yes |
-| **Region / Subdivision** | `v1.0` (`CF-Region-Code` or `.mmdb`) | Yes (if DB supports) | Yes | Yes | Yes | Yes |
-| **City** | `v1.0` (`.mmdb` / optional header) | Optional | Yes | Yes | Yes | Yes |
-| **Browser & Major Version** | `v1.0` | Yes | Yes | Yes | Yes | Yes |
-| **Operating System & Version** | `v1.0` | Yes | Yes | Yes | Yes | Yes |
-| **Device Class (`desktop/mobile/tablet`)** | `v1.0` | Screen width / UA | Yes | Yes | Yes | Yes |
-| **Viewport / Screen Size Bucket** | `v1.0` (`collect.js` bucket) | Yes (exact/bucket) | Screen size | Screen resolution | Resolution | Screen resolution |
-| **Browser Language** | `v1.0` (`Accept-Language` primary tag) | Yes | No | Yes | Yes | Yes |
+| **Country** | `0.1.0` (`CF-IPCountry` or `.mmdb`) | Yes | Yes | Yes | Yes | Yes |
+| **Region / Subdivision** | `0.1.0` (`CF-Region-Code` or `.mmdb`) | Yes (if DB supports) | Yes | Yes | Yes | Yes |
+| **City** | `0.1.0` (`.mmdb` / optional header) | Optional | Yes | Yes | Yes | Yes |
+| **Browser & Major Version** | `0.1.0` | Yes | Yes | Yes | Yes | Yes |
+| **Operating System & Version** | `0.1.0` | Yes | Yes | Yes | Yes | Yes |
+| **Device Class (`desktop/mobile/tablet`)** | `0.1.0` | Screen width / UA | Yes | Yes | Yes | Yes |
+| **Viewport / Screen Size Bucket** | `0.1.0` (`collect.js` bucket) | Yes (exact/bucket) | Screen size | Screen resolution | Resolution | Screen resolution |
+| **Browser Language** | `0.1.0` (`Accept-Language` primary tag) | Yes | No | Yes | Yes | Yes |
 
 ### Custom Events, Funnels & Performance
 
 | Metric | Rotameter | GoatCounter | Plausible CE | Umami | Matomo | GA4 |
 | --- | --- | --- | --- | --- | --- | --- |
-| **Custom Named Events** | `v1.0` | Custom path prefix | Yes | Yes | Yes | Yes |
-| **Custom Key-Value Event Properties** | `v1.0` | No | Yes | Yes | Custom Dimensions | Event Parameters |
-| **Outbound Link Clicks** | `v1.0` (`collect.js` auto) | Manual | Script extension | Manual | Built-in | Enhanced measurement |
-| **File Downloads** | `v1.0` (`collect.js` auto) | Manual | Script extension | Manual | Built-in | Enhanced measurement |
-| **Conversion Rate (% of visitors / visits)** | `v1.0` (per goal/event) | No | Yes | Goal conversion | Yes | Key Event Rate |
-| **Multi-Step Funnels & Drop-off** | `v2.0` | No | Yes | Yes | Paid plugin | Funnel Exploration |
-| **Retention Cohorts (D1/D7/D30)** | `v2.0` | No | No | Yes | Paid plugin | Cohort Exploration |
-| **Revenue / Ecommerce Attribution** | `v2.0` | No | Revenue goals | Revenue reporting | Ecommerce | Ecommerce |
+| **Custom Named Events** | `0.1.0` | Custom path prefix | Yes | Yes | Yes | Yes |
+| **Custom Key-Value Event Properties** | `0.1.0` | No | Yes | Yes | Custom Dimensions | Event Parameters |
+| **Outbound Link Clicks** | `0.1.0` (`collect.js` auto) | Manual | Script extension | Manual | Built-in | Enhanced measurement |
+| **File Downloads** | `0.1.0` (`collect.js` auto) | Manual | Script extension | Manual | Built-in | Enhanced measurement |
+| **Conversion Rate (% of visitors / visits)** | `0.1.0` (per event) / `0.4.0` (goals, `RM-21`) | No | Yes | Goal conversion | Yes | Key Event Rate |
+| **Multi-Step Funnels & Drop-off** | `0.4.0` (`RM-21`) | No | Yes | Yes | Paid plugin | Funnel Exploration |
+| **Retention Cohorts (D1/D7/D30)** | `0.4.0` (`RM-21`) | No | No | Yes | Paid plugin | Cohort Exploration |
+| **Revenue / Ecommerce Attribution** | `0.4.0` (`RM-21`) | No | Revenue goals | Revenue reporting | Ecommerce | Ecommerce |
 | **Core Web Vitals (LCP/INP/CLS/TTFB)** | Out of scope (use `/status` or RUM) | No | No | No | No | No (separate CrUX) |
 
 ---
 
-## 2. Exact Rotameter `v1.0` Mathematical Definitions
+## 2. Exact Rotameter `0.1.0+` Mathematical Definitions
 
-All `v1.0` metrics are derived cleanly from the canonical `sessions` and `events` tables so API, CLI, MCP, and TUI always agree to the decimal.
+All core metrics are derived cleanly from the canonical `sessions` and `events` tables so API, CLI, MCP, TUI, and Web UI always agree to the decimal.
 
 ### 2.1 Visitor (`visitor_id`)
 $$\text{visitor\_id} = \text{HMAC-SHA256}(\text{salt}_{\text{window}}, \text{site\_id} \,\|\, \text{client\_ip} \,\|\, \text{user\_agent})[0..16]$$

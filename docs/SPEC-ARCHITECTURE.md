@@ -1,4 +1,4 @@
-# Architecture Specification (`v1.0`)
+# Architecture Specification (`0.1.0+`)
 
 **Rotameter** is structured as a modular Rust workspace that compiles into a single static binary (`rotameter`), keeping pure domain logic isolated from runtime I/O and storage behind explicit trait boundaries.
 
@@ -127,7 +127,7 @@ SQLite WAL File (rotameter.db + rotameter.db-wal)
 ```sql
 CREATE TABLE orgs (
   org_id        BLOB PRIMARY KEY,                    -- 16-byte UUIDv7 (wire: org_<26-char base32>)
-  slug          TEXT NOT NULL UNIQUE,                -- e.g. "default" in single-tenant v1.0
+  slug          TEXT NOT NULL UNIQUE,                -- e.g. "default" in single-tenant 0.1.0-0.5.0
   display_name  TEXT NOT NULL,
   created_at_ms INTEGER NOT NULL,
   updated_at_ms INTEGER NOT NULL
@@ -200,7 +200,7 @@ CREATE TABLE sessions (
 CREATE INDEX idx_sessions_range ON sessions(site_id, started_at_ms, visitor_id);
 CREATE INDEX idx_sessions_realtime ON sessions(site_id, last_event_ms);
 
--- Ordered per-session event stream: unlocks v2.0 funnels & user flows with zero migration rewrite
+-- Ordered per-session event stream: unlocks 0.4.0 funnels & user flows with zero migration rewrite
 CREATE TABLE events (
   site_id        BLOB NOT NULL,
   ts_ms          INTEGER NOT NULL,
@@ -245,8 +245,8 @@ CREATE TABLE rollups_daily (
 ### Why This Layout Scales on `1 vCPU / 1 GB RAM`
 - **Compact rows:** Integer-interned paths/dimensions + `BLOB(16)` `site_id`/`session_id`/`visitor_id` + `WITHOUT ROWID` keep raw `events` compact (`1M` events ≈ `60–75 MB` on disk).
 - **Unique visitors across arbitrary ranges:** `idx_sessions_range(site_id, started_at_ms, visitor_id)` is a **covering index** — counting distinct visitors across `7D`, `30D`, or `90D` never even touches the main `sessions` table pages.
-- **Zero-rewrite `v2.0` funnels & user flows:** `events(site_id, session_id, seq_in_session)` already stores exact in-session event ordering (`seq_in_session = 1, 2, 3...`), so `v2.0` funnel windows and step transitions query existing historical data directly.
-- **First-boot local `self_site`:** `rotameter serve` idempotently seeds a transparent local default org (`slug = "default"`) and local site row (`is_self_site = 1`, immutable `site_id`, `slug` from `--public-url` host or `_self`, `display_name = "Self (Local)"`) unless disabled via `--no-self-site`, `ROTAMETER_SELF_SITE=false`, or `[server] self_site = false`, enabling local smoke-testing (`v1.0`) and Web UI dogfooding (`v1.5`) without touching external networks.
+- **Zero-rewrite `0.4.0` funnels & user flows:** `events(site_id, session_id, seq_in_session)` already stores exact in-session event ordering (`seq_in_session = 1, 2, 3...`), so `0.4.0` funnel windows and step transitions query existing historical data directly.
+- **First-boot local `self_site`:** `rotameter serve` idempotently seeds a transparent local default org (`slug = "default"`) and local site row (`is_self_site = 1`, immutable `site_id`, `slug` from `--public-url` host or `_self`, `display_name = "Self (Local)"`) unless disabled via `--no-self-site`, `ROTAMETER_SELF_SITE=false`, or `[server] self_site = false`, enabling local smoke-testing (`0.1.0+`) and Web UI dogfooding (`0.3.0+`) without touching external networks.
 
 ---
 

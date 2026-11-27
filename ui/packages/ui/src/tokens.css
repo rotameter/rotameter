@@ -68,16 +68,6 @@
 }
 
 /* Tiered Density Scales (Root and Container Overridable) */
-[data-density="compact"] {
-  --density-scale: 0.85;
-  --density-grid-gap: 6px;
-  --density-panel-pad: 8px 10px;
-  --density-control-h: 26px;
-  --density-table-row-h: 26px;
-  --density-font-body: 0.75rem;
-  --density-icon-size: 14px;
-}
-
 :root,
 [data-density="standard"] {
   --density-scale: 1;
@@ -87,6 +77,16 @@
   --density-table-row-h: 34px;
   --density-font-body: 0.8125rem;
   --density-icon-size: 16px;
+}
+
+[data-density="compact"] {
+  --density-scale: 0.85;
+  --density-grid-gap: 6px;
+  --density-panel-pad: 8px 10px;
+  --density-control-h: 26px;
+  --density-table-row-h: 26px;
+  --density-font-body: 0.75rem;
+  --density-icon-size: 14px;
 }
 
 [data-density="comfortable"] {

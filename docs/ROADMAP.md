@@ -53,7 +53,7 @@ Rotameter follows Rust/Cargo SemVer conventions (`0.x` minor milestones keep sin
 
 ## `0.4.0` — Product Analytics, Advanced Tracking & Web UI v2 (`RM-21`)
 
-- Multi-step conversion funnels (ordered & unordered), user flows/streams, retention cohorts, revenue/goal attribution, Google Search Console sync, and compound boolean filter AST (`AND`/`OR`/`NOT` + regex).
+- Multi-step conversion funnels (ordered & unordered), user flows/streams, retention cohorts, revenue/goal & first-touch/last-touch attribution (within the active salt window), Google Search Console sync, and compound boolean filter AST (`AND`/`OR`/`NOT` + regex).
 - Opt-in privacy-safe click/scroll heatmaps and engaged-time heartbeats shipped as a separate collector extension module so base `collect.js` stays `<= 1,536 bytes` gzip.
 - Lazy-loaded Web UI v2 plugins (`@rotameter/plugin-funnels`, `@rotameter/plugin-heatmaps`, `@rotameter/plugin-streams` with freeze-on-interact + `stream_base_url`, and `@rotameter/plugin-builder` consuming `@rotameter/plugin-sdk` visualizations; `SPEC-UI.md`).
 

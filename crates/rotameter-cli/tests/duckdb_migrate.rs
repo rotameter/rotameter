@@ -51,7 +51,7 @@ fn sqlite_expected_summary(
     let spec = QuerySpec {
         site_id: SiteRef::Slug("demo.local".to_string()),
         range: TimeRange::Preset {
-            preset: RangePreset::All,
+            preset: RangePreset::Hours24,
         },
         granularity: None,
         metrics: vec![Metric::Visitors, Metric::Pageviews, Metric::Visits],

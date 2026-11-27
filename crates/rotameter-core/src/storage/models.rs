@@ -86,6 +86,15 @@ pub struct QueryMeta {
     pub query_ms: f64,
     /// `true` if any queried dimension hit the `(other)` cardinality overflow bucket.
     pub truncated_by_cardinality_cap: bool,
+    /// Optional freshest event watermark (`RFC 3339` UTC) for clustered/OLAP readouts.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub watermark_ts: Option<String>,
+    /// Optional count of degraded/unreachable shards contributing partial results.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub partial_nodes: Option<u32>,
+    /// Optional node identifier that served the query.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub served_by_node: Option<String>,
 }
 
 /// Full typed response payload backing `POST /v1/query`.

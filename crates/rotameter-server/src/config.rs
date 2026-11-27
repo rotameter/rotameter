@@ -5,6 +5,8 @@ use std::fmt;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
 
+use crate::auth_config::{OperatorAuthConfig, UiConfig};
+
 /// Operational HTTP endpoint role served by a `rotameter serve` node.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum ServerRole {
@@ -126,6 +128,10 @@ pub struct ServerConfig {
     pub shutdown_timeout_secs: u64,
     /// Streamable HTTP `/mcp` endpoint settings.
     pub mcp_http: McpHttpConfig,
+    /// Operator session, OIDC, and Cloudflare Access settings.
+    pub operator_auth: OperatorAuthConfig,
+    /// Static Web UI serving settings (`--ui=on|off`, `--ui-dir`).
+    pub ui: UiConfig,
 }
 
 impl Default for ServerConfig {
@@ -147,6 +153,8 @@ impl Default for ServerConfig {
             max_batch_size: 512,
             shutdown_timeout_secs: 10,
             mcp_http: McpHttpConfig::default(),
+            operator_auth: OperatorAuthConfig::default(),
+            ui: UiConfig::default(),
         }
     }
 }

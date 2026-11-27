@@ -95,6 +95,9 @@ impl DuckDbStore {
                     total_rows: bd.total_rows,
                     query_ms: started.elapsed().as_secs_f64() * 1_000.0,
                     truncated_by_cardinality_cap: bd.truncated_by_cardinality_cap,
+                    watermark_ts: None,
+                    partial_nodes: None,
+                    served_by_node: None,
                 },
             })
         })

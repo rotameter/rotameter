@@ -104,6 +104,9 @@ impl SqliteStore {
                     total_rows: breakdown.total_rows,
                     query_ms: started.elapsed().as_secs_f64() * 1_000.0,
                     truncated_by_cardinality_cap: breakdown.truncated_by_cardinality_cap,
+                    watermark_ts: None,
+                    partial_nodes: None,
+                    served_by_node: None,
                 },
             })
         })

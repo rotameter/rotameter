@@ -185,6 +185,9 @@ fn rollups_and_query_result_roundtrip() {
             total_rows: 1,
             query_ms: 1.5,
             truncated_by_cardinality_cap: false,
+            watermark_ts: None,
+            partial_nodes: None,
+            served_by_node: None,
         },
     };
     assert_eq!(

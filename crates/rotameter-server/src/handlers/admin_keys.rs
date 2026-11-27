@@ -68,7 +68,7 @@ pub(crate) async fn create_key(
     headers: HeaderMap,
     Json(req): Json<CreateKeyRequest>,
 ) -> Result<(StatusCode, Json<CreatedKeyResponse>), ApiError> {
-    let auth = require_admin(&state, &headers).await?;
+    let auth = require_admin(&state, &headers, true).await?;
     let label = req.label.trim().to_string();
     if label.is_empty() || label.len() > 128 {
         return Err(ApiError::bad_request(
@@ -141,7 +141,7 @@ pub(crate) async fn list_keys(
     State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<Json<Vec<KeyMetadataResponse>>, ApiError> {
-    let auth = require_admin(&state, &headers).await?;
+    let auth = require_admin(&state, &headers, false).await?;
     let keys = state
         .control_plane
         .list_api_keys(auth.org_id)
@@ -157,7 +157,7 @@ pub(crate) async fn revoke_key(
     headers: HeaderMap,
     Path(raw_key_id): Path<String>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let auth = require_admin(&state, &headers).await?;
+    let auth = require_admin(&state, &headers, true).await?;
     let key_id = KeyId::from_str(&raw_key_id).map_err(ApiError::from)?;
     let owned = state
         .control_plane

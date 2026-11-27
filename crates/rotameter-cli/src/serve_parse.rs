@@ -31,6 +31,28 @@ pub(crate) struct ServerTomlSection {
     pub(crate) salt_store: Option<String>,
     pub(crate) enable_mcp_http: Option<bool>,
     pub(crate) mcp_allow_admin: Option<bool>,
+    pub(crate) ui: Option<String>,
+    pub(crate) ui_dir: Option<PathBuf>,
+    pub(crate) admin_username: Option<String>,
+    pub(crate) admin_password: Option<String>,
+    pub(crate) admin_password_hash: Option<String>,
+    pub(crate) session_secret: Option<String>,
+    pub(crate) session_ttl_secs: Option<u64>,
+    pub(crate) cf_access_trusted: Option<bool>,
+    pub(crate) cf_access_team_domain: Option<String>,
+    pub(crate) cf_access_aud: Option<String>,
+    pub(crate) oidc: Option<OidcTomlSection>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+pub(crate) struct OidcTomlSection {
+    pub(crate) issuer_url: Option<String>,
+    pub(crate) client_id: Option<String>,
+    pub(crate) client_secret: Option<String>,
+    pub(crate) redirect_uri: Option<String>,
+    pub(crate) scopes: Option<Vec<String>>,
+    pub(crate) allowed_emails: Option<Vec<String>>,
+    pub(crate) allowed_domains: Option<Vec<String>>,
 }
 
 #[derive(Debug, Default, Deserialize)]

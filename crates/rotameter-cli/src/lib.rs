@@ -51,6 +51,8 @@ mod seed_gen;
 mod seed_rng;
 #[cfg(feature = "sqlite")]
 mod seed_session;
+pub mod serve_auth_resolve;
+mod serve_auth_types;
 pub mod serve_cmd;
 #[cfg(all(feature = "server", feature = "duckdb"))]
 mod serve_duckdb;

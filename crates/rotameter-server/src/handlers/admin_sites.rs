@@ -19,7 +19,7 @@ pub(crate) async fn create_site(
     headers: HeaderMap,
     Json(req): Json<UpsertSiteRequest>,
 ) -> Result<(StatusCode, Json<SiteResponse>), ApiError> {
-    let auth = require_admin(&state, &headers).await?;
+    let auth = require_admin(&state, &headers, true).await?;
     let raw_slug = req
         .slug
         .as_deref()
@@ -68,7 +68,7 @@ pub(crate) async fn put_site(
     Path(raw_site): Path<String>,
     Json(req): Json<UpsertSiteRequest>,
 ) -> Result<(StatusCode, Json<SiteResponse>), ApiError> {
-    let auth = require_admin(&state, &headers).await?;
+    let auth = require_admin(&state, &headers, true).await?;
     let site_ref = SiteRef::parse(&raw_site).map_err(ApiError::from)?;
     let existing = state
         .control_plane
@@ -89,7 +89,7 @@ pub(crate) async fn list_sites(
     State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<Json<Vec<SiteResponse>>, ApiError> {
-    let auth = require_admin(&state, &headers).await?;
+    let auth = require_admin(&state, &headers, false).await?;
     let sites = state
         .control_plane
         .list_sites(auth.org_id)
@@ -103,7 +103,7 @@ pub(crate) async fn get_site(
     headers: HeaderMap,
     Path(raw_site): Path<String>,
 ) -> Result<Json<SiteResponse>, ApiError> {
-    let auth = require_admin(&state, &headers).await?;
+    let auth = require_admin(&state, &headers, false).await?;
     let site_ref = SiteRef::parse(&raw_site).map_err(ApiError::from)?;
     let site = state
         .control_plane
@@ -120,7 +120,7 @@ pub(crate) async fn delete_site(
     Path(raw_site): Path<String>,
     Query(query): Query<DeleteSiteQuery>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
-    let auth = require_admin(&state, &headers).await?;
+    let auth = require_admin(&state, &headers, true).await?;
     if !query.confirm {
         return Err(ApiError::bad_request(
             "confirm_required",

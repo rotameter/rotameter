@@ -9,6 +9,7 @@ use url::Url;
 use crate::cli::{GlobalOpts, ServeArgs};
 use crate::context::{resolve_config_path, resolve_db_path};
 use crate::exit::CliError;
+use crate::serve_auth_resolve::{resolve_operator_auth, resolve_ui_settings};
 use crate::serve_cmd::{McpHttpSettings, ServeSettings};
 use crate::serve_parse::{
     clean_opt, env_bool, env_non_empty, env_u32, parse_role, parse_salt_store, read_toml_config,
@@ -74,18 +75,7 @@ where
             .map_err(|err| CliError::usage(format!("invalid `--public-url` `{raw_url}`: {err}")))?;
     }
 
-    let cli_self_site = if args.no_self_site {
-        Some(false)
-    } else {
-        args.self_site
-    };
-    let self_site_enabled = cli_self_site
-        .or(env_bool(&env_fn, "ROTAMETER_SELF_SITE")?)
-        .or(srv.self_site)
-        .unwrap_or(true);
-    let self_site_id = clean_opt(args.self_site_id.as_deref())
-        .or_else(|| env_non_empty(&env_fn, "ROTAMETER_SELF_SITE_ID"))
-        .or_else(|| clean_opt(srv.self_site_id.as_deref()));
+    let (self_site_enabled, self_site_id) = resolve_self_site(args, &env_fn, &srv)?;
 
     let geoip_raw = clean_opt(args.geoip.as_deref())
         .or_else(|| env_non_empty(&env_fn, "ROTAMETER_GEOIP"))
@@ -100,6 +90,8 @@ where
             )));
         }
     };
+    let ui = resolve_ui_settings(args, &env_fn, &srv)?;
+    let operator_auth = resolve_operator_auth(args, &env_fn, &srv)?;
     let mmdb_path = args
         .mmdb_path
         .clone()
@@ -141,7 +133,32 @@ where
         duckdb_memory_limit,
         duckdb_threads,
         mcp_http,
+        operator_auth,
+        ui,
     })
+}
+
+fn resolve_self_site<F>(
+    args: &ServeArgs,
+    env_fn: &F,
+    srv: &crate::serve_parse::ServerTomlSection,
+) -> Result<(bool, Option<String>), CliError>
+where
+    F: Fn(&str) -> Option<String>,
+{
+    let cli_self_site = if args.no_self_site {
+        Some(false)
+    } else {
+        args.self_site
+    };
+    let enabled = cli_self_site
+        .or(env_bool(env_fn, "ROTAMETER_SELF_SITE")?)
+        .or(srv.self_site)
+        .unwrap_or(true);
+    let id = clean_opt(args.self_site_id.as_deref())
+        .or_else(|| env_non_empty(env_fn, "ROTAMETER_SELF_SITE_ID"))
+        .or_else(|| clean_opt(srv.self_site_id.as_deref()));
+    Ok((enabled, id))
 }
 
 fn resolve_mcp_http<F>(

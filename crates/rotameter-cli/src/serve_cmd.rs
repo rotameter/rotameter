@@ -6,6 +6,7 @@ use std::path::PathBuf;
 
 use crate::cli::{GlobalOpts, ServeArgs};
 use crate::exit::CliError;
+use crate::serve_auth_resolve::{OperatorAuthSettings, UiSettings};
 
 pub use crate::serve_resolve::{resolve_serve_settings, resolve_serve_settings_with};
 
@@ -73,12 +74,17 @@ pub struct ServeSettings {
     pub duckdb_threads: u32,
     /// Streamable HTTP `/mcp` settings.
     pub mcp_http: McpHttpSettings,
+    /// Operator session, OIDC, and Cloudflare Access settings.
+    pub operator_auth: OperatorAuthSettings,
+    /// Static Web UI serving settings (`--ui=on|off`, `--ui-dir`).
+    pub ui: UiSettings,
 }
 
 #[cfg(all(feature = "server", feature = "sqlite"))]
 pub(crate) fn run_serve(global: &GlobalOpts, args: &ServeArgs) -> Result<(), CliError> {
     use rotameter_server::{GeoIpMode, McpHttpConfig, SaltStoreMode, ServerConfig, ServerRole};
 
+    use crate::serve_auth_resolve::into_server_auth_and_ui;
     use crate::storage_dsn::StorageDsn;
 
     let settings = resolve_serve_settings(global, args)?;
@@ -96,6 +102,7 @@ pub(crate) fn run_serve(global: &GlobalOpts, args: &ServeArgs) -> Result<(), Cli
         .map(StorageDsn::parse)
         .transpose()?;
 
+    let (operator_auth, ui) = into_server_auth_and_ui(settings.operator_auth, settings.ui);
     let config = ServerConfig {
         bind_addr: settings.bind_addr,
         role: match settings.role {
@@ -122,6 +129,8 @@ pub(crate) fn run_serve(global: &GlobalOpts, args: &ServeArgs) -> Result<(), Cli
             enabled: settings.mcp_http.enabled,
             allow_admin: settings.mcp_http.allow_admin,
         },
+        operator_auth,
+        ui,
         ..ServerConfig::default()
     };
 

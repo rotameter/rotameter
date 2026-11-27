@@ -199,6 +199,7 @@ pub(crate) async fn in_memory_app(bootstrap_admin_key: &str) -> (AppState, Route
     (state, app)
 }
 
+#[allow(dead_code)]
 pub(crate) async fn request(
     app: &Router,
     method: Method,

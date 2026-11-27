@@ -74,6 +74,9 @@ fn sample_query() -> QueryResponse {
             total_rows: 2,
             query_ms: 1.8,
             truncated_by_cardinality_cap: false,
+            watermark_ts: None,
+            partial_nodes: None,
+            served_by_node: None,
         },
     }
 }

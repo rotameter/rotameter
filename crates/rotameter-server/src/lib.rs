@@ -2,6 +2,11 @@
 //! HTTP ingest, query, and admin server for Rotameter.
 
 mod auth;
+mod auth_codec;
+pub mod auth_config;
+mod auth_oidc;
+mod auth_oidc_http;
+mod auth_session;
 pub mod config;
 mod error;
 mod geoip;
@@ -12,9 +17,11 @@ mod salt_store;
 mod self_site;
 pub mod serve;
 pub mod state;
+mod ui_assets;
 
 use rotameter_core::ComponentInfo;
 
+pub use auth_config::{OidcConfig, OperatorAuthConfig, UiConfig, UiMode};
 pub use config::{
     GeoIpMode, McpHttpConfig, RateLimitConfig, SaltStoreMode, ServerConfig, ServerError, ServerRole,
 };

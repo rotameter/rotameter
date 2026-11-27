@@ -8,12 +8,17 @@ license.workspace = true
 repository.workspace = true
 description = "Axum HTTP ingest, query, and admin server for Rotameter"
 
+[features]
+ui = []
+
 [dependencies]
 axum.workspace = true
 chrono.workspace = true
 chrono-tz.workspace = true
 getrandom.workspace = true
+hmac-sha256.workspace = true
 maxminddb.workspace = true
+reqwest.workspace = true
 rotameter-core.workspace = true
 serde.workspace = true
 serde_json.workspace = true

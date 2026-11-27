@@ -22,7 +22,7 @@ pub(crate) async fn post_backup(
     State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<Response, ApiError> {
-    let _ = require_admin(&state, &headers).await?;
+    let _ = require_admin(&state, &headers, true).await?;
     let Some(exporter) = state.backup_exporter.as_ref() else {
         return Err(ApiError::new(
             StatusCode::NOT_IMPLEMENTED,

@@ -11,6 +11,8 @@ use rotameter_core::privacy::{SessionId, compute_api_key_hash};
 use rotameter_core::storage::{AnalyticsDataPlane, ControlPlaneStore};
 use rotameter_core::types::{ApiKeyRecord, KeyScope};
 
+use crate::auth_config::UiConfig;
+use crate::auth_session::OperatorAuthState;
 use crate::config::{ServerConfig, ServerError, ServerRole};
 use crate::geoip::GeoIpResolver;
 use crate::handlers::admin_backup::LiveBackupExporter;
@@ -18,6 +20,7 @@ use crate::ingest::IngestPipeline;
 use crate::rate_limit::IpRateLimiter;
 use crate::salt_store::ServerSaltStore;
 use crate::self_site::ensure_self_site;
+use crate::ui_assets::validate_ui_config;
 
 /// Split OLTP control-plane and OLAP analytics data-plane stores wired into `rotameter-server`.
 #[derive(Clone)]
@@ -79,6 +82,8 @@ pub struct AppState {
     pub(crate) self_site_id: Option<SiteId>,
     pub(crate) mcp_http_enabled: bool,
     pub(crate) mcp_allow_admin: bool,
+    pub(crate) operator_auth: Arc<OperatorAuthState>,
+    pub(crate) ui: UiConfig,
     pub(crate) started_at: Instant,
 }
 
@@ -118,6 +123,8 @@ impl AppState {
             .prune_expired_all(now)
             .await
             .map_err(|err| ServerError::new(format!("cannot prune expired salts: {err}")))?;
+        validate_ui_config(&config.ui)?;
+        let operator_auth = Arc::new(OperatorAuthState::from_config(config)?);
         let ingest = if config.role.allows_ingest() {
             IngestPipeline::spawn(stores.analytics.clone(), config)
         } else {
@@ -137,6 +144,8 @@ impl AppState {
             self_site_id,
             mcp_http_enabled: config.mcp_http.enabled,
             mcp_allow_admin: config.mcp_http.allow_admin,
+            operator_auth,
+            ui: config.ui.clone(),
             started_at: Instant::now(),
         })
     }

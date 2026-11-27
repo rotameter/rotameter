@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `/v1/capabilities` boot handshake, optional `QueryMeta` cluster metadata fields (`watermark_ts`, `partial_nodes`, `served_by_node`), `/v1/auth/*` operator auth (local admin credentials, OIDC Authorization Code + PKCE, `HttpOnly; SameSite=Lax` session cookies with CSRF verification, and Cloudflare Access passthrough while keeping visitor collection strictly cookieless), and feature-gated `ui` static asset serving (`--ui=on|off`, `--ui-dir <path>`) (`RM-37`).
 - Added Streamable HTTP `/mcp` transport on `rotameter serve` (`--enable-mcp-http`, `ROTAMETER_ENABLE_MCP_HTTP`, `[server] enable_mcp_http`) authenticated via `rm_rd_`/`rm_adm_` Bearer tokens, plus opt-in guarded admin MCP tools (`rotameter_site_upsert`, `rotameter_site_delete`, `rotameter_key_create`, `rotameter_key_list`, `rotameter_key_revoke`) behind `rotameter mcp --allow-admin` and `--mcp-allow-admin` (`RM-20`).
 
 ## [0.2.0] - 2026-11-26

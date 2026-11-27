@@ -22,7 +22,7 @@ pub(crate) async fn post_query(
 ) -> Result<Response, ApiError> {
     let spec = req.into_core()?;
     spec.validate().map_err(ApiError::from)?;
-    let (_, site) = require_read_site(&state, &headers, &spec.site_id).await?;
+    let (_, site) = require_read_site(&state, &headers, &spec.site_id, true).await?;
     let result = state
         .analytics
         .query(&site, &spec, now_ms())
@@ -47,7 +47,7 @@ pub(crate) async fn get_realtime(
     Path(raw_site): Path<String>,
 ) -> Result<Json<WireRealtimeSnapshot>, ApiError> {
     let site_ref = SiteRef::parse(&raw_site).map_err(ApiError::from)?;
-    let (_, site) = require_read_site(&state, &headers, &site_ref).await?;
+    let (_, site) = require_read_site(&state, &headers, &site_ref, false).await?;
     let snap = state
         .analytics
         .realtime(&site, now_ms())

@@ -20,6 +20,7 @@ server = ["dep:rotameter-server", "dep:tokio"]
 sqlite = ["dep:rotameter-store-sqlite", "dep:getrandom"]
 mcp = ["dep:rotameter-mcp"]
 tui = ["dep:rotameter-tui"]
+ui = ["rotameter-server/ui"]
 
 [dependencies]
 chrono.workspace = true

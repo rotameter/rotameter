@@ -151,6 +151,21 @@ pub struct ServeArgs {
     /// Expose guarded admin tools on HTTP `/mcp` for `rm_adm_` tokens (`ROTAMETER_MCP_ALLOW_ADMIN`, default `false`).
     #[arg(long, num_args = 0..=1, default_missing_value = "true", value_parser = clap::value_parser!(bool))]
     pub mcp_allow_admin: Option<bool>,
+    /// Enable or disable the static Web UI (`on` or `off`; `ROTAMETER_UI`, default `off`).
+    #[arg(long)]
+    pub ui: Option<String>,
+    /// Serve static Web UI assets from a local directory (`ROTAMETER_UI_DIR`).
+    #[arg(long)]
+    pub ui_dir: Option<PathBuf>,
+    /// Local Web UI admin username (`ROTAMETER_ADMIN_USERNAME`, default `admin`).
+    #[arg(long)]
+    pub admin_username: Option<String>,
+    /// Local Web UI admin password (`ROTAMETER_ADMIN_PASSWORD`).
+    #[arg(long)]
+    pub admin_password: Option<String>,
+    /// Pre-hashed local Web UI admin password (`sha256$<salt>$<hex>`; `ROTAMETER_ADMIN_PASSWORD_HASH`).
+    #[arg(long)]
+    pub admin_password_hash: Option<String>,
 }
 
 /// Options for `rotameter doctor`.

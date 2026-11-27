@@ -7,7 +7,7 @@
 
   <h1>Rotameter</h1>
   <p><strong>A single-binary, privacy-first, headless web analytics engine in Rust.</strong></p>
-  <p><code>MIT OR Apache-2.0</code> · Rust edition <code>2024</code> (MSRV <code>1.100</code>) · Current target: <code>0.1.0</code></p>
+  <p><code>MIT OR Apache-2.0</code> · Rust edition <code>2024</code> (MSRV <code>1.100</code>) · Latest release: <code>v0.2.0</code></p>
 </div>
 
 Rotameter is engineered for unattended durability on a **`1 vCPU / 1 GB RAM`** VM with zero cookies, zero persisted raw IPs, zero ClickHouse/PostgreSQL dependencies, and a clean-sheet `/v1/*` contract backed by bundled SQLite WAL + daily rollups.
@@ -28,13 +28,13 @@ Measured on release builds via [`scripts/run-release-gates.sh`](./scripts/run-re
 
 ---
 
-## Key Capabilities (`0.1.0`)
+## Key Capabilities (`0.2.0`)
 
-- **Headless `/v1/*` engine:** Scoped SHA-256 Bearer tokens (`rm_ing_`, `rm_rd_`, `rm_adm_`), bounded `16,384`-event MPSC ingest ring buffer, graceful `SIGTERM` drain, `/v1/query` (`JSON` & `RFC 4180` CSV), `/v1/sites/{site}/realtime`, idempotent `/v1/admin/*`, and per-IP rate limiting.
-- **Privacy & session accuracy:** Cookieless `HMAC-SHA256` rotating salt (`daily` with 30m midnight UTC grace carryover, opt-in `weekly`/`monthly`), 30m sliding session metrics (visits, bounce rate, visit duration, entry/exit), compiled-in bot filter, `CF-IPCountry` header + optional `.mmdb` GeoIP, URL/UTM normalization, cardinality caps into `(other)`, and local-only `self_site` initialization (never phones home).
-- **Multi-path collection:** Sub-kilobyte `GET /v1/collect.js`, zero-JS `1x1` `/v1/pixel.gif`, `POST /v1/events/batch`, and first-party **Astro + Cloudflare Workers** proxy & SSR helper ([`@rotameter/astro-cloudflare`](./integrations/astro-cloudflare/README.md)).
-- **SQLite WAL event stream + rollups:** Ordered per-session `events`, `sessions`, `dim_strings`, hourly/daily rollups (`rollups_hourly`, `rollups_daily`, `seen_visitors_daily`, `rollups_path_daily`), retention pruner, and online `VACUUM INTO` backups behind pluggable `Storage` traits.
-- **Operator interfaces:** Unified `rotameter` CLI (plus `rotameter seed` demo generator), strictly read-only `stdio` MCP server (`rotameter mcp`, 7 tools), and interactive `ratatui` flight-instrument TUI (`rotameter tui`).
+- **Headless `/v1/*` engine:** Scoped SHA-256 Bearer tokens (`rm_ing_`, `rm_rd_`, `rm_adm_`), bounded `16,384`-event MPSC ingest ring buffer, graceful `SIGTERM` drain, `/v1/query` (`JSON` & `RFC 4180` CSV), `/v1/sites/{site}/realtime`, idempotent `/v1/admin/*`, zero-downtime `POST /v1/admin/backup`, and per-IP rate limiting.
+- **Privacy & session accuracy:** Cookieless `HMAC-SHA256` rotating salt (`daily` with 30m midnight UTC grace carryover, opt-in `weekly`/`monthly`, DB-backed via `--salt-store=db|memory`), 30m sliding session metrics (visits, bounce rate, visit duration, entry/exit), compiled-in bot filter, `CF-IPCountry` header + optional `.mmdb` GeoIP, URL/UTM normalization, cardinality caps into `(other)`, and local-only `self_site` initialization (never phones home).
+- **Multi-path collection & streaming logs:** Sub-kilobyte `GET /v1/collect.js`, zero-JS `1x1` `/v1/pixel.gif`, `POST /v1/events/batch`, streaming proxy log receivers (`rotameter import --stdin`, `--unix-socket`, `--follow`, `caddy-json`/`clf`/`jsonl`), and first-party **Astro + Cloudflare Workers** proxy & SSR helper ([`@rotameter/astro-cloudflare`](./integrations/astro-cloudflare/README.md)).
+- **OLTP/OLAP storage split, Arrow portability & DuckDB:** Runtime-agnostic `ControlPlaneStore` / `AnalyticsDataPlane` split (`--control-db`, `--analytics-db`, `--role=all|ingest|query`), bundled SQLite WAL + rollups, feature-gated `rotameter-arrow` canonical Parquet/JSON `.tar.zst` `backup`/`restore`/`migrate`, and opt-in DuckDB OLAP (`--features duckdb`, `Dockerfile.duckdb`, VM-safe `256MB` / `1`-thread defaults).
+- **Operator interfaces:** Unified `rotameter` CLI (plus `rotameter seed` demo generator), `stdio` MCP server (`rotameter mcp`), and interactive `ratatui` flight-instrument TUI (`rotameter tui`).
 
 ---
 
@@ -108,23 +108,25 @@ rotameter mcp   # newline-delimited JSON-RPC 2.0 over stdio
 
 | Command | Mode | Summary |
 | --- | --- | --- |
-| `rotameter serve` | Local DB | Run the HTTP ingest/query/admin daemon (`--bind`, `--db`, `--public-url`, `--no-self-site`, `--self-site-id`, `--geoip`, `--mmdb-path`, `--trusted-proxy`) |
+| `rotameter serve` | Local DB | Run the HTTP ingest/query/admin daemon (`--bind`, `--control-db`, `--analytics-db`, `--role`, `--salt-store`, `--duckdb-memory-limit`, `--duckdb-threads`, `--public-url`, `--no-self-site`, `--geoip`, `--trusted-proxy`) |
 | `rotameter site` | Local or Remote | `upsert`, `list`, `show`, `purge`, `delete` |
 | `rotameter key` | Local or Remote | `create`, `list`, `revoke` (`ingest`, `read`, `admin` scopes) |
 | `rotameter query` | Remote API | Query summary, timeseries, and breakdowns (`--range`, `--group-by`, `--filter`, `--compare`, `--format table\|json\|csv`) |
 | `rotameter realtime` | Remote API | Stream 5-minute active visitors and 30-minute pulse (`--watch`) |
-| `rotameter import` | Local or Remote | Backfill JSONL or Nginx/Caddy CLF logs (`--dry-run`) |
+| `rotameter import` | Local or Remote | Backfill or stream Apache/Nginx/Caddy logs (`--stdin`, `--unix-socket`, `--follow`, `--input-format clf\|jsonl\|caddy-json`, `--dry-run`) |
 | `rotameter seed` | Local DB | Generate repeatable multi-day diurnal traffic & live visitors (`--site`, `--days`, `--sessions-per-day`, `--realtime-visitors`, `--seed`, `--reset`) |
-| `rotameter backup` | Local DB | Online SQLite `VACUUM INTO` snapshot |
+| `rotameter backup` | Local DB | Online SQLite `VACUUM INTO` snapshot or `--format portable` Arrow/Parquet `.tar.zst` bundle (`--features arrow`) |
+| `rotameter restore` | Local DB | Restore a verified portable Arrow/Parquet directory or `.tar.zst` archive (`--plane all\|control\|analytics`) |
+| `rotameter migrate` | Local DB | Stream data between storage DSNs (`sqlite://`, `duckdb://`) in-memory via Arrow or via `--stage-dir` |
 | `rotameter doctor` | Local or Remote | Verify local WAL health/pragmas or remote `/v1/health` + Cloudflare Access auth |
-| `rotameter mcp` | Remote API (`stdio`) | Start `stdio` read-only MCP server (`7` tools) |
+| `rotameter mcp` | Remote API (`stdio`) | Start `stdio` MCP server (`7` read-only tools by default) |
 | `rotameter tui` | Remote API | Launch interactive `ratatui` dashboard (`s`, `1`–`5`, `←`/`→`, `Tab`, `Enter`/`Esc`, `?`, `q`) |
 
 ---
 
 ## Deployment, Integrations & Brand Assets
 
-- **Production deployment:** Multi-arch `musl`/macOS release workflow, distroless `Dockerfile`, hardened `systemd` unit (`MemoryMax=256M`), Litestream → R2 replication, and verified restore drill — see [`infra/README.md`](./infra/README.md).
+- **Production deployment:** Multi-arch `musl`/macOS release workflow, distroless `Dockerfile` + `Dockerfile.duckdb`, hardened `systemd` unit (`MemoryMax=256M`), Litestream → R2 replication, and verified restore drill — see [`infra/README.md`](./infra/README.md).
 - **Astro & Cloudflare Workers:** Zero-dependency edge proxy (`/api/r.js`, `/api/e` via `waitUntil()`), bundled CSP-safe beacon (`@rotameter/astro-cloudflare/beacon`), and SSR `trackServerHit()` helper — see [`integrations/astro-cloudflare/README.md`](./integrations/astro-cloudflare/README.md).
 - **Brand & favicons:** SVG symbol sprite ([`assets/brand/icons-sprite.svg`](./assets/brand/icons-sprite.svg)), standalone icons ([`assets/brand/icons/`](./assets/brand/icons)), adaptive light/dark favicon ([`assets/brand/favicon.svg`](./assets/brand/favicon.svg)), multi-size [`favicon.ico`](./assets/brand/favicon.ico), Apple/PWA PNGs (`16`, `32`, `180`, `192`, `512`), and [`site.webmanifest`](./assets/brand/site.webmanifest).
 
@@ -140,6 +142,7 @@ SemVer progression: **`0.1.0`** *(headless engine)* → **`0.2.0`** *(OLTP/OLAP 
 - [`docs/SPEC-PRIVACY.md`](./docs/SPEC-PRIVACY.md) — Salt rotation, sessions, bots, GeoIP, cardinality protection
 - [`docs/SPEC-API.md`](./docs/SPEC-API.md) — `/v1/*` HTTP contract and Astro/Cloudflare SSR integration
 - [`docs/SPEC-INTERFACES.md`](./docs/SPEC-INTERFACES.md) — CLI, MCP tools, and TUI specification
+- [`docs/SPEC-UI.md`](./docs/SPEC-UI.md) — Web UI (`0.3.0+`) architecture, CSS tokens, WCAG 2.2 AA, and plugin SDK
 - [`docs/SPEC-OPERATIONS.md`](./docs/SPEC-OPERATIONS.md) — Multi-arch builds, `systemd`, Litestream R2 backups, release gates
 - [`docs/COMPARISON-FEATURES.md`](./docs/COMPARISON-FEATURES.md) & [`docs/COMPARISON-METRICS.md`](./docs/COMPARISON-METRICS.md) — Feature and metric comparisons
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md), [`AGENTS.md`](./AGENTS.md), and [`CHANGELOG.md`](./CHANGELOG.md)

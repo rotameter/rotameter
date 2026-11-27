@@ -33,7 +33,7 @@ export function Button({
       className={cx(
         "inline-flex items-center justify-center gap-1.5 border px-2.5 font-medium transition-colors",
         "min-h-[max(24px,var(--density-control-h))] min-w-[24px] rounded-[var(--radius-xs)]",
-        "text-[var(--text-sm)] leading-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+        "text-[length:var(--text-sm)] leading-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
         VARIANT_CLASSES[variant],
         className,
       )}

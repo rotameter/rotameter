@@ -61,7 +61,7 @@ export function KeysPanel() {
           >
             {showRevoked ? "Showing Revoked" : "Show Revoked"}
           </Button>
-          <span className="inline-flex items-center gap-1.5 text-[var(--text-xs)] text-[var(--fg-muted)]">
+          <span className="inline-flex items-center gap-1.5 text-[length:var(--text-xs)] text-[var(--fg-muted)]">
             <BrandIcon name="rm-key" className="text-[var(--fg-muted)]" />
             <span>{visibleKeys.length} key(s)</span>
           </span>
@@ -81,16 +81,16 @@ export function KeysPanel() {
         </p>
       ) : (
         <div className="overflow-x-auto border border-[var(--border-hairline)]">
-          <table className="w-full border-collapse text-[var(--text-sm)]" aria-label="API keys">
+          <table className="w-full border-collapse text-[length:var(--text-sm)]" aria-label="API keys">
             <thead>
-              <tr className="bg-[var(--bg-elevated)] border-b border-[var(--border-hairline)] text-[var(--text-xs)] uppercase tracking-[0.05em] text-[var(--fg-secondary)]">
-                <th className="px-2.5 py-1.5 text-left font-medium">Label</th>
-                <th className="px-2.5 py-1.5 text-left font-medium">Scope</th>
-                <th className="px-2.5 py-1.5 text-left font-medium">Site</th>
-                <th className="px-2.5 py-1.5 text-left font-medium">Prefix</th>
-                <th className="px-2.5 py-1.5 text-left font-medium">Last Used</th>
-                <th className="px-2.5 py-1.5 text-left font-medium">Status</th>
-                <th className="px-2.5 py-1.5 text-right font-medium">Action</th>
+              <tr className="bg-[var(--bg-elevated)] border-b border-[var(--border-hairline)] text-[length:var(--text-xs)] uppercase tracking-[0.05em] text-[var(--fg-secondary)]">
+                <th className="p-[var(--density-cell-pad)] text-left font-medium">Label</th>
+                <th className="p-[var(--density-cell-pad)] text-left font-medium">Scope</th>
+                <th className="p-[var(--density-cell-pad)] text-left font-medium">Site</th>
+                <th className="p-[var(--density-cell-pad)] text-left font-medium">Prefix</th>
+                <th className="p-[var(--density-cell-pad)] text-left font-medium">Last Used</th>
+                <th className="p-[var(--density-cell-pad)] text-left font-medium">Status</th>
+                <th className="p-[var(--density-cell-pad)] text-right font-medium">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -99,23 +99,28 @@ export function KeysPanel() {
                 const siteLabel = k.site_id ? (siteSlugById.get(k.site_id) ?? k.site_id) : "org-wide";
                 return (
                   <tr key={k.key_id} className="border-b border-[var(--border-hairline)] last:border-b-0">
-                    <td className="px-2.5 py-2 font-medium text-[var(--fg-primary)]">{k.label}</td>
-                    <td className="px-2.5 py-2 rm-tabular text-[var(--fg-secondary)]">{k.scope}</td>
-                    <td className="px-2.5 py-2 rm-tabular text-[var(--fg-secondary)]">{siteLabel}</td>
-                    <td className="px-2.5 py-2 rm-tabular text-[var(--fg-muted)]">{k.key_prefix}…</td>
-                    <td className="px-2.5 py-2 rm-tabular text-[var(--fg-muted)]">
+                    <td className="p-[var(--density-cell-pad)] font-medium text-[var(--fg-primary)]">
+                      <div>{k.label}</div>
+                      <div className="rm-density-expanded rm-tabular text-[length:var(--text-xs)] font-normal text-[var(--fg-muted)]">
+                        Created {k.created_at}
+                      </div>
+                    </td>
+                    <td className="p-[var(--density-cell-pad)] rm-tabular text-[var(--fg-secondary)]">{k.scope}</td>
+                    <td className="p-[var(--density-cell-pad)] rm-tabular text-[var(--fg-secondary)]">{siteLabel}</td>
+                    <td className="p-[var(--density-cell-pad)] rm-tabular text-[var(--fg-muted)]">{k.key_prefix}…</td>
+                    <td className="p-[var(--density-cell-pad)] rm-tabular text-[var(--fg-muted)]">
                       {k.last_used_at ?? "—"}
                     </td>
                     <td
-                      className={`px-2.5 py-2 text-[var(--text-xs)] font-semibold ${
+                      className={`p-[var(--density-cell-pad)] text-[length:var(--text-xs)] font-semibold ${
                         revoked ? "text-[var(--signal-crit)]" : "text-[var(--signal-ok)]"
                       }`}
                     >
                       {revoked ? "REVOKED" : "ACTIVE"}
                     </td>
-                    <td className="px-2.5 py-2 text-right">
+                    <td className="p-[var(--density-cell-pad)] text-right">
                       {revoked ? (
-                        <span className="text-[var(--text-xs)] text-[var(--fg-muted)]">—</span>
+                        <span className="text-[length:var(--text-xs)] text-[var(--fg-muted)]">—</span>
                       ) : (
                         <Button
                           variant="danger"
@@ -152,7 +157,7 @@ export function KeysPanel() {
       >
         <div className="flex flex-col gap-3">
           {revokeError ? (
-            <p role="alert" className="text-[var(--text-sm)] text-[var(--signal-crit)]">
+            <p role="alert" className="text-[length:var(--text-sm)] text-[var(--signal-crit)]">
               {revokeError}
             </p>
           ) : null}

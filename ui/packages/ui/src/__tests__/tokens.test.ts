@@ -48,6 +48,7 @@ describe("WCAG 2.2 AA & AAA design tokens", () => {
   const css = readFileSync(new URL("../tokens.css", import.meta.url), "utf8");
   const light = parseBlockVars(css, /:root,\s*:root\[data-theme="light"\]\s*\{([\s\S]*?)\}/);
   const dark = parseBlockVars(css, /:root\[data-theme="dark"\]\s*\{([\s\S]*?)\}/);
+  const rootBase = parseBlockVars(css, /:root\s*\{([\s\S]*?)\}/);
   const compact = parseBlockVars(css, /\[data-density="compact"\]\s*\{([\s\S]*?)\}/);
   const standard = parseBlockVars(css, /:root,\s*\[data-density="standard"\]\s*\{([\s\S]*?)\}/);
   const comfortable = parseBlockVars(css, /\[data-density="comfortable"\]\s*\{([\s\S]*?)\}/);
@@ -80,24 +81,37 @@ describe("WCAG 2.2 AA & AAA design tokens", () => {
     });
   }
 
-  test("compact density preserves >= 24px target size and visible 2px focus ring", () => {
-    const controlH = Number.parseFloat(compact["--density-control-h"] ?? "0");
-    const rowH = Number.parseFloat(compact["--density-table-row-h"] ?? "0");
-    expect(controlH).toBeGreaterThanOrEqual(24);
-    expect(rowH).toBeGreaterThanOrEqual(24);
+  test("WCAG AA typography scale stays constant across densities while spacing/heights scale", () => {
+    const xs = Number.parseFloat(rootBase["--text-xs"] ?? "0");
+    const sm = Number.parseFloat(rootBase["--text-sm"] ?? "0");
+    const base = Number.parseFloat(rootBase["--text-base"] ?? "0");
+    const md = Number.parseFloat(rootBase["--text-md"] ?? "0");
+    const lg = Number.parseFloat(rootBase["--text-lg"] ?? "0");
+    const kpi = Number.parseFloat(rootBase["--text-kpi"] ?? "0");
+
+    expect(base).toBeGreaterThanOrEqual(1);
+    expect(xs).toBeLessThan(sm);
+    expect(sm).toBeLessThan(base);
+    expect(base).toBeLessThan(md);
+    expect(md).toBeLessThan(lg);
+    expect(lg).toBeLessThan(kpi);
+
+    for (const density of [compact, standard, comfortable]) {
+      expect(density["--density-font-body"]).toBeUndefined();
+      expect(density["--density-kpi"]).toBeUndefined();
+    }
+
+    for (const token of ["--density-grid-gap", "--density-control-h", "--density-table-row-h"] as const) {
+      const cVal = Number.parseFloat(compact[token] ?? "0");
+      const sVal = Number.parseFloat(standard[token] ?? "0");
+      const bVal = Number.parseFloat(comfortable[token] ?? "0");
+      expect(cVal).toBeLessThan(sVal);
+      expect(sVal).toBeLessThan(bVal);
+    }
+
+    expect(Number.parseFloat(compact["--density-control-h"] ?? "0")).toBeGreaterThanOrEqual(24);
+    expect(Number.parseFloat(compact["--density-table-row-h"] ?? "0")).toBeGreaterThanOrEqual(24);
     expect(css).toContain("outline: 2px solid var(--focus-ring)");
     expect(css).toContain("outline-offset: 2px");
-  });
-
-  test("--density-kpi exceeds body size and scales monotonically across densities", () => {
-    const kpiSizes: number[] = [];
-    for (const density of [compact, standard, comfortable]) {
-      const body = Number.parseFloat(density["--density-font-body"] ?? "0");
-      const kpi = Number.parseFloat(density["--density-kpi"] ?? "0");
-      expect(kpi).toBeGreaterThan(body);
-      kpiSizes.push(kpi);
-    }
-    expect(kpiSizes[0]).toBeLessThan(kpiSizes[1]!);
-    expect(kpiSizes[1]).toBeLessThan(kpiSizes[2]!);
   });
 });

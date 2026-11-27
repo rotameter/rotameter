@@ -97,7 +97,7 @@ export function BreakdownTable({
 
   if (rows.length === 0) {
     return (
-      <div className="border border-[var(--border-hairline)] bg-[var(--bg-sunken)] px-3 py-6 text-center text-[var(--fg-muted)] text-[var(--text-sm)]">
+      <div className="border border-[var(--border-hairline)] bg-[var(--bg-sunken)] px-3 py-6 text-center text-[var(--fg-muted)] text-[length:var(--text-sm)]">
         No breakdown rows in this range.
       </div>
     );
@@ -108,7 +108,7 @@ export function BreakdownTable({
       ref={scrollRef}
       className="max-h-[420px] overflow-auto border border-[var(--border-hairline)] bg-[var(--bg-surface)]"
     >
-      <table className="w-full border-collapse grid text-[var(--density-font-body)]">
+      <table className="w-full border-collapse grid text-[length:var(--text-sm)]">
         <thead className="sticky top-0 z-10 grid bg-[var(--bg-elevated)] border-b border-[var(--border-hairline)]">
           {table.getHeaderGroups().map((hg) => (
             <tr
@@ -121,7 +121,7 @@ export function BreakdownTable({
                 return (
                   <th
                     key={header.id}
-                    className={`px-2.5 py-1.5 font-medium text-[var(--text-xs)] uppercase tracking-[0.05em] text-[var(--fg-secondary)] select-none ${
+                    className={`px-2.5 py-1.5 font-medium text-[length:var(--text-xs)] uppercase tracking-[0.05em] text-[var(--fg-secondary)] select-none ${
                       isRight ? "text-right" : "text-left"
                     }`}
                   >

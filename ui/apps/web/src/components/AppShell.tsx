@@ -91,7 +91,7 @@ export function AppShell({
           >
             ☰
           </Button>
-          <span className="inline-flex items-center gap-1.5 font-semibold tracking-[0.08em] text-[var(--text-sm)]">
+          <span className="inline-flex items-center gap-1.5 font-semibold tracking-[0.08em] text-[length:var(--text-sm)]">
             <BrandIcon name="rm-logo" className="w-5 h-5 text-[var(--accent-primary)]" />
             <span>ROTAMETER</span>
           </span>
@@ -103,7 +103,7 @@ export function AppShell({
               options={sites.map((s) => ({ value: s.slug, label: s.slug }))}
             />
           ) : (
-            <span className="rm-tabular border border-[var(--border-hairline)] bg-[var(--bg-elevated)] px-2 py-1 text-[var(--text-xs)] rounded-[var(--radius-xs)]">
+            <span className="rm-tabular border border-[var(--border-hairline)] bg-[var(--bg-elevated)] px-2 py-1 text-[length:var(--text-xs)] rounded-[var(--radius-xs)]">
               {q.siteId}
             </span>
           )}
@@ -152,7 +152,7 @@ export function AppShell({
 
         <div className="flex flex-wrap items-center gap-2">
           <span
-            className="rm-tabular border border-[var(--border-hairline)] bg-[var(--bg-elevated)] px-2 py-1 text-[var(--text-xs)] text-[var(--fg-secondary)] rounded-[var(--radius-xs)]"
+            className="rm-tabular border border-[var(--border-hairline)] bg-[var(--bg-elevated)] px-2 py-1 text-[length:var(--text-xs)] text-[var(--fg-secondary)] rounded-[var(--radius-xs)]"
             title="Node topology & query latency"
           >
             {telemetryLabel}
@@ -187,7 +187,7 @@ export function AppShell({
         {!prefs.sidebarCollapsed ? (
           <nav
             aria-label="Dashboard sections"
-            className="w-48 shrink-0 border-r border-[var(--border-hairline)] bg-[var(--bg-surface)] p-2 flex flex-col gap-1"
+            className="w-48 shrink-0 border-r border-[var(--border-hairline)] bg-[var(--bg-surface)] p-[var(--density-grid-gap)] flex flex-col gap-1"
           >
             {navItems.map((item) => {
               const active = activeRouteId === item.id;
@@ -206,7 +206,7 @@ export function AppShell({
             })}
           </nav>
         ) : null}
-        <main className="flex-1 p-4 overflow-auto">{children}</main>
+        <main className="flex-1 p-[var(--density-grid-gap)] overflow-auto">{children}</main>
       </div>
     </div>
   );

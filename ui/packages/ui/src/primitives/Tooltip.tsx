@@ -13,7 +13,7 @@ export function Tooltip({ trigger, content }: TooltipProps) {
         <BaseTooltip.Trigger render={trigger} />
         <BaseTooltip.Portal>
           <BaseTooltip.Positioner sideOffset={6} className="z-50">
-            <BaseTooltip.Popup className="border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-2 py-1 rounded-[var(--radius-xs)] text-[var(--text-xs)] text-[var(--fg-primary)]">
+            <BaseTooltip.Popup className="border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-2 py-1 rounded-[var(--radius-xs)] text-[length:var(--text-xs)] text-[var(--fg-primary)]">
               {content}
             </BaseTooltip.Popup>
           </BaseTooltip.Positioner>

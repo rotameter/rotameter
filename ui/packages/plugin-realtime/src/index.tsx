@@ -48,22 +48,22 @@ function RealtimePluginView() {
           <p className="text-[var(--signal-crit)]">{error.message}</p>
         ) : (
           <div className="flex flex-col gap-[var(--density-grid-gap)]">
-            <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--border-hairline)] bg-[var(--bg-elevated)] px-3 py-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border border-[var(--border-hairline)] bg-[var(--bg-elevated)] p-[var(--density-panel-pad)]">
               <div className="flex items-center gap-3">
                 <span
                   aria-hidden
                   className="inline-block w-2.5 h-2.5 rounded-full bg-[var(--signal-ok)]"
                 />
                 <div>
-                  <div className="text-[var(--text-xs)] uppercase tracking-[0.06em] text-[var(--fg-muted)]">
+                  <div className="text-[length:var(--text-xs)] uppercase tracking-[0.06em] text-[var(--fg-muted)]">
                     Active Visitors (5m)
                   </div>
-                  <div className="rm-tabular text-[length:var(--density-kpi)] leading-tight font-semibold text-[var(--fg-primary)]">
+                  <div className="rm-tabular text-[length:var(--text-kpi)] leading-tight font-semibold text-[var(--fg-primary)]">
                     {data.active_visitors.toLocaleString("en-US")}
                   </div>
                 </div>
               </div>
-              <div className="rm-tabular text-[var(--text-xs)] text-[var(--fg-muted)]">
+              <div className="rm-density-detail rm-tabular text-[length:var(--text-xs)] text-[var(--fg-muted)]">
                 {paused ? "PAUSED" : "POLLING 10s"} · Updated{" "}
                 {dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : "--"}
               </div>
@@ -85,12 +85,12 @@ function RealtimePluginView() {
             </ChartHost>
 
             <div className="border border-[var(--border-hairline)] bg-[var(--bg-surface)]">
-              <div className="border-b border-[var(--border-hairline)] bg-[var(--bg-elevated)] px-2.5 py-1.5 flex items-center justify-between text-[var(--text-xs)] uppercase tracking-[0.05em] text-[var(--fg-secondary)]">
+              <div className="border-b border-[var(--border-hairline)] bg-[var(--bg-elevated)] px-2.5 py-1.5 flex items-center justify-between text-[length:var(--text-xs)] uppercase tracking-[0.05em] text-[var(--fg-secondary)]">
                 <span>Active Pages (Click to Filter Breakdowns)</span>
                 <span className="rm-tabular">Visitors</span>
               </div>
               {data.active_pages.length === 0 ? (
-                <p className="px-2.5 py-4 text-center text-[var(--text-sm)] text-[var(--fg-muted)]">
+                <p className="px-2.5 py-4 text-center text-[length:var(--text-sm)] text-[var(--fg-muted)]">
                   No active pages in trailing 5 minutes.
                 </p>
               ) : (

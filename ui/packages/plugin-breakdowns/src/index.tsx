@@ -133,7 +133,7 @@ function BreakdownsPluginView() {
   ) : (
     <div className="flex flex-col gap-2">
       {data.meta.truncated_by_cardinality_cap ? (
-        <div className="border border-[var(--signal-warn)] bg-[var(--bg-elevated)] px-2.5 py-1.5 text-[var(--text-xs)] text-[var(--signal-warn)]">
+        <div className="border border-[var(--signal-warn)] bg-[var(--bg-elevated)] px-2.5 py-1.5 text-[length:var(--text-xs)] text-[var(--signal-warn)]">
           Breakdown truncated at server cardinality cap ({data.meta.total_rows} rows shown).
         </div>
       ) : null}
@@ -212,7 +212,7 @@ function BreakdownsPluginView() {
           </div>
         ) : null}
         {exportError ? (
-          <p className="text-[var(--signal-crit)] text-[var(--text-sm)]">{exportError}</p>
+          <p className="text-[var(--signal-crit)] text-[length:var(--text-sm)]">{exportError}</p>
         ) : null}
         <Tabs
           value={groupId}

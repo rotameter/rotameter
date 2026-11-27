@@ -30,7 +30,7 @@ export function ChartHost({ vizType, title, data, fallback, children }: ChartHos
   return (
     <div className="flex flex-col gap-2" data-viz-type={vizType}>
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[var(--text-xs)] uppercase tracking-[0.06em] text-[var(--fg-muted)]">
+        <span className="text-[length:var(--text-xs)] uppercase tracking-[0.06em] text-[var(--fg-muted)]">
           {title}
         </span>
         <Button
@@ -43,7 +43,7 @@ export function ChartHost({ vizType, title, data, fallback, children }: ChartHos
       </div>
       {showTable ? (
         <div className="overflow-x-auto border border-[var(--border-hairline)]">
-          <table className="w-full border-collapse text-[var(--text-sm)]" aria-label={fallback.caption ?? title}>
+          <table className="w-full border-collapse text-[length:var(--text-sm)]" aria-label={fallback.caption ?? title}>
             <thead>
               <tr className="bg-[var(--bg-elevated)] border-b border-[var(--border-hairline)]">
                 {fallback.columns.map((col) => (

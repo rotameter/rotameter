@@ -19,6 +19,11 @@ const CODE_RULES = [
     pattern: /\bshadow-(?:sm|md|lg|xl|2xl|inner)\b|\bboxShadow\b|box-shadow/,
     message: "Blurred drop-shadows violate flat hairline surface tokens",
   },
+  {
+    name: "no-ambiguous-text-var",
+    pattern: /text-\[var\(--(?:text|density)-/,
+    message: "Use text-[length:var(--...)] so Tailwind v4 emits font-size instead of color",
+  },
 ];
 
 const PLUGIN_ONLY_RULES = [

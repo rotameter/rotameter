@@ -120,7 +120,7 @@ export function TimeSeriesChart({ points }: TimeSeriesChartProps) {
 
   if (points.length === 0) {
     return (
-      <div className="border border-[var(--border-hairline)] bg-[var(--bg-sunken)] px-3 py-6 text-center text-[var(--fg-muted)] text-[var(--text-sm)]">
+      <div className="border border-[var(--border-hairline)] bg-[var(--bg-sunken)] px-3 py-6 text-center text-[var(--fg-muted)] text-[length:var(--text-sm)]">
         No timeseries buckets in this window.
       </div>
     );
@@ -156,7 +156,7 @@ export function TimeSeriesChart({ points }: TimeSeriesChartProps) {
                 />
               </svg>
               <span>{cfg.label}</span>
-              <span className="text-[var(--text-xs)] text-[var(--fg-muted)]">({cfg.patternLabel})</span>
+              <span className="text-[length:var(--text-xs)] text-[var(--fg-muted)]">({cfg.patternLabel})</span>
             </Button>
           );
         })}

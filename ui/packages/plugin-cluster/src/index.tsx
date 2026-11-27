@@ -52,46 +52,46 @@ function ClusterPluginView() {
         ) : (
           <div className="flex flex-col gap-3">
             <div className="rm-hairline-grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-              <div className="bg-[var(--bg-surface)] px-3 py-2.5">
-                <div className="text-[var(--text-xs)] text-[var(--fg-muted)]">STATUS</div>
-                <div className="rm-tabular text-[var(--text-md)] font-semibold text-[var(--signal-ok)] mt-1">
+              <div className="bg-[var(--bg-surface)] p-[var(--density-panel-pad)]">
+                <div className="text-[length:var(--text-xs)] text-[var(--fg-muted)]">STATUS</div>
+                <div className="rm-tabular text-[length:var(--text-md)] font-semibold text-[var(--signal-ok)] mt-1">
                   {data.status.toUpperCase()}
                 </div>
               </div>
-              <div className="bg-[var(--bg-surface)] px-3 py-2.5">
-                <div className="text-[var(--text-xs)] text-[var(--fg-muted)]">ROLE</div>
-                <div className="rm-tabular text-[var(--text-md)] font-semibold text-[var(--fg-primary)] mt-1">
+              <div className="bg-[var(--bg-surface)] p-[var(--density-panel-pad)]">
+                <div className="text-[length:var(--text-xs)] text-[var(--fg-muted)]">ROLE</div>
+                <div className="rm-tabular text-[length:var(--text-md)] font-semibold text-[var(--fg-primary)] mt-1">
                   {caps.node_role}
                 </div>
               </div>
-              <div className="bg-[var(--bg-surface)] px-3 py-2.5">
-                <div className="text-[var(--text-xs)] text-[var(--fg-muted)]">VERSION</div>
-                <div className="rm-tabular text-[var(--text-md)] font-semibold text-[var(--fg-primary)] mt-1">
+              <div className="bg-[var(--bg-surface)] p-[var(--density-panel-pad)]">
+                <div className="text-[length:var(--text-xs)] text-[var(--fg-muted)]">VERSION</div>
+                <div className="rm-tabular text-[length:var(--text-md)] font-semibold text-[var(--fg-primary)] mt-1">
                   {data.version}
                 </div>
               </div>
-              <div className="bg-[var(--bg-surface)] px-3 py-2.5">
-                <div className="text-[var(--text-xs)] text-[var(--fg-muted)]">SCHEMA</div>
-                <div className="rm-tabular text-[var(--text-md)] font-semibold text-[var(--fg-primary)] mt-1">
+              <div className="bg-[var(--bg-surface)] p-[var(--density-panel-pad)]">
+                <div className="text-[length:var(--text-xs)] text-[var(--fg-muted)]">SCHEMA</div>
+                <div className="rm-tabular text-[length:var(--text-md)] font-semibold text-[var(--fg-primary)] mt-1">
                   v{data.schema_version}
                 </div>
               </div>
-              <div className="bg-[var(--bg-surface)] px-3 py-2.5">
-                <div className="text-[var(--text-xs)] text-[var(--fg-muted)]">UPTIME</div>
-                <div className="rm-tabular text-[var(--text-md)] font-semibold text-[var(--fg-primary)] mt-1">
+              <div className="bg-[var(--bg-surface)] p-[var(--density-panel-pad)]">
+                <div className="text-[length:var(--text-xs)] text-[var(--fg-muted)]">UPTIME</div>
+                <div className="rm-tabular text-[length:var(--text-md)] font-semibold text-[var(--fg-primary)] mt-1">
                   {formatUptime(data.uptime_secs)}
                 </div>
               </div>
-              <div className="bg-[var(--bg-surface)] px-3 py-2.5">
-                <div className="text-[var(--text-xs)] text-[var(--fg-muted)]">QUEUE FILL</div>
-                <div className={`rm-tabular text-[var(--text-md)] font-semibold mt-1 ${TONE_TEXT[tone]}`}>
+              <div className="bg-[var(--bg-surface)] p-[var(--density-panel-pad)]">
+                <div className="text-[length:var(--text-xs)] text-[var(--fg-muted)]">QUEUE FILL</div>
+                <div className={`rm-tabular text-[length:var(--text-md)] font-semibold mt-1 ${TONE_TEXT[tone]}`}>
                   {data.queue_depth} / {data.queue_capacity} ({fillPct.toFixed(1)}%)
                 </div>
               </div>
             </div>
 
             <div className="border border-[var(--border-hairline)] bg-[var(--bg-surface)] px-3 py-2 flex flex-col gap-1.5">
-              <div className="flex items-center justify-between text-[var(--text-xs)] text-[var(--fg-muted)]">
+              <div className="flex items-center justify-between text-[length:var(--text-xs)] text-[var(--fg-muted)]">
                 <span className="inline-flex items-center gap-1.5">
                   <BrandIcon name="rm-threshold" className="text-[var(--fg-muted)]" />
                   <span>INGEST RING BUFFER SATURATION</span>
@@ -124,7 +124,7 @@ function ClusterPluginView() {
       >
         <div className="flex flex-col gap-3">
           {caps.topology === "cluster" ? (
-            <div className="border border-[var(--border-hairline)] bg-[var(--bg-elevated)] px-2.5 py-1.5 text-[var(--text-xs)] text-[var(--fg-secondary)]">
+            <div className="border border-[var(--border-hairline)] bg-[var(--bg-elevated)] px-2.5 py-1.5 text-[length:var(--text-xs)] text-[var(--fg-secondary)]">
               Multi-node roster grid arrives in 0.5.0 (RM-22).
             </div>
           ) : null}
@@ -133,11 +133,11 @@ function ClusterPluginView() {
             {features.map((feat) => (
               <div
                 key={feat.key}
-                className="flex items-center justify-between border border-[var(--border-hairline)] bg-[var(--bg-surface)] px-2.5 py-2 text-[var(--text-sm)]"
+                className="flex items-center justify-between border border-[var(--border-hairline)] bg-[var(--bg-surface)] px-2.5 py-2 text-[length:var(--text-sm)]"
               >
                 <span className="text-[var(--fg-secondary)]">{feat.label}</span>
                 <span
-                  className={`rm-tabular text-[var(--text-xs)] font-semibold ${
+                  className={`rm-tabular text-[length:var(--text-xs)] font-semibold ${
                     feat.enabled ? "text-[var(--signal-ok)]" : "text-[var(--fg-muted)]"
                   }`}
                 >
@@ -147,7 +147,7 @@ function ClusterPluginView() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[var(--text-xs)]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[length:var(--text-xs)]">
             <div className="border border-[var(--border-hairline)] bg-[var(--bg-sunken)] px-2.5 py-2">
               <div className="text-[var(--fg-muted)] uppercase tracking-[0.05em] mb-1">
                 Auth Methods & Endpoints

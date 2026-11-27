@@ -65,7 +65,7 @@ export function AuthGate({ api, capabilities, onAuthenticated }: AuthGateProps) 
       <div className="w-full max-w-md flex flex-col gap-4">
         <div className="flex items-center justify-center gap-2">
           <BrandIcon name="rm-logo" className="w-6 h-6 text-[var(--accent-primary)]" />
-          <span className="font-semibold tracking-[0.12em] text-[var(--text-md)] text-[var(--fg-primary)]">
+          <span className="font-semibold tracking-[0.12em] text-[length:var(--text-md)] text-[var(--fg-primary)]">
             ROTAMETER
           </span>
         </div>
@@ -78,7 +78,7 @@ export function AuthGate({ api, capabilities, onAuthenticated }: AuthGateProps) 
             {error ? (
               <div
                 role="alert"
-                className="border border-[var(--signal-crit)] bg-[var(--bg-elevated)] px-3 py-2 text-[var(--text-sm)] text-[var(--signal-crit)]"
+                className="border border-[var(--signal-crit)] bg-[var(--bg-elevated)] px-3 py-2 text-[length:var(--text-sm)] text-[var(--signal-crit)]"
               >
                 {error}
               </div>
@@ -86,10 +86,10 @@ export function AuthGate({ api, capabilities, onAuthenticated }: AuthGateProps) 
 
             {supportsSession ? (
               <form onSubmit={handlePasswordLogin} className="flex flex-col gap-2.5">
-                <div className="text-[var(--text-xs)] uppercase tracking-[0.06em] text-[var(--fg-muted)]">
+                <div className="text-[length:var(--text-xs)] uppercase tracking-[0.06em] text-[var(--fg-muted)]">
                   Operator Credentials
                 </div>
-                <label className="flex flex-col gap-1 text-[var(--text-sm)]">
+                <label className="flex flex-col gap-1 text-[length:var(--text-sm)]">
                   <span>Username</span>
                   <Input
                     value={username}
@@ -98,7 +98,7 @@ export function AuthGate({ api, capabilities, onAuthenticated }: AuthGateProps) 
                     required
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-[var(--text-sm)]">
+                <label className="flex flex-col gap-1 text-[length:var(--text-sm)]">
                   <span>Password</span>
                   <Input
                     type="password"
@@ -118,7 +118,7 @@ export function AuthGate({ api, capabilities, onAuthenticated }: AuthGateProps) 
               onSubmit={handleTokenLogin}
               className="flex flex-col gap-2.5 border-t border-[var(--border-hairline)] pt-3"
             >
-              <div className="inline-flex items-center gap-1.5 text-[var(--text-xs)] uppercase tracking-[0.06em] text-[var(--fg-muted)]">
+              <div className="inline-flex items-center gap-1.5 text-[length:var(--text-xs)] uppercase tracking-[0.06em] text-[var(--fg-muted)]">
                 <BrandIcon name="rm-key" className="text-[var(--fg-muted)]" />
                 <span>API Key Session (`rm_adm_` or `rm_rd_`)</span>
               </div>
@@ -139,7 +139,7 @@ export function AuthGate({ api, capabilities, onAuthenticated }: AuthGateProps) 
               <div className="border-t border-[var(--border-hairline)] pt-3">
                 <a
                   href={`/v1/auth/oidc/start?return_to=${encodeURIComponent(window.location.pathname || "/")}`}
-                  className="inline-flex w-full items-center justify-center border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 min-h-[max(24px,var(--density-control-h))] rounded-[var(--radius-xs)] text-[var(--text-sm)] font-medium text-[var(--fg-primary)] hover:bg-[var(--bg-sunken)]"
+                  className="inline-flex w-full items-center justify-center border border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 min-h-[max(24px,var(--density-control-h))] rounded-[var(--radius-xs)] text-[length:var(--text-sm)] font-medium text-[var(--fg-primary)] hover:bg-[var(--bg-sunken)]"
                 >
                   Continue with OIDC SSO
                 </a>

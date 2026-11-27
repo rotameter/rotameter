@@ -2,12 +2,12 @@
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
 
-  --text-xs: 0.6875rem;
-  --text-sm: 0.75rem;
-  --text-base: 0.8125rem;
-  --text-md: 0.9375rem;
-  --text-lg: 1.25rem;
-  --text-xl: 1.75rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.375rem;
+  --text-kpi: 1.75rem;
 
   --radius-none: 0px;
   --radius-xs: 2px;
@@ -67,39 +67,45 @@
   --series-6: #94a3b8;
 }
 
-/* Tiered Density Scales (Root and Container Overridable) */
+/* Tiered Density Scales (Spacing, Height & Progressive Disclosure — Typography stays WCAG AA constant) */
 :root,
 [data-density="standard"] {
-  --density-scale: 1;
-  --density-grid-gap: 10px;
-  --density-panel-pad: 12px 14px;
-  --density-control-h: 32px;
-  --density-table-row-h: 34px;
-  --density-font-body: 0.8125rem;
-  --density-kpi: 1.5rem;
+  --density-grid-gap: 12px;
+  --density-panel-pad: 12px 16px;
+  --density-cell-pad: 8px 12px;
+  --density-control-h: 34px;
+  --density-table-row-h: 38px;
   --density-icon-size: 16px;
 }
 
 [data-density="compact"] {
-  --density-scale: 0.85;
   --density-grid-gap: 6px;
   --density-panel-pad: 8px 10px;
-  --density-control-h: 26px;
-  --density-table-row-h: 26px;
-  --density-font-body: 0.75rem;
-  --density-kpi: 1.25rem;
-  --density-icon-size: 14px;
+  --density-cell-pad: 4px 8px;
+  --density-control-h: 28px;
+  --density-table-row-h: 30px;
+  --density-icon-size: 15px;
 }
 
 [data-density="comfortable"] {
-  --density-scale: 1.15;
-  --density-grid-gap: 16px;
-  --density-panel-pad: 16px 20px;
-  --density-control-h: 38px;
-  --density-table-row-h: 42px;
-  --density-font-body: 0.875rem;
-  --density-kpi: 1.75rem;
+  --density-grid-gap: 18px;
+  --density-panel-pad: 18px 22px;
+  --density-cell-pad: 12px 14px;
+  --density-control-h: 40px;
+  --density-table-row-h: 48px;
   --density-icon-size: 18px;
+}
+
+[data-density="compact"] .rm-density-detail {
+  display: none;
+}
+
+.rm-density-expanded {
+  display: none;
+}
+
+[data-density="comfortable"] .rm-density-expanded {
+  display: block;
 }
 
 @layer base {
@@ -108,7 +114,8 @@
     background-color: var(--bg-canvas);
     color: var(--fg-primary);
     font-family: var(--font-sans);
-    font-size: var(--density-font-body);
+    font-size: var(--text-base);
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
 

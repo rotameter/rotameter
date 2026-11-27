@@ -12,7 +12,7 @@ export function PulseChart({ pulse }: PulseChartProps) {
 
   if (bars.length === 0) {
     return (
-      <div className="border border-[var(--border-hairline)] bg-[var(--bg-sunken)] px-3 py-6 text-center text-[var(--fg-muted)] text-[var(--text-sm)]">
+      <div className="border border-[var(--border-hairline)] bg-[var(--bg-sunken)] px-3 py-6 text-center text-[var(--fg-muted)] text-[length:var(--text-sm)]">
         No events in trailing 30-minute pulse window.
       </div>
     );
@@ -24,7 +24,7 @@ export function PulseChart({ pulse }: PulseChartProps) {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between text-[var(--text-xs)] text-[var(--fg-muted)]">
+      <div className="flex items-center justify-between text-[length:var(--text-xs)] text-[var(--fg-muted)]">
         <span className="rm-tabular">
           {totalEvents.toLocaleString("en-US")} events (30m) · peak {maxEvents}/min
         </span>

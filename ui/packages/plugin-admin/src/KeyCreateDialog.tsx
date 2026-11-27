@@ -77,7 +77,7 @@ export function KeyCreateDialog({ open, onOpenChange, sites }: KeyCreateDialogPr
     >
       {created ? (
         <div className="flex flex-col gap-3">
-          <div className="border border-[var(--signal-warn)] bg-[var(--bg-elevated)] px-2.5 py-2 text-[var(--text-xs)] text-[var(--signal-warn)]">
+          <div className="border border-[var(--signal-warn)] bg-[var(--bg-elevated)] px-2.5 py-2 text-[length:var(--text-xs)] text-[var(--signal-warn)]">
             This token is shown once. Store it now.
           </div>
           <Input
@@ -104,7 +104,7 @@ export function KeyCreateDialog({ open, onOpenChange, sites }: KeyCreateDialogPr
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-[var(--text-xs)] text-[var(--fg-secondary)]">
+          <label className="flex flex-col gap-1 text-[length:var(--text-xs)] text-[var(--fg-secondary)]">
             <span>Label</span>
             <Input
               aria-label="Key label"
@@ -115,7 +115,7 @@ export function KeyCreateDialog({ open, onOpenChange, sites }: KeyCreateDialogPr
             />
           </label>
 
-          <div className="flex flex-col gap-1 text-[var(--text-xs)] text-[var(--fg-secondary)]">
+          <div className="flex flex-col gap-1 text-[length:var(--text-xs)] text-[var(--fg-secondary)]">
             <span>Scope</span>
             <Select<KeyScope>
               ariaLabel="Key scope"
@@ -126,7 +126,7 @@ export function KeyCreateDialog({ open, onOpenChange, sites }: KeyCreateDialogPr
           </div>
 
           {scope !== "admin" ? (
-            <div className="flex flex-col gap-1 text-[var(--text-xs)] text-[var(--fg-secondary)]">
+            <div className="flex flex-col gap-1 text-[length:var(--text-xs)] text-[var(--fg-secondary)]">
               <span>Bound Site</span>
               {sites.length > 0 ? (
                 <Select
@@ -136,7 +136,7 @@ export function KeyCreateDialog({ open, onOpenChange, sites }: KeyCreateDialogPr
                   options={sites.map((s) => ({ value: s.site_id, label: `${s.slug} (${s.site_id})` }))}
                 />
               ) : (
-                <p className="text-[var(--text-xs)] text-[var(--signal-warn)]">
+                <p className="text-[length:var(--text-xs)] text-[var(--signal-warn)]">
                   Create a site first before minting site-scoped keys.
                 </p>
               )}
@@ -144,7 +144,7 @@ export function KeyCreateDialog({ open, onOpenChange, sites }: KeyCreateDialogPr
           ) : null}
 
           {formError ? (
-            <p role="alert" className="text-[var(--text-sm)] text-[var(--signal-crit)]">
+            <p role="alert" className="text-[length:var(--text-sm)] text-[var(--signal-crit)]">
               {formError}
             </p>
           ) : null}

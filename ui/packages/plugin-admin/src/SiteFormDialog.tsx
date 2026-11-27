@@ -72,10 +72,10 @@ export function SiteFormDialog({ open, onOpenChange, site }: SiteFormDialogProps
       description={site ? `Site UID: ${site.site_id}` : "Create a new tracked site and configure privacy policy."}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-[var(--text-xs)] text-[var(--fg-secondary)]">
+        <label className="flex flex-col gap-1 text-[length:var(--text-xs)] text-[var(--fg-secondary)]">
           <span>Slug</span>
           {site ? (
-            <div className="rm-tabular border border-[var(--border-hairline)] bg-[var(--bg-sunken)] px-2.5 py-1.5 text-[var(--text-sm)] text-[var(--fg-primary)] rounded-[var(--radius-xs)]">
+            <div className="rm-tabular border border-[var(--border-hairline)] bg-[var(--bg-sunken)] px-2.5 py-1.5 text-[length:var(--text-sm)] text-[var(--fg-primary)] rounded-[var(--radius-xs)]">
               {site.slug}
             </div>
           ) : (
@@ -90,7 +90,7 @@ export function SiteFormDialog({ open, onOpenChange, site }: SiteFormDialogProps
         </label>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <label className="flex flex-col gap-1 text-[var(--text-xs)] text-[var(--fg-secondary)]">
+          <label className="flex flex-col gap-1 text-[length:var(--text-xs)] text-[var(--fg-secondary)]">
             <span>Display Name</span>
             <Input
               aria-label="Display name"
@@ -99,7 +99,7 @@ export function SiteFormDialog({ open, onOpenChange, site }: SiteFormDialogProps
               onChange={(e) => setForm((f) => ({ ...f, display_name: e.target.value }))}
             />
           </label>
-          <label className="flex flex-col gap-1 text-[var(--text-xs)] text-[var(--fg-secondary)]">
+          <label className="flex flex-col gap-1 text-[length:var(--text-xs)] text-[var(--fg-secondary)]">
             <span>Timezone (IANA)</span>
             <Input
               aria-label="Timezone"
@@ -111,7 +111,7 @@ export function SiteFormDialog({ open, onOpenChange, site }: SiteFormDialogProps
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <div className="flex flex-col gap-1 text-[var(--text-xs)] text-[var(--fg-secondary)]">
+          <div className="flex flex-col gap-1 text-[length:var(--text-xs)] text-[var(--fg-secondary)]">
             <span>Salt Rotation</span>
             <Select<SaltRotation>
               ariaLabel="Salt rotation"
@@ -120,7 +120,7 @@ export function SiteFormDialog({ open, onOpenChange, site }: SiteFormDialogProps
               options={SALT_OPTIONS}
             />
           </div>
-          <label className="flex flex-col gap-1 text-[var(--text-xs)] text-[var(--fg-secondary)]">
+          <label className="flex flex-col gap-1 text-[length:var(--text-xs)] text-[var(--fg-secondary)]">
             <span>Raw Event Retention (days)</span>
             <Input
               aria-label="Raw event retention days"
@@ -133,7 +133,7 @@ export function SiteFormDialog({ open, onOpenChange, site }: SiteFormDialogProps
           </label>
         </div>
 
-        <label className="inline-flex items-center gap-2 min-h-[24px] py-1 text-[var(--text-sm)] text-[var(--fg-primary)] cursor-pointer">
+        <label className="inline-flex items-center gap-2 min-h-[24px] py-1 text-[length:var(--text-sm)] text-[var(--fg-primary)] cursor-pointer">
           <input
             type="checkbox"
             checked={form.respect_gpc}
@@ -143,7 +143,7 @@ export function SiteFormDialog({ open, onOpenChange, site }: SiteFormDialogProps
           <span>Respect Global Privacy Control (`Sec-GPC: 1`)</span>
         </label>
 
-        <label className="flex flex-col gap-1 text-[var(--text-xs)] text-[var(--fg-secondary)]">
+        <label className="flex flex-col gap-1 text-[length:var(--text-xs)] text-[var(--fg-secondary)]">
           <span>Allowed Origins (comma or newline separated)</span>
           <textarea
             aria-label="Allowed origins"
@@ -151,11 +151,11 @@ export function SiteFormDialog({ open, onOpenChange, site }: SiteFormDialogProps
             placeholder="https://example.com"
             value={form.allowed_origins}
             onChange={(e) => setForm((f) => ({ ...f, allowed_origins: e.target.value }))}
-            className="w-full border border-[var(--border-strong)] bg-[var(--bg-surface)] text-[var(--fg-primary)] px-2.5 py-1.5 text-[var(--text-sm)] rounded-[var(--radius-xs)] placeholder:text-[var(--fg-muted)]"
+            className="w-full border border-[var(--border-strong)] bg-[var(--bg-surface)] text-[var(--fg-primary)] px-2.5 py-1.5 text-[length:var(--text-sm)] rounded-[var(--radius-xs)] placeholder:text-[var(--fg-muted)]"
           />
         </label>
 
-        <label className="flex flex-col gap-1 text-[var(--text-xs)] text-[var(--fg-secondary)]">
+        <label className="flex flex-col gap-1 text-[length:var(--text-xs)] text-[var(--fg-secondary)]">
           <span>Allowed Query Keys (strip all others)</span>
           <textarea
             aria-label="Allowed query keys"
@@ -163,12 +163,12 @@ export function SiteFormDialog({ open, onOpenChange, site }: SiteFormDialogProps
             placeholder="utm_source, utm_medium, utm_campaign"
             value={form.allowed_query_keys}
             onChange={(e) => setForm((f) => ({ ...f, allowed_query_keys: e.target.value }))}
-            className="w-full border border-[var(--border-strong)] bg-[var(--bg-surface)] text-[var(--fg-primary)] px-2.5 py-1.5 text-[var(--text-sm)] rounded-[var(--radius-xs)] placeholder:text-[var(--fg-muted)]"
+            className="w-full border border-[var(--border-strong)] bg-[var(--bg-surface)] text-[var(--fg-primary)] px-2.5 py-1.5 text-[length:var(--text-sm)] rounded-[var(--radius-xs)] placeholder:text-[var(--fg-muted)]"
           />
         </label>
 
         {formError ? (
-          <p role="alert" className="text-[var(--text-sm)] text-[var(--signal-crit)]">
+          <p role="alert" className="text-[length:var(--text-sm)] text-[var(--signal-crit)]">
             {formError}
           </p>
         ) : null}

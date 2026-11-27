@@ -37,12 +37,12 @@ export function Select<T extends string>({
         className={cx(
           "inline-flex items-center justify-between gap-2 border border-[var(--border-strong)]",
           "bg-[var(--bg-surface)] text-[var(--fg-primary)] px-2.5 min-h-[max(24px,var(--density-control-h))]",
-          "rounded-[var(--radius-xs)] text-[var(--text-sm)] cursor-pointer hover:bg-[var(--bg-elevated)]",
+          "rounded-[var(--radius-xs)] text-[length:var(--text-sm)] cursor-pointer hover:bg-[var(--bg-elevated)]",
           className,
         )}
       >
         <BaseSelect.Value>{current}</BaseSelect.Value>
-        <BaseSelect.Icon aria-hidden className="text-[var(--fg-muted)] text-[var(--text-xs)]">
+        <BaseSelect.Icon aria-hidden className="text-[var(--fg-muted)] text-[length:var(--text-xs)]">
           ▾
         </BaseSelect.Icon>
       </BaseSelect.Trigger>
@@ -53,7 +53,7 @@ export function Select<T extends string>({
               <BaseSelect.Item
                 key={opt.value}
                 value={opt.value}
-                className="flex items-center justify-between px-2.5 min-h-[24px] py-1 text-[var(--text-sm)] text-[var(--fg-primary)] rounded-[var(--radius-xs)] cursor-pointer data-[highlighted]:bg-[var(--bg-elevated)] data-[selected]:font-semibold"
+                className="flex items-center justify-between px-2.5 min-h-[24px] py-1 text-[length:var(--text-sm)] text-[var(--fg-primary)] rounded-[var(--radius-xs)] cursor-pointer data-[highlighted]:bg-[var(--bg-elevated)] data-[selected]:font-semibold"
               >
                 <BaseSelect.ItemText>{opt.label}</BaseSelect.ItemText>
                 <BaseSelect.ItemIndicator className="text-[var(--accent-primary)]">✓</BaseSelect.ItemIndicator>

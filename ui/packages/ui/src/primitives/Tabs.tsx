@@ -24,7 +24,7 @@ export function Tabs({ value, onValueChange, items, className }: TabsProps) {
             key={item.value}
             value={item.value}
             className={cx(
-              "px-2.5 min-h-[24px] py-1 text-[var(--text-sm)] font-medium rounded-[var(--radius-xs)] cursor-pointer",
+              "px-2.5 min-h-[24px] py-1 text-[length:var(--text-sm)] font-medium rounded-[var(--radius-xs)] cursor-pointer",
               "text-[var(--fg-secondary)] hover:text-[var(--fg-primary)]",
               "data-[active]:bg-[var(--bg-surface)] data-[active]:text-[var(--fg-primary)] data-[active]:border data-[active]:border-[var(--border-strong)]",
             )}

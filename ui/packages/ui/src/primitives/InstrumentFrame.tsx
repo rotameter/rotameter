@@ -26,13 +26,13 @@ export function InstrumentFrame({
         className,
       )}
     >
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-hairline)] bg-[var(--bg-elevated)] px-3 py-2">
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-hairline)] bg-[var(--bg-elevated)] p-[var(--density-cell-pad)]">
         <div className="flex items-baseline gap-2 min-w-0">
-          <h2 className="text-[var(--text-sm)] font-semibold uppercase tracking-[0.06em] text-[var(--fg-primary)] truncate">
+          <h2 className="text-[length:var(--text-sm)] font-semibold uppercase tracking-[0.06em] text-[var(--fg-primary)] truncate">
             {title}
           </h2>
           {subtitle ? (
-            <span className="rm-tabular text-[var(--text-xs)] text-[var(--fg-muted)] truncate">
+            <span className="rm-tabular rm-density-detail text-[length:var(--text-xs)] text-[var(--fg-muted)] truncate">
               {subtitle}
             </span>
           ) : null}

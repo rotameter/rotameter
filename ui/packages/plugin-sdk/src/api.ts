@@ -1,11 +1,15 @@
 import type {
+  ApiKeyMetadata,
   AuthMeResponse,
   CapabilitiesResponse,
+  CreatedApiKey,
+  CreateKeyRequest,
   HealthResponse,
   QueryRequest,
   QueryResponse,
   RealtimeResponse,
   SiteResponse,
+  SiteUpsertRequest,
 } from "./types";
 
 export class ApiClientError extends Error {
@@ -140,6 +144,48 @@ export class RotameterApiClient {
 
   listSites(signal?: AbortSignal): Promise<SiteResponse[]> {
     return this.requestJson("/v1/admin/sites", { signal });
+  }
+
+  createSite(req: SiteUpsertRequest, signal?: AbortSignal): Promise<SiteResponse> {
+    return this.requestJson("/v1/admin/sites", {
+      method: "POST",
+      body: JSON.stringify(req),
+      signal,
+    });
+  }
+
+  updateSite(site: string, req: SiteUpsertRequest, signal?: AbortSignal): Promise<SiteResponse> {
+    return this.requestJson(`/v1/admin/sites/${encodeURIComponent(site)}`, {
+      method: "PUT",
+      body: JSON.stringify(req),
+      signal,
+    });
+  }
+
+  deleteSite(site: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+    return this.requestJson(`/v1/admin/sites/${encodeURIComponent(site)}?confirm=true`, {
+      method: "DELETE",
+      signal,
+    });
+  }
+
+  listKeys(signal?: AbortSignal): Promise<ApiKeyMetadata[]> {
+    return this.requestJson("/v1/admin/keys", { signal });
+  }
+
+  createKey(req: CreateKeyRequest, signal?: AbortSignal): Promise<CreatedApiKey> {
+    return this.requestJson("/v1/admin/keys", {
+      method: "POST",
+      body: JSON.stringify(req),
+      signal,
+    });
+  }
+
+  revokeKey(keyId: string, signal?: AbortSignal): Promise<{ revoked: boolean; key_id: string }> {
+    return this.requestJson(`/v1/admin/keys/${encodeURIComponent(keyId)}`, {
+      method: "DELETE",
+      signal,
+    });
   }
 
   query(req: QueryRequest, signal?: AbortSignal): Promise<QueryResponse> {

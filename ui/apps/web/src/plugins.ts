@@ -4,6 +4,6 @@ export const CORE_PLUGIN_LOADERS: ReadonlyArray<LazyPluginLoader> = [
   () => import("@rotameter/plugin-overview"),
   () => import("@rotameter/plugin-breakdowns"),
   () => import("@rotameter/plugin-realtime"),
-  () => import("./slots/admin"),
-  () => import("./slots/cluster"),
+  () => import("@rotameter/plugin-admin"),
+  () => import("@rotameter/plugin-cluster"),
 ];

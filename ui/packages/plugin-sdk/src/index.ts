@@ -28,13 +28,17 @@ export {
 } from "./context";
 export { isPluginEnabled, loadEnabledPlugins } from "./registry";
 export type {
+  ApiKeyMetadata,
   ApiScope,
   AuthMeResponse,
   CapabilitiesResponse,
   ChartHostFallbackData,
+  CreatedApiKey,
+  CreateKeyRequest,
   DashboardQueryState,
   Granularity,
   HealthResponse,
+  KeyScope,
   KpiSummary,
   LazyPluginLoader,
   NodeRole,
@@ -53,6 +57,8 @@ export type {
   QueryResponse,
   RangePreset,
   RealtimeResponse,
+  SaltRotation,
   SiteResponse,
+  SiteUpsertRequest,
   TabularFallbackColumn,
 } from "./types";

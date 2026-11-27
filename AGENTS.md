@@ -104,7 +104,7 @@ storypole verify <KEY> --run
 ```
 
 **Tier 4 — Release gate (per version bump / `0.1.0` & `1.0.0` release milestones):**
-Everything in Tier 3 plus `cargo build --workspace --release`, `./scripts/check-collector-size.sh`, `./scripts/check-memory-budget.sh`, `outfeed plan -d . --no-llm`, and the `RM-17` release harness (`SIGTERM` drain, midnight rollover, 100k cardinality bomb, 1M-event `p95 < 25 ms`, Litestream/R2 restore drill).
+Everything in Tier 3 plus `cargo build --workspace --release`, `./scripts/check-collector-size.sh`, `./scripts/check-ui-budget.sh`, `./scripts/check-memory-budget.sh`, `outfeed plan -d . --no-llm`, and the `RM-17` release harness (`SIGTERM` drain, midnight rollover, 100k cardinality bomb, 1M-event `p95 < 25 ms`, Litestream/R2 restore drill).
 
 ### 3.5 Zero Inline Scope Creep (`storypole defer`)
 Unrelated bugs, `0.2.0` storage/Arrow work, `0.3.0` Web UI ideas, `0.4.0` funnel/heatmap features, or `0.5.0`/`0.6.0` adapter/plugin work discovered mid-ticket must not leak into the current diff:

@@ -4,4 +4,6 @@
 @source "../../../packages/plugin-overview/src";
 @source "../../../packages/plugin-breakdowns/src";
 @source "../../../packages/plugin-realtime/src";
+@source "../../../packages/plugin-admin/src";
+@source "../../../packages/plugin-cluster/src";
 @source ".";

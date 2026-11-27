@@ -27,13 +27,16 @@ export interface AuthMeResponse {
   site_id?: string;
 }
 
+export type KeyScope = "ingest" | "read" | "admin";
+export type SaltRotation = "daily" | "weekly" | "monthly";
+
 export interface SiteResponse {
   site_id: string;
   org_id: string;
   slug: string;
   display_name: string;
   timezone: string;
-  salt_rotation: string;
+  salt_rotation: SaltRotation;
   respect_gpc: boolean;
   is_self_site: boolean;
   allowed_origins: string[];
@@ -41,6 +44,46 @@ export interface SiteResponse {
   raw_retention_days: number | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface SiteUpsertRequest {
+  slug?: string;
+  display_name?: string;
+  timezone?: string;
+  salt_rotation?: SaltRotation;
+  respect_gpc?: boolean;
+  allowed_origins?: string[];
+  allowed_query_keys?: string[];
+  raw_retention_days?: number;
+}
+
+export interface ApiKeyMetadata {
+  key_id: string;
+  org_id: string;
+  scope: KeyScope;
+  site_id: string | null;
+  key_prefix: string;
+  label: string;
+  created_at: string;
+  last_used_at: string | null;
+  revoked_at: string | null;
+}
+
+export interface CreateKeyRequest {
+  scope: KeyScope;
+  site?: string;
+  label: string;
+}
+
+export interface CreatedApiKey {
+  key_id: string;
+  org_id: string;
+  scope: KeyScope;
+  site_id: string | null;
+  key_prefix: string;
+  label: string;
+  token: string;
+  created_at: string;
 }
 
 export interface QueryMeta {

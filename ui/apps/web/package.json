@@ -9,7 +9,9 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@rotameter/plugin-admin": "workspace:*",
     "@rotameter/plugin-breakdowns": "workspace:*",
+    "@rotameter/plugin-cluster": "workspace:*",
     "@rotameter/plugin-overview": "workspace:*",
     "@rotameter/plugin-realtime": "workspace:*",
     "@rotameter/plugin-sdk": "workspace:*",

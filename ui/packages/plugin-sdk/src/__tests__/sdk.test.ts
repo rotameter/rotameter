@@ -43,6 +43,44 @@ describe("RotameterApiClient", () => {
       hasSignal: true,
     });
   });
+
+  it("sends deleteSite confirm=true and createKey payloads with CSRF token", async () => {
+    const calls: Array<{ url: string; method: string; csrf: string | null; body: string | null }> =
+      [];
+    const client = new RotameterApiClient({
+      query_base_url: "https://analytics.example.com",
+      getCsrfToken: () => "csrf_adm",
+      fetchImpl: (async (input: RequestInfo | URL, init?: RequestInit) => {
+        const headers = new Headers(init?.headers);
+        calls.push({
+          url: String(input),
+          method: init?.method ?? "GET",
+          csrf: headers.get("X-CSRF-Token"),
+          body: typeof init?.body === "string" ? init.body : null,
+        });
+        return new Response(JSON.stringify({ deleted: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }) as typeof fetch,
+    });
+
+    await client.deleteSite("blog.dev");
+    await client.createKey({ scope: "read", site: "blog.dev", label: "ui" });
+
+    expect(calls[0]).toEqual({
+      url: "https://analytics.example.com/v1/admin/sites/blog.dev?confirm=true",
+      method: "DELETE",
+      csrf: "csrf_adm",
+      body: null,
+    });
+    expect(calls[1]).toEqual({
+      url: "https://analytics.example.com/v1/admin/keys",
+      method: "POST",
+      csrf: "csrf_adm",
+      body: JSON.stringify({ scope: "read", site: "blog.dev", label: "ui" }),
+    });
+  });
 });
 
 describe("PluginRegistry scope & role gating", () => {

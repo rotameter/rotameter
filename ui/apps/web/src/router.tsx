@@ -34,6 +34,7 @@ import {
   validateDashboardSearch,
   type DashboardSearchParams,
 } from "./searchParams";
+import { mountSelfSiteCollector } from "./selfSite";
 
 const api = new RotameterApiClient();
 
@@ -84,6 +85,10 @@ function RootShell() {
 
   const caps = capsQuery.data;
   const auth = authQuery.data ?? null;
+
+  useEffect(() => {
+    mountSelfSiteCollector(caps?.self_site_id);
+  }, [caps?.self_site_id]);
 
   useEffect(() => {
     if (!caps || !auth) return;

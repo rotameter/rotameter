@@ -93,11 +93,17 @@ async fn capabilities_reflect_role_and_features() {
     assert_eq!(json["node_role"], "ingest");
     assert_eq!(json["features"]["ui"], false);
     assert_eq!(json["auth_methods"], json!(["bearer"]));
+    assert!(
+        json["self_site_id"]
+            .as_str()
+            .is_some_and(|s| s.starts_with("site_"))
+    );
 
     let dir = tempfile::tempdir().ok();
     let dir_path = dir.as_ref().map(|d| d.path().to_path_buf());
     let full_app = build_test_app(ServerConfig {
         role: ServerRole::All,
+        self_site_enabled: false,
         ui: UiConfig {
             mode: UiMode::On,
             dir: dir_path,
@@ -114,6 +120,7 @@ async fn capabilities_reflect_role_and_features() {
     assert_eq!(st2, StatusCode::OK);
     let j2 = as_json(&body2);
     assert_eq!(j2["features"]["ui"], true);
+    assert!(j2.get("self_site_id").is_none());
     assert_eq!(
         j2["auth_methods"],
         json!(["session", "bearer", "cf_access"])

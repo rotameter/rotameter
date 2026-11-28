@@ -16,6 +16,7 @@ export interface CapabilitiesResponse {
     query: string;
     stream: string;
   };
+  self_site_id?: string;
 }
 
 export interface AuthMeResponse {

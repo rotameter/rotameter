@@ -30,6 +30,8 @@ pub(crate) struct CapabilitiesResponse {
     features: CapabilitiesFeatures,
     auth_methods: Vec<&'static str>,
     endpoints: CapabilitiesEndpoints,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    self_site_id: Option<String>,
 }
 
 pub(crate) async fn get_capabilities(State(state): State<AppState>) -> Json<CapabilitiesResponse> {
@@ -62,5 +64,6 @@ pub(crate) async fn get_capabilities(State(state): State<AppState>) -> Json<Capa
             query: "/v1",
             stream: "/v1",
         },
+        self_site_id: state.self_site_id.map(|id| id.to_string()),
     })
 }

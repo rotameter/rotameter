@@ -5,7 +5,13 @@ import {
   serializeFiltersParam,
   validateDashboardSearch,
 } from "../searchParams";
-import { DEFAULT_PREFERENCES, loadPreferences, resolveTheme, savePreferences } from "../preferences";
+import {
+  DEFAULT_PREFERENCES,
+  loadPreferences,
+  resolveTheme,
+  savePreferences,
+} from "../preferences";
+import { mountSelfSiteCollector } from "../selfSite";
 
 describe("URL search param validation & filter serialization", () => {
   it("parses and round-trips canonical filter expressions", () => {
@@ -68,5 +74,56 @@ describe("UI localStorage preferences", () => {
     });
     expect(resolveTheme("system", true)).toBe("dark");
     expect(resolveTheme("light", true)).toBe("light");
+  });
+});
+
+describe("self_site collector injection", () => {
+  it("skips when self_site_id is absent and injects /v1/collect.js idempotently when present", () => {
+    const appended: Array<{
+      defer: boolean;
+      src: string;
+      attrs: Record<string, string>;
+    }> = [];
+    const fakeDoc = {
+      querySelector: (selector: string) =>
+        selector === "script[data-rotameter-self-site]" && appended.length > 0
+          ? ({} as Element)
+          : null,
+      createElement: () => {
+        const attrs: Record<string, string> = {};
+        return {
+          defer: false,
+          src: "",
+          attrs,
+          setAttribute: (k: string, v: string) => {
+            attrs[k] = v;
+          },
+        };
+      },
+      head: {
+        appendChild: (el: { defer: boolean; src: string; attrs: Record<string, string> }) => {
+          appended.push(el);
+          return el;
+        },
+      },
+    } as unknown as Document;
+
+    expect(mountSelfSiteCollector(undefined, fakeDoc)).toBeNull();
+    expect(appended).toHaveLength(0);
+
+    const injected = mountSelfSiteCollector("site_self_123", fakeDoc);
+    expect(injected).not.toBeNull();
+    expect(appended).toHaveLength(1);
+    expect(appended[0]?.defer).toBe(true);
+    expect(appended[0]?.src).toBe("/v1/collect.js");
+    expect(appended[0]?.attrs).toEqual({
+      "data-site": "site_self_123",
+      "data-endpoint": "/v1/events",
+      "data-spa": "true",
+      "data-rotameter-self-site": "true",
+    });
+
+    expect(mountSelfSiteCollector("site_self_123", fakeDoc)).toBeNull();
+    expect(appended).toHaveLength(1);
   });
 });
